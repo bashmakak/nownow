@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BLOCKS, BLOCK_SHARE, COURSE_BY, FEATURED, FORMAT, PUBLIC, SOON, START_COURSE, TIME, TOPIC_BY, WITH_FULL, WPM, coursesOf, minutes } from '../data';
+import { BLOCKS, BLOCK_SHARE, COURSES, COURSE_BY, FEATURED, FORMAT, PUBLIC, SOON, START_COURSE, TIME, TOPIC_BY, WITH_FULL, WPM, coursesOf, minutes } from '../data';
 import { plural, genMin, aboutMin } from '../lib/store.js';
 import { useTitle } from '../lib/ui.jsx';
 import { Icon } from '../components/Icon.jsx';
@@ -12,7 +12,7 @@ const DEMO_TOPICS = [['', 'Все'], ['psihologiya', 'Психология'], ['
 const FAQ = [
   ['Сколько времени занимает урок?', `У каждого урока своё время. Оно указано на карточке и на странице урока. Короткие версии занимают от ${TIME.short.min} до ${TIME.short.max} ${genMin(TIME.short.max)}${TIME.full ? `, полная — ${aboutMin(TIME.full.mid)}` : ''}.`],
   ['Чем короткая версия отличается от полной?', 'В короткой главная идея, один пример, короткая практика и три вопроса. Полная разбирает ту же тему подробно: больше примеров, вопросы для размышления по ходу, рабочий лист и пять вопросов. Версию выбирают на странице урока.'],
-  ['У всех уроков есть полная версия?', `Пока нет. Сейчас она есть у ${WITH_FULL.length} ${plural(WITH_FULL.length, ['урока', 'уроков', 'уроков'])}: ${WITH_FULL.map(c => `«${c.title}»`).join(', ')}. Остальные готовятся. На карточке урока с двумя версиями указано время обеих.`],
+  ['У всех уроков есть полная версия?', `Пока нет. Сейчас она есть у ${WITH_FULL.length} ${plural(WITH_FULL.length, ['урока', 'уроков', 'уроков'])} из ${COURSES.length}${PUBLIC.every(t => coursesOf(t.slug).some(c => c.full)) ? ', минимум у одного в каждой теме' : ''}. Остальные готовятся. В каталоге такие уроки показывает фильтр «Есть полная версия», а на карточке указано время обеих версий.`],
   ['Как считается время?', `По объёму урока: чтение со скоростью ${WPM} слов в минуту плюс небольшие паузы на вопросы и задания. Это оценка среднего темпа, а не замер. Ваш темп может отличаться.`],
   ['Что если я не успею за один раз?', 'Прогресс сохраняется после каждого блока. Откройте курс позже и продолжите с того места, где остановились.'],
   ['Счётчик времени что-то ограничивает?', 'Нет. Надпись «Осталось N мин» только подсказывает, сколько впереди. Урок не закроется, если вы задержитесь на блоке.'],

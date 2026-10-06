@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BLOCKS, COURSE_BY, TOPIC_BY, VERSION, WITH_FULL, lesson } from '../data';
+import { BLOCKS, COURSE_BY, TOPIC_BY, VERSION, WITH_FULL, about } from '../data';
 import { useStore, update, statusOf, splitKey, setVersion, streak, dayKey, plural, resetAll, applyTheme } from '../lib/store.js';
 import { useUI, useTitle } from '../lib/ui.jsx';
 import { Icon } from '../components/Icon.jsx';
@@ -29,7 +29,7 @@ export default function Me() {
   const { toast } = useUI();
   const [ask, setAsk] = useState(false);
   // ключ прогресса — это урок и его версия; of(k) разбирает ключ
-  const of = k => { const [slug, v] = splitKey(k), c = COURSE_BY[slug]; return { slug, v, c, L: lesson(c, v), tail: c.full ? ` · ${VERSION[v].toLowerCase()} версия` : '' }; };
+  const of = k => { const [slug, v] = splitKey(k), c = COURSE_BY[slug]; return { slug, v, c, A: about(c, v), tail: c.full ? ` · ${VERSION[v].toLowerCase()} версия` : '' }; };
   const all = Object.keys(s.courses).filter(k => COURSE_BY[splitKey(k)[0]]);
   const inprog = all.filter(k => statusOf(s, ...splitKey(k)) === 'progress').sort((a, b) => (s.courses[b].touched || 0) - (s.courses[a].touched || 0));
   // одна карточка на урок: если пройдены обе версии, берём ту, что пройдена позже
@@ -40,7 +40,7 @@ export default function Me() {
   const notes = Object.entries(s.notes).map(([k, v]) => [k.slice(0, k.lastIndexOf(':')), +k.slice(k.lastIndexOf(':') + 1), v])
     .filter(([k, , v]) => v && v.trim() && COURSE_BY[splitKey(k)[0]]);
   const reflects = all.filter(k => (s.courses[k].reflect || '').trim());
-  const sheets = all.filter(k => of(k).L.practice.sheet && Object.values(s.courses[k].work || {}).some(v => (v || '').trim()));
+  const sheets = all.filter(k => of(k).A.sheet.length && Object.values(s.courses[k].work || {}).some(v => (v || '').trim()));
   const bookmarks = s.bookmarks.filter(k => COURSE_BY[k]);
   const cont = inprog[0] && of(inprog[0]);
   const label = { textDecoration: 'none' };
@@ -102,7 +102,7 @@ export default function Me() {
               {completed.map(k => (
                 <div className="stack" style={{ gap: 8, minWidth: 0 }} key={k}>
                   <Link className="label" to={`/courses/${of(k).slug}`} style={label}>{of(k).c.title}</Link>
-                  <KeyCard course={of(k).L} />
+                  <KeyCard course={of(k).A} />
                 </div>
               ))}
             </div>
@@ -134,8 +134,8 @@ export default function Me() {
                 <div className="note-item" key={`w-${k}`}>
                   <Link className="label" to={`/courses/${of(k).slug}`} style={label}>{of(k).c.title} · рабочий лист</Link>
                   <dl className="sheet-answers">
-                    {of(k).L.practice.sheet.map((f, i) => ((s.courses[k].work[i] || '').trim() ? (
-                      <div key={f.label}><dt>{f.label}</dt><dd>{s.courses[k].work[i]}</dd></div>
+                    {of(k).A.sheet.map((label, i) => ((s.courses[k].work[i] || '').trim() ? (
+                      <div key={label}><dt>{label}</dt><dd>{s.courses[k].work[i]}</dd></div>
                     ) : null))}
                   </dl>
                 </div>

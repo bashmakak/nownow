@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { BLOCKS, COURSE_BY, DISCLAIMER, FORMAT, LEVEL, REC_ORDER, TOPIC_BY, VERSION, blockTitle, coursesOf, lesson, minutes, timing } from '../data';
+import { BLOCKS, COURSE_BY, DISCLAIMER, FORMAT, LEVEL, REC_ORDER, TOPIC_BY, VERSION, about, coursesOf, minutes } from '../data';
+import { loadFull } from '../data/full-loader.js';
 import { useStore, pkey, statusOf, activeVersion, remainingSec, leftLabel, restartCourse, setVersion, nMin, aboutMin, plural } from '../lib/store.js';
 import { useTitle } from '../lib/ui.jsx';
 import { Icon } from '../components/Icon.jsx';
@@ -10,12 +11,11 @@ import NotFound from './NotFound.jsx';
 const learnPath = (slug, v) => `/learn/${slug}/${v}`;
 const blockTime = sec => (sec < 45 ? 'меньше минуты' : `${Math.round(sec / 60)} мин`);
 
-/* Что входит в версию: считается по содержимому, а не пишется руками */
-function contents(L) {
-  const n = L.check.length, q = `${n} ${plural(n, ['вопрос', 'вопроса', 'вопросов'])} на закрепление`;
-  const thinks = [L.idea, L.example, L.practice].reduce((k, part) => k + (part.body || []).filter(x => x[0] === 'think').length, 0);
-  if (!L.practice.sheet && !thinks) return `Главная идея, один пример, короткая практика и ${q}.`;
-  return `Подробный разбор с примерами${thinks ? ', вопросы для размышления по ходу' : ''}${L.practice.sheet ? ', рабочий лист, который вы заполняете сами,' : ''} и ${q}.`;
+/* Что входит в версию: считается по сводке версии (см. about), а не пишется руками */
+function contents(A) {
+  const q = `${A.checks} ${plural(A.checks, ['вопрос', 'вопроса', 'вопросов'])} на закрепление`;
+  if (!A.sheet.length && !A.thinks) return `Главная идея, один пример, короткая практика и ${q}.`;
+  return `Подробный разбор с примерами${A.thinks ? ', вопросы для размышления по ходу' : ''}${A.sheet.length ? ', рабочий лист, который вы заполняете сами,' : ''} и ${q}.`;
 }
 
 /* Выбор версии урока. Выбор запоминается и действует на всех уроках, у которых такая версия есть */
@@ -33,7 +33,7 @@ function VersionPicker({ course, value, onChange }) {
           );
         })}
       </div>
-      <p className="ver-note">{contents(lesson(course, value))}</p>
+      <p className="ver-note">{contents(about(course, value))}</p>
     </div>
   );
 }
@@ -60,7 +60,9 @@ function CourseBody({ course: c }) {
   const [v, setV] = useState(() => activeVersion(s, c));
   const pick = next => { setV(next); setVersion(next); };
   const t = TOPIC_BY[c.topic];
-  const L = lesson(c, v), T = timing(c, v);
+  const T = about(c, v);   // сводка выбранной версии: время, заголовки блоков, карточка итога
+  // текст полной версии начинаем скачивать заранее, чтобы урок открылся сразу
+  useEffect(() => { if (v === 'full' && c.full) loadFull(c.slug); }, [v, c]);
   const p = s.courses[pkey(c.slug, v)];
   const st = statusOf(s, c.slug, v);
   const done = i => st === 'done' || Boolean(p && p.done[i]);
@@ -100,14 +102,14 @@ function CourseBody({ course: c }) {
                 {BLOCKS.map((b, i) => (
                   <li key={b.kind}>
                     <span className="n">{i + 1}</span>
-                    <span><b>{b.label}</b><small>{blockTitle(L, i)}</small></span>
+                    <span><b>{b.label}</b><small>{T.titles[i]}</small></span>
                     <span className="m">{done(i) && <><Icon name="check" size={15} /><span className="sr">пройден, </span></>}{blockTime(T.blocks[i])}</span>
                   </li>
                 ))}
               </ol>
               <p className="time-note">Время посчитано по объёму текста и заданий. Ваш темп может отличаться.</p>
             </div>
-            <div className="blk"><h2 className="h3">Итог урока</h2><KeyCard course={lesson(c, passed || v)} locked={!passed} /></div>
+            <div className="blk"><h2 className="h3">Итог урока</h2><KeyCard course={about(c, passed || v)} locked={!passed} /></div>
             {c.sources && (
               <div className="blk"><h2 className="h3">Источники</h2><ul className="sources">{c.sources.map(x => <li key={x}>{x}</li>)}</ul></div>
             )}

@@ -498,3 +498,4 @@ dialog::backdrop{background:rgba(4,6,9,.72)}
 .deeper div{display:flex;flex-direction:column;gap:4px;flex:1 1 260px;min-width:0}
 .deeper b{font:600 16px/1.3 var(--font-body)}
 .deeper span{font-size:14.5px;line-height:1.45;color:var(--text-2)}
+.pl-wait{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--text-2);font-size:15px}

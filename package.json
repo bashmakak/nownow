@@ -4,7 +4,10 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "meta": "node scripts/full-meta.mjs",
+    "predev": "npm run meta",
     "dev": "vite",
+    "prebuild": "npm run meta",
     "build": "vite build",
     "preview": "vite preview"
   },

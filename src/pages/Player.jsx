@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { BLOCKS, COURSE_BY, DISCLAIMER, REC_ORDER, TOPIC_BY, VERSION, coursesOf, lesson, minutes, timing } from '../data';
+import { BLOCKS, COURSE_BY, DISCLAIMER, REC_ORDER, TOPIC_BY, VERSION, about, coursesOf, lesson, minutes } from '../data';
+import { useFull } from '../data/full-loader.js';
 import { useStore, getState, update, ensureProgress, newProgress, today, status, statusOf, activeVersion, pkey, leftLabel, streak, plural } from '../lib/store.js';
 import { useUI, useTitle, DialogHead } from '../lib/ui.jsx';
 import { Icon } from '../components/Icon.jsx';
 import { Mark } from '../components/Brand.jsx';
-import { KeyCard } from '../components/Cards.jsx';
+import { EmptyState, KeyCard } from '../components/Cards.jsx';
 import NotFound from './NotFound.jsx';
 
 /* ---------- переходы между блоками ---------- */
@@ -277,7 +278,7 @@ function PlayerBody({ course: base, version }) {
   const c = lesson(base, version);         // урок в выбранной версии
   useTitle(c.title);
   const slug = pkey(base.slug, version);   // ключ прогресса этой версии
-  const T = timing(base, version);         // расчётное время блоков в секундах
+  const T = about(base, version);          // расчётное время блоков в секундах
   const s = useStore();
   const ui = useUI();
   const hRef = useRef(null);
@@ -395,6 +396,24 @@ function PlayerBody({ course: base, version }) {
    Адрес без версии открывает начатую, а если начатых нет — ту, что человек выбрал по умолчанию. */
 function PlayerEntry({ course, asked }) {
   const [version] = useState(() => asked || activeVersion(getState(), course));
+  // текст полной версии лежит в отдельном файле и скачивается при открытии урока
+  const state = useFull(course.slug, version === 'full');
+  if (state === 'loading') return <div className="pl-wait" role="status"><Mark size={28} /><span>Загружаем урок…</span></div>;
+  if (state === 'error') {
+    return (
+      <section className="page">
+        <div className="wrap">
+          <EmptyState title="Не удалось загрузить полную версию" text="Проверьте соединение с интернетом и попробуйте ещё раз. Короткая версия уже загружена и откроется сразу.">
+            <div className="row" style={{ justifyContent: 'center' }}>
+              {/* браузер запоминает неудачную загрузку файла до перезагрузки страницы, поэтому повтор — это перезагрузка */}
+              <button type="button" className="btn btn-primary" onClick={() => window.location.reload()}>Повторить</button>
+              <Link className="btn btn-secondary" to={`/learn/${course.slug}/short`}>Открыть короткую версию</Link>
+            </div>
+          </EmptyState>
+        </div>
+      </section>
+    );
+  }
   return <PlayerBody course={course} version={version} />;
 }
 
