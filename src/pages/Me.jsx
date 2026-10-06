@@ -1,18 +1,21 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BLOCKS, COURSE_BY, TOPIC_BY, VERSION, WITH_FULL, about } from '../data';
-import { useStore, update, statusOf, splitKey, setVersion, streak, dayKey, plural, resetAll, applyTheme } from '../lib/store.js';
+import { useStore, update, statusOf, splitKey, setVersion, streak, dayKey, activeDay, plural, resetAll, applyTheme } from '../lib/store.js';
 import { useUI, useTitle } from '../lib/ui.jsx';
 import { Icon } from '../components/Icon.jsx';
 import { Mark } from '../components/Brand.jsx';
 import { CourseCard, EmptyState, KeyCard, ProgressLine, ThemeControl } from '../components/Cards.jsx';
+import { Achievements, Bolts, XpBar, achievementCount } from '../components/GameUI.jsx';
+import { TRAINERS } from '../data/trainers.js';
+import { dailyDone, xpOf } from '../lib/game.js';
 
 function Calendar({ activity }) {
   const now = new Date(), dow = (now.getDay() + 6) % 7;
   const start = new Date(now); start.setDate(now.getDate() - dow - 21);
   const cells = [...Array(28)].map((_, i) => {
     const d = new Date(start); d.setDate(start.getDate() + i);
-    const k = dayKey(d), on = Boolean(activity[k] && activity[k].blocks > 0), isToday = k === dayKey(now);
+    const k = dayKey(d), on = activeDay(activity[k]), isToday = k === dayKey(now);
     return { k, n: d.getDate(), on, isToday, fut: d > now && !isToday, title: d.toLocaleDateString('ru-RU') + (on ? ': есть занятие' : '') };
   });
   return (
@@ -43,6 +46,8 @@ export default function Me() {
   const sheets = all.filter(k => of(k).A.sheet.length && Object.values(s.courses[k].work || {}).some(v => (v || '').trim()));
   const bookmarks = s.bookmarks.filter(k => COURSE_BY[k]);
   const cont = inprog[0] && of(inprog[0]);
+  const [achGot, achAll] = achievementCount(s);
+  const played = TRAINERS.filter(t => s.game.best[t.id]);
   const label = { textDecoration: 'none' };
 
   return (
@@ -88,17 +93,45 @@ export default function Me() {
               <Mark size={44} fill={st ? 'url(#nv-g)' : 'currentColor'} />
               <div>
                 <b>{st}</b> <span className="muted">{plural(st, ['день', 'дня', 'дней'])} подряд</span>
-                <p className="muted" style={{ fontSize: 14 }}>{st ? 'День засчитан, если пройден хотя бы один блок.' : 'Пройдите один блок сегодня, чтобы начать серию.'}</p>
+                <p className="muted" style={{ fontSize: 14 }}>{st ? 'День засчитан, если пройден блок урока или раунд в тренажёре.' : 'Пройдите блок урока или раунд в тренажёре, чтобы начать серию.'}</p>
               </div>
             </div>
             <Calendar activity={s.activity} />
           </div>
         </div>
 
+        <div className="group" id="me-game">
+          <div className="stack" style={{ gap: 20 }}>
+            <div className="panel">
+              <div className="panel-head"><h2 className="h3">Уровень и опыт</h2></div>
+              <div className="me-level">
+                <div>
+                  <XpBar xp={xpOf(s)} />
+                  <p className="muted" style={{ fontSize: 14 }}>Опыт дают пройденные уроки, верные ответы в проверке, задания в уроках и раунды в тренажёрах.</p>
+                </div>
+                <div>
+                  {played.length > 0 ? (
+                    <ul className="bests" aria-label="Лучшие результаты в тренажёрах">
+                      {played.map(t => <li key={t.id}><Link to={`/train/${t.id}`}>{t.title}</Link><Bolts n={s.game.best[t.id].bolts} size={16} /><b className="num">{s.game.best[t.id].score}</b></li>)}
+                    </ul>
+                  ) : <p className="muted">В тренажёрах вы ещё не играли. Раунд из восьми заданий занимает около двух минут.</p>}
+                  <div className="row">
+                    <Link className="btn btn-secondary" to="/train"><Icon name="gamepad-2" size={17} />{dailyDone(s) ? 'Тренажёры' : 'Тренировка дня'}</Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="panel">
+              <div className="panel-head"><h2 className="h3">Достижения</h2><span className="muted num" id="ach-count">{achGot} из {achAll}</span></div>
+              <Achievements />
+            </div>
+          </div>
+        </div>
+
         <div className="group">
           <h2 className="h3" style={{ marginBottom: 18 }}>Ключевые знания</h2>
           {completed.length ? (
-            <div className="kgrid">
+            <div className="kgrid" data-rv-kids="">
               {completed.map(k => (
                 <div className="stack" style={{ gap: 8, minWidth: 0 }} key={k}>
                   <Link className="label" to={`/courses/${of(k).slug}`} style={label}>{of(k).c.title}</Link>

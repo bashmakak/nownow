@@ -3,6 +3,7 @@ import { BLOCKS, BLOCK_SHARE, COURSES, TIME, WITH_FULL, WPM } from '../data';
 import { plural, genMin, aboutMin } from '../lib/store.js';
 import { useTitle } from '../lib/ui.jsx';
 import { Icon } from '../components/Icon.jsx';
+import { ROUND, TRAINERS } from '../data/trainers.js';
 
 export default function About() {
   useTitle('О платформе');
@@ -34,6 +35,15 @@ export default function About() {
             <p><b>Полная</b> разбирает ту же тему подробно: больше примеров, вопросы для размышления по ходу, рабочий лист и пять вопросов.{TIME.full && ` Она занимает ${aboutMin(TIME.full.mid)}.`} Сейчас полная версия есть у {WITH_FULL.length} {plural(WITH_FULL.length, ['урока', 'уроков', 'уроков'])}, остальные готовятся.</p>
             <p>Версию выбирают на странице урока. Выбор запоминается, изменить его можно в кабинете.</p>
           </div>
+        </div>
+        <div className="group" style={{ maxWidth: 720 }}>
+          <h2 className="h3" style={{ marginBottom: 14 }}>Задания, тренажёры и опыт</h2>
+          <div className="stack" style={{ gap: 12 }}>
+            <p>В уроках по искусственному интеллекту есть <b>интерактивные задания</b>: собрать запрос из элементов, расставить шаги по порядку, найти в ответе модели то, что нужно проверить. Они необязательны и помогают закрепить материал делом.</p>
+            <p><b>Тренажёры</b> — короткие раунды из {ROUND} заданий. Сейчас их {TRAINERS.length} по теме ИИ и ещё один собирает вопросы из уроков, которые вы уже прошли. После раунда показан разбор ошибок.</p>
+            <p>За уроки, верные ответы, задания и раунды начисляется <b>опыт</b>. Он складывается в уровни, а за заметные шаги даются достижения. Сравнения с другими людьми нет: всё хранится в вашем браузере.</p>
+          </div>
+          <div style={{ marginTop: 16 }}><Link className="btn btn-secondary" to="/train">Открыть тренажёры</Link></div>
         </div>
         <div className="group" style={{ maxWidth: 720 }}>
           <h2 className="h3" style={{ marginBottom: 14 }}>Как считается время</h2>

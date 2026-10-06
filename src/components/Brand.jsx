@@ -49,6 +49,8 @@ export function HeroFx() {
       <svg viewBox="0 0 1200 600" preserveAspectRatio="none">
         <polygon points="560,600 1200,250 1200,292 640,600" fill="url(#nv-gs)" opacity=".5" filter="url(#nv-b12)" />
         <polygon className="streak-core" points="610,600 1200,268 1200,276 628,600" fill="url(#nv-gs)" filter="url(#nv-b2)" />
+        {/* вспышка, которая время от времени пробегает по лучу */}
+        <line className="beam-pulse" x1="619" y1="600" x2="1200" y2="272" pathLength="100" />
       </svg>
     </div>
   );

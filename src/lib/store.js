@@ -3,7 +3,10 @@ import { COURSE_BY, timing } from '../data';
 
 /* Прогресс, закладки и заметки живут в браузере: сервера у сайта нет. */
 const KEY = 'nownow.v1';
-const fresh = () => ({ theme: 'dark', name: '', version: 'short', bookmarks: [], courses: {}, notes: {}, activity: {} });
+/* game — всё, что относится к тренажёрам и наградам: опыт за раунды, лучшие результаты, сыгранное по дням,
+   показанные достижения. Опыт за уроки здесь не хранится: он считается по прогрессу (см. lib/game.js). */
+const freshGame = () => ({ xp: 0, best: {}, days: {}, dailies: 0, seen: null, lvl: 1 });
+const fresh = () => ({ theme: 'dark', name: '', version: 'short', bookmarks: [], courses: {}, notes: {}, activity: {}, game: freshGame() });
 
 /* Прогресс короткой версии хранится под slug урока, полной — под «slug@full».
    Заметки к блокам: «ключ:номер блока». */
@@ -27,7 +30,7 @@ function migrate(st) {
 function load() {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return migrate({ ...fresh(), ...JSON.parse(raw) });
+    if (raw) { const st = { ...fresh(), ...JSON.parse(raw) }; st.game = { ...freshGame(), ...(st.game || {}) }; return migrate(st); }
   } catch { /* хранилище недоступно: работаем в памяти */ }
   return fresh();
 }
@@ -49,7 +52,9 @@ export const useStore = () => useSyncExternalStore(subscribe, getState);
 
 export const dayKey = (d = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-export const today = draft => draft.activity[dayKey()] || (draft.activity[dayKey()] = { sec: 0, blocks: 0 });
+export const today = draft => draft.activity[dayKey()] || (draft.activity[dayKey()] = { sec: 0, blocks: 0, games: 0 });
+/* День засчитан, если пройден хотя бы один блок урока или сыгран раунд в тренажёре */
+export const activeDay = a => Boolean(a && (a.blocks > 0 || a.games > 0));
 
 export const newProgress = () => ({
   started: Date.now(), touched: Date.now(), completed: null, finished: false, block: 0,
@@ -85,7 +90,7 @@ export function remainingSec(s, course, v) {
 export const leftLabel = sec => (sec < 45 ? 'Осталось меньше минуты' : `Осталось ${Math.max(1, Math.round(sec / 60))} мин`);
 export function setVersion(v) { update(d => { d.version = v === 'full' ? 'full' : 'short'; }); }
 export function streak(s) {
-  const has = k => s.activity[k] && s.activity[k].blocks > 0;
+  const has = k => activeDay(s.activity[k]);
   const d = new Date();
   if (!has(dayKey(d))) d.setDate(d.getDate() - 1);
   let n = 0;

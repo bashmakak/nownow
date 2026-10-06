@@ -9,6 +9,7 @@ import e from './courses-e.js';
 import f from './courses-f.js';
 import g from './courses-g.js';
 import h from './courses-h.js';
+import i from './courses-i.js';
 
 export { GROUPS, TOPICS, BLOCKS, VERSION, FORMAT, LEVEL, DISCLAIMER, WPM };
 
@@ -20,7 +21,7 @@ export { GROUPS, TOPICS, BLOCKS, VERSION, FORMAT, LEVEL, DISCLAIMER, WPM };
    Поле full у урока — эта сводка. Если оно есть, у урока есть полная версия. */
 const PARTS = ['why', 'idea', 'example', 'practice', 'check', 'key'];
 
-export const COURSES = [...a, ...b, ...c, ...d, ...e, ...f, ...g, ...h].map(x => {
+export const COURSES = [...a, ...b, ...c, ...d, ...e, ...f, ...g, ...h, ...i].map(x => {
   const full = FULL_META[x.slug];
   return full ? { ...x, sources: full.sources || x.sources, full } : x;
 });
@@ -39,7 +40,17 @@ export const lesson = (x, v) => {
 
 export const TOPIC_BY = Object.fromEntries(TOPICS.map(t => [t.slug, t]));
 export const COURSE_BY = Object.fromEntries(COURSES.map(x => [x.slug, x]));
-export const coursesOf = slug => COURSES.filter(x => x.topic === slug);
+
+/* Маршрут по теме: порядок, в котором уроки лучше проходить. Темы без маршрута показывают уроки в порядке добавления */
+export const PATHS = {
+  'iskusstvennyj-intellekt': [
+    'kak-rabotaet-yazykovaya-model', 'prompty', 'primery-v-prompte', 'zadacha-po-shagam', 'kontekstnoe-okno',
+    'proverka-otvetov-nejroseti', 'gde-ii-silen', 'chto-ne-otpravlyat-v-nejroset', 'ii-kak-redaktor', 'ii-kak-repetitor',
+  ],
+};
+const rank = (topic, slug) => { const i = (PATHS[topic] || []).indexOf(slug); return i < 0 ? 999 : i; };
+export const coursesOf = slug => COURSES.filter(x => x.topic === slug).sort((p, q) => rank(slug, p.slug) - rank(slug, q.slug));
+export const pathOf = slug => (PATHS[slug] ? coursesOf(slug) : []);
 
 /* Тема открыта в каталоге, когда в ней минимум два курса */
 export const isPublic = t => coursesOf(t.slug).length >= 2;

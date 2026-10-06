@@ -14,10 +14,12 @@ export function UIProvider({ children }) {
 
   const close = useCallback(() => setDialog(null), []);
   const open = useCallback((content, cls = '') => setDialog({ content, cls }), []);
+  // сообщение — строка или объект { title, text, icon, tone }: так показываются опыт, уровень и достижения
   const toast = useCallback(msg => {
     const id = Date.now() + Math.random();
-    setToasts(t => [...t, { id, msg }]);
-    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3200);
+    const t = typeof msg === 'string' ? { text: msg } : msg;
+    setToasts(list => [...list.slice(-2), { id, ...t }]);
+    setTimeout(() => setToasts(list => list.filter(x => x.id !== id)), t.title ? 4600 : 3200);
   }, []);
 
   useEffect(() => {
@@ -42,7 +44,12 @@ export function UIProvider({ children }) {
         {dialog?.content}
       </dialog>
       <div className="toasts" role="status" aria-live="polite">
-        {toasts.map(t => <div className="toast" key={t.id}>{t.msg}</div>)}
+        {toasts.map(t => (
+          <div className={`toast ${t.title ? 'toast-rich' : ''} ${t.tone || ''}`} key={t.id}>
+            {t.icon && <span className="toast-ic"><Icon name={t.icon} size={18} /></span>}
+            <span>{t.title && <b>{t.title}</b>}{t.text}</span>
+          </div>
+        ))}
       </div>
     </UICtx.Provider>
   );

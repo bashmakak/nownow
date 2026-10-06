@@ -14,7 +14,8 @@ const blockTime = sec => (sec < 45 ? 'меньше минуты' : `${Math.round
 /* Что входит в версию: считается по сводке версии (см. about), а не пишется руками */
 function contents(A) {
   const q = `${A.checks} ${plural(A.checks, ['вопрос', 'вопроса', 'вопросов'])} на закрепление`;
-  if (!A.sheet.length && !A.thinks) return `Главная идея, один пример, короткая практика и ${q}.`;
+  const play = A.plays ? `, ${A.plays === 1 ? 'интерактивное задание' : 'интерактивные задания'}` : '';
+  if (!A.sheet.length && !A.thinks) return `Главная идея, один пример${play}, короткая практика и ${q}.`;
   return `Подробный разбор с примерами${A.thinks ? ', вопросы для размышления по ходу' : ''}${A.sheet.length ? ', рабочий лист, который вы заполняете сами,' : ''} и ${q}.`;
 }
 
@@ -122,6 +123,7 @@ function CourseBody({ course: c }) {
                 <div><dt>Время</dt><dd>{aboutMin(T.min)}</dd></div>
                 <div><dt>Версия</dt><dd>{VERSION[v]}</dd></div>
                 <div><dt>Блоков</dt><dd>6</dd></div>
+                {T.plays > 0 && <div><dt>Заданий</dt><dd>{T.plays}</dd></div>}
                 <div><dt>Формат</dt><dd>{FORMAT[c.format]}</dd></div>
                 <div><dt>Уровень</dt><dd>{LEVEL[c.level]}</dd></div>
                 <div><dt>Тема</dt><dd><Link to={`/topics/${t.slug}`}>{t.title}</Link></dd></div>

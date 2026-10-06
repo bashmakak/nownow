@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { GROUPS, PUBLIC, SOON, TOPIC_BY, coursesOf, isPublic, tagsOf } from '../data';
 import { useTitle } from '../lib/ui.jsx';
 import { Icon } from '../components/Icon.jsx';
 import { CourseCard, Crumbs, TopicTile } from '../components/Cards.jsx';
+import { PathMap, TrainerCard } from '../components/GameUI.jsx';
+import { trainersOf } from '../data/trainers.js';
 import NotFound from './NotFound.jsx';
 
 export function Topics() {
@@ -20,7 +22,7 @@ export function Topics() {
           return list.length ? (
             <div className="group" key={g.id}>
               <span className="label">{g.title}</span>
-              <div className="tiles">{list.map(t => <TopicTile topic={t} key={t.slug} />)}</div>
+              <div className="tiles" data-rv-kids="">{list.map(t => <TopicTile topic={t} key={t.slug} />)}</div>
             </div>
           ) : null;
         })}
@@ -43,6 +45,7 @@ function TopicBody({ topic }) {
   const [tag, setTag] = useState('');
   const list = coursesOf(topic.slug);
   const shown = tag ? list.filter(c => c.tags.includes(tag)) : list;
+  const trainers = trainersOf(topic.slug);
   const similar = PUBLIC.filter(x => x.g === topic.g && x.slug !== topic.slug).concat(PUBLIC.filter(x => x.g !== topic.g)).slice(0, 4);
   return (
     <section className="page">
@@ -57,13 +60,23 @@ function TopicBody({ topic }) {
             </div>
           </div>
         </header>
+        <PathMap topic={topic.slug} />
         <div className="chips" role="group" aria-label="Подтемы" style={{ marginBottom: 24 }}>
           <button type="button" className="chip" aria-pressed={!tag} onClick={() => setTag('')}>Все подтемы</button>
           {tagsOf(topic.slug).map(x => (
             <button key={x} type="button" className="chip" aria-pressed={tag === x} onClick={() => setTag(x)}>{x}</button>
           ))}
         </div>
-        <div className="cards">{shown.map(c => <CourseCard course={c} key={c.slug} />)}</div>
+        <div className="cards" data-rv-kids="">{shown.map(c => <CourseCard course={c} key={c.slug} />)}</div>
+        {trainers.length > 0 && (
+          <div className="group" id="topic-trainers">
+            <div className="sec-head" style={{ marginBottom: 18 }}>
+              <div><h2 className="h3">Тренажёры по теме</h2><p className="muted" style={{ marginTop: 6, maxWidth: '60ch' }}>Короткие раунды на закрепление уроков: восемь заданий, очки и разбор ошибок.</p></div>
+              <Link className="more-link" to="/train">Все тренажёры <Icon name="arrow-right" size={16} /></Link>
+            </div>
+            <div className="tcards" data-rv-kids="">{trainers.map(t => <TrainerCard id={t.id} key={t.id} />)}</div>
+          </div>
+        )}
         <div className="group">
           <h2 className="h3" style={{ marginBottom: 18 }}>Похожие темы</h2>
           <div className="tiles">{similar.map(t => <TopicTile topic={t} key={t.slug} />)}</div>

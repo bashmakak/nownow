@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
-import { COURSE_BY, PUBLIC, REC_ORDER, TIME, TOPIC_BY, coursesOf, isPublic, tagsOf, timing } from '../data';
+import { COURSE_BY, PUBLIC, REC_ORDER, TIME, TOPIC_BY, about, coursesOf, isPublic, tagsOf, timing } from '../data';
 import { useStore, status, activeVersion, genMin, nCourses, norm } from '../lib/store.js';
 import { useUI, useTitle } from '../lib/ui.jsx';
 import { Icon } from '../components/Icon.jsx';
@@ -12,6 +12,7 @@ const SELECTS = [
   ['format', 'Формат', [['', 'Любой формат'], ['theory', 'Теория'], ['practice', 'Практика'], ['case', 'Кейс']]],
   ['level', 'Уровень', [['', 'Любой уровень'], ['1', 'Начальный'], ['2', 'Средний'], ['3', 'Продвинутый']]],
   ['version', 'Версия', [['', 'Любая версия'], ['full', 'Есть полная версия']]],
+  ['play', 'Задания', [['', 'С заданиями и без'], ['1', 'С интерактивом']]],
   ['status', 'Статус', [['', 'Все курсы'], ['new', 'Не начатые'], ['progress', 'В процессе'], ['done', 'Пройденные']]],
   ['sort', 'Сортировка', [['', 'Сначала рекомендуемые'], ['fast', 'Сначала короткие'], ['long', 'Сначала длинные'], ['az', 'По названию']]],
 ];
@@ -24,7 +25,7 @@ export default function Catalog() {
   const [params, setParams] = useSearchParams();
   const [shown, setShown] = useState(PAGE);
   const input = useRef(null);
-  const f = Object.fromEntries(['q', 'topic', 'tag', 'format', 'level', 'version', 'status', 'sort'].map(k => [k, params.get(k) || '']));
+  const f = Object.fromEntries(['q', 'topic', 'tag', 'format', 'level', 'version', 'play', 'status', 'sort'].map(k => [k, params.get(k) || '']));
 
   // состояние фильтров хранится в адресе: страницей можно поделиться
   const set = patch => {
@@ -45,6 +46,7 @@ export default function Catalog() {
   if (f.level) list = list.filter(c => String(c.level) === f.level);
   if (f.status) list = list.filter(c => status(s, c.slug) === f.status);
   if (f.version === 'full') list = list.filter(c => c.full);
+  if (f.play) list = list.filter(c => about(c).plays > 0);
   if (f.sort === 'az') list = [...list].sort((a, b) => a.title.localeCompare(b.title, 'ru'));
   // по времени сортируем ту версию, которая показана на карточке
   const sec = c => timing(c, activeVersion(s, c)).total;
@@ -104,7 +106,7 @@ export default function Catalog() {
           )}
           {list.length ? (
             <>
-              <div className="cards">{list.slice(0, shown).map(c => <CourseCard course={c} key={c.slug} />)}</div>
+              <div className="cards" data-rv-kids="">{list.slice(0, shown).map(c => <CourseCard course={c} key={c.slug} />)}</div>
               {list.length > shown && (
                 <div className="cat-more">
                   <button type="button" className="btn btn-secondary" onClick={() => setShown(n => n + PAGE)}>

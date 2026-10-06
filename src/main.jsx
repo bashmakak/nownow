@@ -14,6 +14,8 @@ import '@fontsource/inter/cyrillic-700.css';
 import '@fontsource/sora/latin-600.css';
 import '@fontsource/sora/latin-700.css';
 import './styles.css';
+import './play.css';
+import './motion.css';
 
 import App from './App.jsx';
 import { getState, applyTheme } from './lib/store.js';

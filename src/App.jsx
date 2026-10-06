@@ -8,6 +8,7 @@ import { Topics, Topic } from './pages/Topics.jsx';
 import Course from './pages/Course.jsx';
 import Player from './pages/Player.jsx';
 import Me from './pages/Me.jsx';
+import { Train, Trainer } from './pages/Train.jsx';
 import About from './pages/About.jsx';
 import NotFound from './pages/NotFound.jsx';
 
@@ -23,6 +24,8 @@ export default function App() {
           <Route path="topics" element={<Topics />} />
           <Route path="topics/:slug" element={<Topic />} />
           <Route path="learn/:slug/:version?" element={<Player />} />
+          <Route path="train" element={<Train />} />
+          <Route path="train/:id" element={<Trainer />} />
           <Route path="me" element={<Me />} />
           <Route path="about" element={<About />} />
           <Route path="*" element={<NotFound />} />

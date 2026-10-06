@@ -7,15 +7,27 @@ import { useUI, useTitle, DialogHead } from '../lib/ui.jsx';
 import { Icon } from '../components/Icon.jsx';
 import { Mark } from '../components/Brand.jsx';
 import { EmptyState, KeyCard } from '../components/Cards.jsx';
+import { Play } from '../components/Play.jsx';
+import { CountUp, XpBar } from '../components/GameUI.jsx';
+import { REVIEW, trainerFor } from '../data/trainers.js';
+import { REVIEW_MIN, XP, lessonXp, reviewPool, rightOf, xpOf } from '../lib/game.js';
+import { celebrate, sparkFrom } from '../lib/fx.js';
 import NotFound from './NotFound.jsx';
 
 /* ---------- переходы между блоками ---------- */
-function goNext(slug) {
+/* c — урок в открытой версии: по его проверке считается число верных ответов при завершении */
+function goNext(slug, c) {
   update(d => {
     const p = ensureProgress(d, slug), i = p.block;
     if (!p.done[i]) { p.done[i] = 1; today(d).blocks++; }
     p.touched = Date.now();
-    if (i >= 5) { p.finished = true; if (!p.completed) p.completed = Date.now(); } else p.block = i + 1;
+    if (i >= 5) {
+      p.finished = true;
+      if (!p.completed) p.completed = Date.now();
+      // лучший результат проверки остаётся за уроком и при повторном прохождении
+      p.right = Math.max(p.right || 0, c.check.filter((q, k) => p.answers[k] === q.correct).length);
+      p.finishedAt = Date.now();
+    } else p.block = i + 1;
   });
 }
 function goPrev(slug) { update(d => { const p = ensureProgress(d, slug); if (p.block > 0) p.block--; }); }
@@ -129,13 +141,14 @@ function Sheet({ slug, fields, work }) {
 function Question({ slug, q, qi, total, answer }) {
   const fb = useRef(null);
   const was = useRef(answer);
+  const [just, setJust] = useState(false);   // ответ дан только что: показываем реакцию
   const answered = answer != null;
   useEffect(() => {
-    if (was.current == null && answer != null) fb.current?.focus({ preventScroll: true });
+    if (was.current == null && answer != null) { fb.current?.focus({ preventScroll: true }); setJust(true); }
     was.current = answer;
   }, [answer]);
   return (
-    <fieldset className="q" data-q={qi}>
+    <fieldset className={`q ${just ? 'just' : ''}`} data-q={qi}>
       <legend><small>Вопрос {qi + 1} из {total}</small>{q.q}</legend>
       <div className="q-opts">
         {q.options.map((o, oi) => {
@@ -143,7 +156,7 @@ function Question({ slug, q, qi, total, answer }) {
           const cls = answered ? (right ? 'ok' : sel ? 'bad' : '') : '';
           return (
             <button key={o} type="button" className={`opt ${cls}`} disabled={answered} aria-pressed={sel}
-              onClick={() => update(d => { const p = ensureProgress(d, slug); if (p.answers[qi] == null) p.answers[qi] = oi; })}>
+              onClick={e => { if (right) sparkFrom(e.currentTarget); update(d => { const p = ensureProgress(d, slug); if (p.answers[qi] == null) p.answers[qi] = oi; }); }}>
               <span className="dot">{answered && right ? <Icon name="check" size={14} /> : answered && sel ? <Icon name="x" size={14} /> : null}</span>
               <span>{o}{answered && right && <span className="sr"> (верный ответ)</span>}</span>
             </button>
@@ -165,6 +178,7 @@ function Block({ course: c, pk, note, p, hRef }) {
       {kicker}{h(c.why.title)}
       {c.why.text && <Paras text={c.why.text} />}
       {c.why.body && <Rich nodes={c.why.body} />}
+      {c.why.play && <Play cfg={c.why.play} pk={pk} kind="why" was={p.play?.why} />}
       {c.disclaimer && <div className="note-box"><Icon name="info" size={20} /><p>{DISCLAIMER}</p></div>}
     </>);
     case 'idea': return (<>
@@ -174,18 +188,21 @@ function Block({ course: c, pk, note, p, hRef }) {
         <ul className="points">{c.idea.points.map(([t, x]) => <li key={t}><div><h2 className="h4">{t}</h2><p>{fmt(x)}</p></div></li>)}</ul>
       )}
       {c.idea.body && <Rich nodes={c.idea.body} />}
+      {c.idea.play && <Play cfg={c.idea.play} pk={pk} kind="idea" was={p.play?.idea} />}
       {c.idea.callout && <Callout label="Важно" text={c.idea.callout} icon="lightbulb" />}
     </>);
     case 'example': return (<>
       {kicker}{h(c.example.title)}
       {c.example.text && <Paras text={c.example.text} />}
       {c.example.body && <Rich nodes={c.example.body} />}
+      {c.example.play && <Play cfg={c.example.play} pk={pk} kind="example" was={p.play?.example} />}
       {c.example.takeaway && <Callout label="Вывод" text={c.example.takeaway} icon="circle-check" />}
     </>);
     case 'practice': return (<>
       {kicker}{h(c.practice.title)}
       {c.practice.intro && <p className="pl-intro">{fmt(c.practice.intro)}</p>}
       {c.practice.body && <Rich nodes={c.practice.body} />}
+      {c.practice.play && <Play cfg={c.practice.play} pk={pk} kind="practice" was={p.play?.practice} />}
       {c.practice.sheet && <Sheet slug={pk} fields={c.practice.sheet} work={p.work || {}} />}
       {c.practice.steps && (
         <ol className="psteps">
@@ -231,6 +248,12 @@ function Done({ course: c, pk, version, p, hRef }) {
   const rate = v => update(d => { ensureProgress(d, pk).useful = v; });
   // после короткой версии предлагаем полную, если она есть и ещё не пройдена
   const deeper = version === 'short' && c.full && statusOf(s, c.slug, 'full') !== 'done';
+  // опыт за этот урок: сам урок, верные ответы, задания
+  const gained = lessonXp(s, pk), plays = Object.values(p.play || {}).filter(x => x && x.done).length;
+  // тренажёр по этому уроку; если такого нет, предлагаем повторение пройденного
+  const trainer = trainerFor(c.slug) || (reviewPool(s).length >= REVIEW_MIN ? REVIEW : null);
+  // искры только в момент завершения, а не при каждом возвращении на этот экран
+  useEffect(() => { if (Date.now() - (p.finishedAt || 0) < 4000) celebrate(); }, []);  // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className="done-wrap">
       <div className="flash" aria-hidden="true">
@@ -242,6 +265,15 @@ function Done({ course: c, pk, version, p, hRef }) {
         <h1 className="h1" id="pl-h" tabIndex={-1} ref={hRef}>Ключевое знание получено</h1>
       </div>
       <div style={{ width: '100%' }}><KeyCard course={c} /></div>
+      <div className="reward" id="reward">
+        <div className="reward-sum"><b>+<CountUp value={gained} ms={900} /></b><span>к опыту за урок</span></div>
+        <ul className="reward-list">
+          <li><span>Урок пройден</span><b>+{XP[version]}</b></li>
+          <li><span>Верные ответы: {rightOf(c, version, p)} из {c.check.length}</span><b>+{rightOf(c, version, p) * XP.answer}</b></li>
+          {plays > 0 && <li><span>Задания: {plays}</span><b>+{plays * XP.play}</b></li>}
+        </ul>
+        <XpBar xp={xpOf(s)} />
+      </div>
       <div className="done-stats">
         <div className="stat"><b>{mins}</b><span>{plural(mins, ['минута', 'минуты', 'минут'])} на урок</span></div>
         <div className="stat"><b>6</b><span>блоков из 6</span></div>
@@ -261,6 +293,12 @@ function Done({ course: c, pk, version, p, hRef }) {
         <div className="deeper">
           <div><b>Хотите разобраться глубже?</b><span>У этого урока есть полная версия: подробный разбор, рабочий лист и больше вопросов.</span></div>
           <Link className="btn btn-secondary" to={`/learn/${c.slug}/full`}>Полная версия · {minutes(c, 'full')} мин</Link>
+        </div>
+      )}
+      {trainer && (
+        <div className="deeper deeper-train">
+          <div><b>Закрепите в тренажёре «{trainer.title}»</b><span>{trainer.hook} Раунд займёт около двух минут.</span></div>
+          <Link className="btn btn-secondary" to={`/train/${trainer.id}`}><Icon name="gamepad-2" size={17} />Сыграть раунд</Link>
         </div>
       )}
       <div className="row">
@@ -317,9 +355,9 @@ function PlayerBody({ course: base, version }) {
       // в коде и таблицах стрелки нужны для прокрутки
       if (e.target.closest && e.target.closest('pre, .rt-table')) return;
       const onControl = tag === 'button' || tag === 'a' || tag === 'summary';
-      if (e.key === 'ArrowRight') { e.preventDefault(); goNext(slug); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); goNext(slug, c); }
       else if (e.key === 'ArrowLeft') { e.preventDefault(); goPrev(slug); }
-      else if (e.key === 'Enter' && !onControl) { e.preventDefault(); goNext(slug); }
+      else if (e.key === 'Enter' && !onControl) { e.preventDefault(); goNext(slug, c); }
       else if (['n', 'N', 'т', 'Т'].includes(e.key)) { e.preventDefault(); openNote(); }
       else if (e.key === '?') { e.preventDefault(); openKeys(); }
     };
@@ -329,6 +367,10 @@ function PlayerBody({ course: base, version }) {
   }, [slug, finished]);
 
   const i = p.block;
+  // направление перехода между блоками: вперёд блок въезжает справа, назад — слева
+  const prevBlock = useRef(i);
+  const dir = i >= prevBlock.current ? 'fwd' : 'back';
+  useEffect(() => { prevBlock.current = i; }, [i]);
   const fill = k => {
     if (p.done[k] || finished) return 100;
     if (k === i) return Math.min(100, Math.max(5, p.elapsed[k] / T.blocks[k] * 100));
@@ -366,7 +408,7 @@ function PlayerBody({ course: base, version }) {
       </header>
       <div className="pl-main">
         <div className="wrap">
-          <article className="pl-col" id="pl-block">
+          <article className="pl-col" id="pl-block" key={finished ? 'done' : i} data-dir={finished ? 'done' : dir}>
             {finished ? <Done course={c} pk={slug} version={version} p={p} hRef={hRef} /> : <Block course={c} pk={slug} note={note} p={p} hRef={hRef} />}
           </article>
         </div>
@@ -383,8 +425,8 @@ function PlayerBody({ course: base, version }) {
             <span className="sp" />
             <button type="button" className="pl-hint btn btn-ghost btn-sm" onClick={openKeys}><Icon name="keyboard" size={16} />Клавиши</button>
             {unanswered
-              ? <button type="button" className="btn btn-secondary" id="pl-next" onClick={() => goNext(slug)}>Пропустить проверку</button>
-              : <button type="button" className="btn btn-primary" id="pl-next" onClick={() => goNext(slug)}>{i === 5 ? 'Завершить урок' : 'Дальше'}<Icon name={i === 5 ? 'check' : 'arrow-right'} size={18} /></button>}
+              ? <button type="button" className="btn btn-secondary" id="pl-next" onClick={() => goNext(slug, c)}>Пропустить проверку</button>
+              : <button type="button" className="btn btn-primary" id="pl-next" onClick={() => goNext(slug, c)}>{i === 5 ? 'Завершить урок' : 'Дальше'}<Icon name={i === 5 ? 'check' : 'arrow-right'} size={18} /></button>}
           </div>
         </footer>
       )}

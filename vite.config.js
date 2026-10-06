@@ -13,6 +13,7 @@ export default defineConfig({
         manualChunks(id) {
           // полные версии уроков остаются отдельными файлами и скачиваются по требованию
           if (id.includes('/src/data/full/')) return undefined;
+          if (id.includes('/src/data/trainers')) return 'trainers';
           if (id.includes('/src/data/')) return 'lessons';
           if (id.includes('node_modules')) return 'vendor';
         },

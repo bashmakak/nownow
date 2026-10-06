@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
-import { TOPIC_BY, VERSION, coursesOf, metaLine, minutes, timing } from '../data';
+import { TOPIC_BY, VERSION, about, coursesOf, metaLine, minutes, timing } from '../data';
 import { useStore, status, activeVersion, remainingSec, leftLabel, toggleBookmark, setTheme, nCourses } from '../lib/store.js';
 import { useUI } from '../lib/ui.jsx';
 import { Icon } from './Icon.jsx';
 import { Mark } from './Brand.jsx';
 
+/* Линия, по которой при наведении пробегает вспышка: середина яркого луча из STREAKS */
+const PULSE = [[156, 120, 300, 44], [91, 120, 300, 68.5], [201, 120, 300, 20], [134, 120, 300, 91.5]];
 const STREAKS = [
   [['130,120 300,34 300,52 160,120', 0.45, 'nv-b6'], ['150,120 300,42 300,46 162,120', 1]],
   [['60,120 300,60 300,76 96,120', 0.45, 'nv-b6'], ['84,120 300,67 300,70 98,120', 1]],
@@ -20,6 +22,7 @@ export function Cover({ course, min, big = false }) {
     <div className="cover">
       <svg className="cover-fx" viewBox="0 0 300 120" preserveAspectRatio="none" aria-hidden="true">
         {STREAKS[v].map(([p, o, f], i) => <polygon key={i} points={p} fill="url(#nv-gs)" opacity={o} filter={f ? `url(#${f})` : undefined} />)}
+        <line className="cover-pulse" x1={PULSE[v][0]} y1={PULSE[v][1]} x2={PULSE[v][2]} y2={PULSE[v][3]} pathLength="100" />
       </svg>
       <span className="cover-ic"><Icon name={t.icon} size={big ? 24 : 22} /></span>
       <span className="cover-min"><span className="sr">Время урока: </span>{min} мин</span>
@@ -65,7 +68,12 @@ export function CourseCard({ course }) {
           <span className="label">{TOPIC_BY[course.topic].title}</span>
           <h3 className="ccard-title">{course.title}</h3>
           <p className="ccard-meta">{metaLine(course, v)}</p>
-          {course.full && <div><span className="badge badge-full"><Icon name="zap" size={13} />{VERSION[other]} версия: {minutes(course, other)} мин</span></div>}
+          {(course.full || about(course).plays > 0) && (
+            <div className="badges">
+              {about(course).plays > 0 && <span className="badge badge-play"><Icon name="mouse-pointer-click" size={13} />Интерактив</span>}
+              {course.full && <span className="badge badge-full"><Icon name="zap" size={13} />{VERSION[other]} версия: {minutes(course, other)} мин</span>}
+            </div>
+          )}
           {st === 'progress' && <ProgressLine course={course} version={v} />}
           {st === 'done' && <div><span className="badge"><Icon name="check" size={13} />Пройден</span></div>}
         </div>

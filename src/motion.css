@@ -1,0 +1,184 @@
+/* NowNow: движение. Общий приём — световой луч: вспышка пробегает по лучу в hero и на обложках,
+   блик проходит по кнопке и по карточке итога, искры отвечают на верный ответ.
+   Появление сделано анимацией с заполнением «назад»: после неё элемент возвращается к своим
+   обычным стилям, и наведение работает как раньше.
+   При настройке «уменьшить движение» всё здесь отключается (см. конец файла и styles.css). */
+
+@keyframes rise{from{opacity:0;transform:translateY(16px)}}
+@keyframes fadeIn{from{opacity:0}}
+@keyframes pop{0%{transform:scale(.6)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes grow{from{transform:scaleX(0)}}
+@keyframes drain{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+@keyframes sweep{to{transform:translateX(130%)}}
+@keyframes shake{20%{transform:translateX(-6px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
+@keyframes okPulse{0%{box-shadow:0 0 0 0 rgba(0,200,151,.45)}100%{box-shadow:0 0 0 14px rgba(0,200,151,0)}}
+@keyframes floatUp{from{opacity:0;transform:translateY(10px) scale(.9)}}
+
+/* ---------- страница целиком ---------- */
+@keyframes pageIn{from{opacity:0;transform:translateY(10px)}}
+#view > section:not(.hero){animation:pageIn .42s var(--ease) backwards}
+#view > .player{animation:fadeIn .35s ease backwards}
+
+/* ---------- появление при прокрутке ---------- */
+[data-rv]:not([data-in]),[data-rv-kids]:not([data-in]) > *{opacity:0}
+[data-rv][data-in]{animation:rise .7s var(--ease) backwards}
+[data-rv-kids][data-in] > *{animation:rise .6s var(--ease) backwards}
+[data-rv-kids][data-in] > :nth-child(2){animation-delay:60ms}
+[data-rv-kids][data-in] > :nth-child(3){animation-delay:120ms}
+[data-rv-kids][data-in] > :nth-child(4){animation-delay:180ms}
+[data-rv-kids][data-in] > :nth-child(5){animation-delay:240ms}
+[data-rv-kids][data-in] > :nth-child(6){animation-delay:300ms}
+[data-rv-kids][data-in] > :nth-child(7){animation-delay:340ms}
+[data-rv-kids][data-in] > :nth-child(8){animation-delay:380ms}
+[data-rv-kids][data-in] > :nth-child(9){animation-delay:420ms}
+[data-rv-kids][data-in] > :nth-child(n+10){animation-delay:460ms}
+html[data-norv] [data-rv],html[data-norv] [data-rv-kids] > *{opacity:1}
+/* шкала блоков урока: отрезки вырастают слева направо, как заполняется время */
+@keyframes segIn{from{transform:scaleX(0);opacity:0}}
+.tl-bar[data-in] .tl-seg{transform-origin:left;animation:segIn .55s var(--ease) backwards}
+.tl-bar[data-in] .tl-seg:nth-child(2){animation-delay:90ms}
+.tl-bar[data-in] .tl-seg:nth-child(3){animation-delay:180ms}
+.tl-bar[data-in] .tl-seg:nth-child(4){animation-delay:270ms}
+.tl-bar[data-in] .tl-seg:nth-child(5){animation-delay:360ms}
+.tl-bar[data-in] .tl-seg:nth-child(6){animation-delay:450ms}
+
+/* ---------- hero: луч выстреливает, слова заголовка поднимаются, карточка встаёт на место ---------- */
+@keyframes heroUp{from{opacity:0;transform:translateY(22px)}}
+@keyframes wordUp{from{transform:translateY(108%)}}
+@keyframes demoIn{from{opacity:0;transform:translateY(36px) scale(.97)}}
+@keyframes beamIn{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes beamPulse{0%{stroke-dashoffset:7;opacity:0}5%{opacity:1}30%{stroke-dashoffset:-100;opacity:1}32%,100%{stroke-dashoffset:-100;opacity:0}}
+.hero-copy > *{animation:heroUp .8s var(--ease) backwards}
+.hero-copy > :nth-child(1){animation-delay:.05s}
+.hero-copy > :nth-child(3){animation-delay:.34s}
+.hero-copy > :nth-child(4){animation-delay:.44s}
+.hero-copy > :nth-child(5){animation-delay:.52s}
+.hero-copy > .hero-h{animation:none}
+.hero-h span{display:inline-block;overflow:hidden;vertical-align:bottom;padding-bottom:.16em;margin-bottom:-.16em}
+.hero-h i{display:inline-block;font-style:normal;animation:wordUp .9s var(--ease) backwards;animation-delay:calc(var(--i) * 110ms + 120ms)}
+.demo{animation:demoIn 1s var(--ease) .3s backwards}
+.hero-fx svg{animation:beamIn 1.15s cubic-bezier(.7,0,.2,1) backwards}
+.hero-fx .glow{animation:fadeIn 1.8s ease .2s backwards}
+.beam-pulse{fill:none;stroke:#F4FFD2;stroke-width:3;stroke-linecap:round;stroke-dasharray:7 100;stroke-dashoffset:7;opacity:0;animation:beamPulse 7s cubic-bezier(.6,0,.3,1) 1.7s infinite}
+.demo-list > *{animation:rise .35s var(--ease) backwards}
+.demo-list > :nth-child(2){animation-delay:70ms}
+@media (hover:hover) and (pointer:fine){
+  .hero-fx .glow{transform:translate(calc(var(--px,0) * 34px),calc(var(--py,0) * 22px));transition:transform .5s ease-out}
+  .hero .demo{transform:perspective(1300px) rotateY(calc(var(--px,0) * -5deg)) rotateX(calc(var(--py,0) * 4deg));transition:transform .3s ease-out}
+}
+
+/* ---------- шапка ---------- */
+.site-head{transition:background-color .25s,box-shadow .25s}
+.site-head[data-stuck]{background:rgba(11,15,20,.95);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+@keyframes lineIn{from{transform:scaleX(0)}}
+.head-nav a{position:relative}
+.head-nav a[aria-current="page"]::after{content:"";position:absolute;left:14px;right:14px;bottom:5px;height:2px;border-radius:2px;background:var(--lime);transform-origin:left;animation:lineIn .35s var(--ease)}
+.lock .mark{transition:transform .35s var(--ease)}
+.lock:hover .mark{transform:rotate(-10deg) scale(1.12)}
+
+/* ---------- кнопки: блик проходит по основной кнопке ---------- */
+.btn{transition:background-color .15s,border-color .15s,box-shadow .2s,transform .12s var(--ease),filter .15s}
+.btn:active{transform:scale(.96)}
+.btn-primary{position:relative;overflow:hidden;isolation:isolate}
+.btn-primary::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.75) 50%,transparent 70%);transform:translateX(-130%);pointer-events:none}
+.btn .ic{transition:transform .2s var(--ease)}
+.chip:active,.icon-btn:active{transform:scale(.94)}
+.chip,.icon-btn{transition:border-color .15s,color .15s,background-color .15s,transform .12s var(--ease)}
+@media (hover:hover){
+  .btn-primary:hover::after{animation:sweep .75s var(--ease)}
+  .btn:hover > .ic:last-child{transform:translateX(3px)}
+  .more-link .ic{transition:transform .2s var(--ease)}
+  .more-link:hover .ic{transform:translateX(4px)}
+}
+
+/* ---------- карточки: пятно света под курсором, вспышка по лучу на обложке ---------- */
+.tile{position:relative;overflow:hidden}
+.ccard{transition:border-color .2s,transform .28s var(--ease),box-shadow .28s}
+.tile{transition:border-color .2s,transform .28s var(--ease)}
+.cover-ic{transition:transform .3s var(--ease)}
+.tile-ic{transition:background-color .15s,color .15s,transform .3s var(--ease)}
+.cover-pulse{fill:none;stroke:#F4FFD2;stroke-width:2.5;stroke-linecap:round;stroke-dasharray:14 100;stroke-dashoffset:14;opacity:0}
+@keyframes coverPulse{0%{stroke-dashoffset:14;opacity:1}100%{stroke-dashoffset:-100;opacity:1}}
+@media (hover:hover){
+  .ccard::after,.tile::after,.tcard::after,.ach::after,.daily::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .3s;background:radial-gradient(280px circle at var(--mx,50%) var(--my,50%),rgba(0,200,151,.13),transparent 65%)}
+  .ccard:hover::after,.tile:hover::after,a.tcard:hover::after,.ach.on:hover::after,.daily:hover::after{opacity:1}
+  .ccard:hover{transform:translateY(-4px);box-shadow:0 18px 40px rgba(0,0,0,.22)}
+  .ccard:hover .cover-pulse,.side:hover .cover-pulse{animation:coverPulse .9s cubic-bezier(.6,0,.3,1)}
+  .ccard:hover .cover-ic{transform:translateY(-2px) rotate(-5deg)}
+  .tile:hover{transform:translateY(-3px)}
+  .tile:hover .tile-ic{transform:rotate(-8deg) scale(1.08)}
+}
+.bar i{transition:width .6s var(--ease)}
+.syl-bar i{transition:background-color .4s}
+.bm[aria-pressed="true"] .ic{animation:pop .3s var(--ease)}
+
+/* ---------- урок: смена блоков, ответы, финал ---------- */
+@keyframes blockFwd{from{opacity:0;transform:translateX(28px)}}
+@keyframes blockBack{from{opacity:0;transform:translateX(-28px)}}
+.pl-main{overflow-x:clip}
+.pl-col[data-dir="fwd"]{animation:blockFwd .38s var(--ease) backwards}
+.pl-col[data-dir="back"]{animation:blockBack .38s var(--ease) backwards}
+.seg[aria-current="step"] span{transition:box-shadow .3s}
+.q.just .opt.ok{animation:okPulse .7s var(--ease)}
+.q.just .opt.ok .dot{animation:pop .35s var(--ease)}
+.q.just .opt.bad{animation:shake .4s}
+.q.just .q-fb{animation:rise .35s var(--ease) backwards}
+.pstep input:checked + .box .ic{animation:pop .28s var(--ease)}
+.think details[open] p,.faq-list details[open] p{animation:rise .3s var(--ease) backwards}
+.pl-wait .mark{animation:waitPulse 1.1s ease-in-out infinite}
+@keyframes waitPulse{0%,100%{opacity:.45;transform:scale(.94)}50%{opacity:1;transform:scale(1.06)}}
+.done-wrap > *{animation:rise .6s var(--ease) backwards}
+.done-wrap > :nth-child(2){animation-delay:.08s}
+.done-wrap > :nth-child(3){animation-delay:.18s}
+.done-wrap > :nth-child(4){animation-delay:.3s}
+.done-wrap > :nth-child(5){animation-delay:.4s}
+.done-wrap > :nth-child(n+6){animation-delay:.48s}
+.done-wrap .keycard::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(105deg,transparent 35%,rgba(216,255,90,.2) 50%,transparent 65%);transform:translateX(-130%);animation:sweep 1.2s var(--ease) .55s}
+
+/* ---------- задания и тренажёры ---------- */
+.play .ch,.tr-body .ch{animation:rise .35s var(--ease) backwards}
+@keyframes cardIn{from{opacity:0;transform:translateY(18px) rotate(-1.5deg) scale(.96)}}
+.tr-body .ch-card{animation:cardIn .42s var(--ease) backwards}
+.ch-opt.ok,.ch-bucket.ok,.ch-word.ok{animation:okPulse .7s var(--ease)}
+.ch-opt.bad,.ch-bucket.bad,.ch-word.bad{animation:shake .4s}
+.ch-opt.ok .ch-key,.ch-bucket.ok .ic{animation:pop .35s var(--ease)}
+.ch-fb > *{animation:rise .3s var(--ease) backwards}
+.ch-bar i{animation:grow .7s var(--ease) backwards}
+.ch-gap.filled{animation:pop .35s var(--ease)}
+.tmp-out li{animation:rise .35s var(--ease) backwards;animation-delay:calc(var(--i) * 70ms)}
+.bubble mark{animation:fadeIn .5s ease backwards}
+.bld-tg[aria-pressed="true"] .ic,.spot-row.on .spot-box .ic,.ord-item.placed .ord-n{animation:pop .28s var(--ease)}
+.ord-seq .ord-item.placed{animation:rise .25s var(--ease) backwards}
+.ord-item.bad,.spot-row.wrong{animation:shake .4s}
+.tr-timer i{animation:drain linear both}
+.tr-timer[data-stop] i{animation-play-state:paused}
+.tr-run{animation:pop .3s var(--ease)}
+.tr-pts{animation:floatUp .5s var(--ease) backwards}
+.tr-intro > *,.tr-end > *{animation:rise .5s var(--ease) backwards}
+.tr-intro > :nth-child(2),.tr-end > :nth-child(2){animation-delay:.07s}
+.tr-intro > :nth-child(3),.tr-end > :nth-child(3){animation-delay:.14s}
+.tr-intro > :nth-child(4),.tr-end > :nth-child(4){animation-delay:.21s}
+.tr-intro > :nth-child(n+5),.tr-end > :nth-child(n+5){animation-delay:.28s}
+@keyframes boltPop{0%{opacity:0;transform:scale(.2) rotate(-25deg)}60%{opacity:1;transform:scale(1.25) rotate(6deg)}100%{transform:scale(1) rotate(0)}}
+.bolts.pop svg.on{animation:boltPop .55s var(--ease) backwards;animation-delay:calc(var(--i) * 170ms + 250ms)}
+.ach.on .ach-ic{transition:transform .3s var(--ease)}
+.ach.on:hover .ach-ic{transform:rotate(-8deg) scale(1.08)}
+.path-row .now .path-node{animation:nodePulse 2.2s ease-in-out infinite}
+@keyframes nodePulse{0%,100%{box-shadow:0 0 0 0 rgba(0,200,151,.45)}55%{box-shadow:0 0 0 9px rgba(0,200,151,0)}}
+.daily-list li.next .daily-n{animation:nodePulse 2.2s ease-in-out infinite}
+
+/* ---------- окна и сообщения ---------- */
+@keyframes dlgIn{from{opacity:0;transform:translateY(14px) scale(.98)}}
+dialog[open]{animation:dlgIn .28s var(--ease)}
+dialog[open]::backdrop{animation:fadeIn .25s ease}
+@keyframes toastRich{from{opacity:0;transform:translateY(14px) scale(.94)}}
+.toast-rich{animation:toastRich .4s var(--ease)}
+.toast-rich .toast-ic{animation:pop .45s var(--ease) .1s backwards}
+
+@media print{[data-rv]:not([data-in]),[data-rv-kids]:not([data-in]) > *{opacity:1}}
+@media (prefers-reduced-motion: reduce){
+  [data-rv]:not([data-in]),[data-rv-kids]:not([data-in]) > *{opacity:1}
+  .beam-pulse,.cover-pulse{display:none}
+  .hero .demo,.hero-fx .glow{transform:none}
+  .tr-timer{display:none}
+}
