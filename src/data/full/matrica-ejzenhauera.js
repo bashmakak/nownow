@@ -1,5 +1,5 @@
 /* ===== Полная версия урока «Матрица Эйзенхауэра: что делать первым» =====
-   Короткая версия лежит в ../courses-b.js под тем же slug. Формат узлов body описан в psihologiya-prinyatiya-reshenij.js */
+   Короткая версия лежит в ../courses-*.js под тем же slug. Формат узлов body описан в psihologiya-prinyatiya-reshenij.js */
 export default {
   slug: "matrica-ejzenhauera",
 

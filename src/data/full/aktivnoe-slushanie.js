@@ -1,5 +1,5 @@
 /* ===== Полная версия урока «Активное слушание: слышать, а не ждать своей очереди» =====
-   Короткая версия лежит в ../courses-a.js под тем же slug. Формат узлов body описан в psihologiya-prinyatiya-reshenij.js */
+   Короткая версия лежит в ../courses-*.js под тем же slug. Формат узлов body описан в psihologiya-prinyatiya-reshenij.js */
 export default {
   slug: "aktivnoe-slushanie",
 
