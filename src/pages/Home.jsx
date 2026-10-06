@@ -33,7 +33,7 @@ function Demo() {
   };
   return (
     <div className="demo">
-      <div className="demo-top"><Lockup /><span className="label">Каталог</span></div>
+      <div className="demo-top"><Lockup small /><span className="label">Каталог</span></div>
       <p className="demo-title">Выберите тему и получите ключевое знание за 30 минут</p>
       <form className="field" role="search" onSubmit={submit}>
         <label className="sr" htmlFor="demo-q">Поиск курсов</label>
