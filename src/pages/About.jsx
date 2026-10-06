@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { BLOCKS, BLOCK_SHARE, TIME, WITH_FULL, WPM } from '../data';
+import { BLOCKS, BLOCK_SHARE, COURSES, TIME, WITH_FULL, WPM } from '../data';
 import { plural, genMin, aboutMin } from '../lib/store.js';
 import { useTitle } from '../lib/ui.jsx';
 import { Icon } from '../components/Icon.jsx';
@@ -43,7 +43,7 @@ export default function About() {
           <h2 className="h3" style={{ marginBottom: 14 }}>Об этой версии сайта</h2>
           <div className="note-box">
             <Icon name="info" size={20} />
-            <p>Это демонстрационная версия сайта. Полная версия пока написана для урока <Link to="/courses/psihologiya-prinyatiya-reshenij">«Психология принятия решений»</Link>, у остальных есть только короткая. Аккаунтов и оплаты нет. Прогресс, закладки и заметки хранятся только в вашем браузере. Автор всех уроков — редакция NowNow.</p>
+            <p>Это демонстрационная версия сайта. Полная версия пока написана для {WITH_FULL.length} {plural(WITH_FULL.length, ['урока', 'уроков', 'уроков'])} из {COURSES.length}: их можно найти в <Link to="/courses?version=full">каталоге</Link> по фильтру «Есть полная версия». У остальных есть только короткая. Аккаунтов и оплаты нет. Прогресс, закладки и заметки хранятся только в вашем браузере. Автор всех уроков — редакция NowNow.</p>
           </div>
         </div>
         <div className="group"><Link className="btn btn-primary btn-lg" to="/courses">Перейти в каталог <Icon name="arrow-right" size={18} /></Link></div>

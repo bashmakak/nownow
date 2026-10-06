@@ -1,5 +1,10 @@
 import { GROUPS, TOPICS, TOPIC_ORDER, BLOCKS, VERSION, FORMAT, LEVEL, DISCLAIMER } from './topics.js';
-import decisionsFull from './lesson-decisions.js';
+import fullDecisions from './full/psihologiya-prinyatiya-reshenij.js';
+import fullBudget from './full/lichnyj-byudzhet.js';
+import fullPrompts from './full/prompty.js';
+import fullSleep from './full/gigiena-sna.js';
+import fullListening from './full/aktivnoe-slushanie.js';
+import fullMatrix from './full/matrica-ejzenhauera.js';
 import a from './courses-a.js';
 import b from './courses-b.js';
 import c from './courses-c.js';
@@ -13,9 +18,9 @@ export { GROUPS, TOPICS, BLOCKS, VERSION, FORMAT, LEVEL, DISCLAIMER };
 
 /* ---------- версии урока ----------
    У каждого урока есть короткая версия: она лежит в courses-*.js.
-   Полная версия — те же шесть блоков, написанные подробно. Она лежит в отдельном файле
-   с тем же slug и подключается здесь. */
-const FULL = [decisionsFull];
+   Полная версия — те же шесть блоков, написанные подробно. Она лежит в папке full
+   в файле с именем slug и подключается здесь. */
+const FULL = [fullDecisions, fullBudget, fullPrompts, fullSleep, fullListening, fullMatrix];
 const PARTS = ['why', 'idea', 'example', 'practice', 'check', 'key'];
 const fullBy = Object.fromEntries(FULL.map(x => [x.slug, x]));
 
