@@ -353,7 +353,7 @@ textarea.input{height:auto;min-height:112px;padding:12px 14px;line-height:1.5;re
 .seg[aria-current="step"] span{box-shadow:0 0 0 1px var(--progress)}
 .seg:disabled{cursor:default}
 .pl-main{flex:1;padding-block:clamp(28px,5vw,56px) 40px}
-.pl-col{width:min(680px,100%);margin-inline:auto;display:flex;flex-direction:column;gap:20px;outline:none}
+.pl-col{width:min(680px,100%);margin-inline:auto;display:flex;flex-direction:column;gap:20px;outline:none;overflow-wrap:break-word}
 .pl-kicker{color:var(--accent-text)}
 .pl-col > p,.pl-intro{font-size:17.5px;line-height:1.65}
 .pl-col > p.label{font-size:12px;line-height:1.35}
