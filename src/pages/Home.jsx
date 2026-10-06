@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BLOCKS, COURSE_BY, FEATURED, FORMAT, PUBLIC, SOON, START_COURSE, TOPIC_BY, coursesOf } from '../data';
-import { plural } from '../lib/store.js';
+import { BLOCKS, BLOCK_SHARE, COURSE_BY, FEATURED, FORMAT, PUBLIC, SOON, START_COURSE, TIME, TOPIC_BY, WITH_FULL, WPM, coursesOf, minutes } from '../data';
+import { plural, genMin, aboutMin } from '../lib/store.js';
 import { useTitle } from '../lib/ui.jsx';
 import { Icon } from '../components/Icon.jsx';
 import { HeroFx, Lockup } from '../components/Brand.jsx';
@@ -10,12 +10,14 @@ import { CourseCard, TopicTile } from '../components/Cards.jsx';
 const TL_COLORS = ['#D8FF5A', '#B6F66B', '#93EC79', '#6BE285', '#3FD68F', '#00C897'];
 const DEMO_TOPICS = [['', 'Все'], ['psihologiya', 'Психология'], ['lichnye-finansy', 'Финансы'], ['iskusstvennyj-intellekt', 'ИИ']];
 const FAQ = [
-  ['Почему именно 30 минут?', 'Это время, которое можно найти в обычном дне: в обеденный перерыв, по дороге или вечером. За полчаса реально разобрать одну идею и сразу попробовать её на своей ситуации.'],
+  ['Сколько времени занимает урок?', `У каждого урока своё время. Оно указано на карточке и на странице урока. Короткие версии занимают от ${TIME.short.min} до ${TIME.short.max} ${genMin(TIME.short.max)}${TIME.full ? `, полная — ${aboutMin(TIME.full.mid)}` : ''}.`],
+  ['Чем короткая версия отличается от полной?', 'В короткой главная идея, один пример, короткая практика и три вопроса. Полная разбирает ту же тему подробно: больше примеров, вопросы для размышления по ходу, рабочий лист и пять вопросов. Версию выбирают на странице урока.'],
+  ['У всех уроков есть полная версия?', `Пока нет. Сейчас она есть у ${WITH_FULL.length} ${plural(WITH_FULL.length, ['урока', 'уроков', 'уроков'])}: ${WITH_FULL.map(c => `«${c.title}»`).join(', ')}. Остальные готовятся. На карточке урока с двумя версиями указано время обеих.`],
+  ['Как считается время?', `По объёму урока: чтение со скоростью ${WPM} слов в минуту плюс небольшие паузы на вопросы и задания. Это оценка среднего темпа, а не замер. Ваш темп может отличаться.`],
   ['Что если я не успею за один раз?', 'Прогресс сохраняется после каждого блока. Откройте курс позже и продолжите с того места, где остановились.'],
-  ['Таймер ограничивает время?', 'Нет. Счётчик «Осталось N мин» только подсказывает, сколько впереди. Урок не закроется, если вы задержитесь на блоке.'],
+  ['Счётчик времени что-то ограничивает?', 'Нет. Надпись «Осталось N мин» только подсказывает, сколько впереди. Урок не закроется, если вы задержитесь на блоке.'],
   ['Нужна ли регистрация?', 'В этой версии нет. Прогресс, закладки и заметки хранятся в вашем браузере и не передаются на сервер. На другом устройстве они не появятся.'],
   ['Что я получу в конце урока?', 'Карточку «Ключевое знание»: главный вывод, три тезиса и одно действие на сегодня. Все карточки собираются в кабинете.'],
-  ['Почему некоторые уроки короче 30 минут?', 'Это демо-версия. Урок «Психология принятия решений» написан в полную длину и помечен как полный. Остальные показывают структуру и главную идею в сокращённом виде.'],
   ['Как выбираются темы?', 'Тема открывается, когда в ней готово минимум два урока. Дальше в открытые темы добавляются новые уроки.'],
 ];
 
@@ -35,7 +37,7 @@ function Demo() {
   return (
     <div className="demo">
       <div className="demo-top"><Lockup small /><span className="label">Каталог</span></div>
-      <p className="demo-title">Выберите тему и получите ключевое знание за 30 минут</p>
+      <p className="demo-title">Выберите тему и получите ключевое знание за несколько минут</p>
       <form className="field" role="search" onSubmit={submit}>
         <label className="sr" htmlFor="demo-q">Поиск курсов</label>
         <Icon name="search" size={18} />
@@ -50,7 +52,7 @@ function Demo() {
         {list.map(c => (
           <Link className="demo-row" to={`/courses/${c.slug}`} key={c.slug}>
             <span className="demo-thumb"><Icon name={TOPIC_BY[c.topic].icon} size={22} /></span>
-            <span><b>{c.title}</b><small>30 мин · {FORMAT[c.format]}</small></span>
+            <span><b>{c.title}</b><small>{minutes(c, 'short')} мин · {FORMAT[c.format]}</small></span>
             <Icon name="arrow-right" size={18} />
           </Link>
         ))}
@@ -80,14 +82,14 @@ function Timeline() {
   return (
     <>
       <div className="tl-bar" data-hl={hl ?? undefined} aria-hidden="true">
-        {BLOCKS.map((b, i) => <span className="tl-seg" key={b.kind} style={{ flex: `${b.min} 1 0`, background: TL_COLORS[i] }}>{b.min}</span>)}
+        {BLOCKS.map((b, i) => <span className="tl-seg" key={b.kind} style={{ flex: `${BLOCK_SHARE[i]} 1 0`, background: TL_COLORS[i] }}>{BLOCK_SHARE[i]}</span>)}
       </div>
-      <div className="tl-scale" aria-hidden="true"><span>0 МИН</span><span>30 МИН</span></div>
+      <div className="tl-scale" aria-hidden="true"><span>НАЧАЛО</span><span>ДОЛЯ ВРЕМЕНИ, %</span><span>ИТОГ</span></div>
       <ol className="tl-list">
         {BLOCKS.map((b, i) => (
           <li className="tl-item" key={b.kind} tabIndex={0}
             onMouseEnter={() => setHl(i)} onMouseLeave={() => setHl(null)} onFocus={() => setHl(i)} onBlur={() => setHl(null)}>
-            <span className="num">{b.min} МИН</span><b>{b.label}</b><span>{b.hint}</span>
+            <span className="num">{BLOCK_SHARE[i]} %</span><b>{b.label}</b><span>{b.hint}</span>
           </li>
         ))}
       </ol>
@@ -103,11 +105,11 @@ export default function Home() {
         <HeroFx />
         <div className="wrap hero-grid">
           <div className="hero-copy">
-            <p className="label hero-eyebrow">30 минут до новой идеи</p>
+            <p className="label hero-eyebrow">Быстрые знания</p>
             <h1 className="h-display">Знания, которые работают.</h1>
-            <p className="lead">Один курс даёт одно ключевое знание. Шесть коротких блоков, 30 минут и результат, который можно применить сегодня.</p>
+            <p className="lead">Один урок даёт одно ключевое знание. Короткая версия занимает {aboutMin(TIME.short.mid)}, полная разбирает тему подробно. Сколько времени уйдёт, видно до начала.</p>
             <div className="row">
-              <Link className="btn btn-primary btn-lg" to={`/learn/${START_COURSE}`}>Начать за 30 минут <Icon name="arrow-right" size={18} /></Link>
+              <Link className="btn btn-primary btn-lg" to={`/learn/${START_COURSE}`}>Начать первый урок <Icon name="arrow-right" size={18} /></Link>
               <Link className="btn btn-secondary btn-lg" to="/courses">Смотреть каталог</Link>
             </div>
             <p className="hero-note">Без регистрации. Прогресс сохраняется в вашем браузере.</p>
@@ -121,7 +123,7 @@ export default function Home() {
           <div className="sec-head"><h2 className="h2">Как это работает</h2></div>
           <ol className="steps3">
             <li className="step3"><span className="num">ШАГ 1</span><h3 className="h3">Выберите тему</h3><p>Психология, финансы, ИИ, сон и другие. В каждой теме короткие курсы под конкретный вопрос.</p></li>
-            <li className="step3"><span className="num">ШАГ 2</span><h3 className="h3">Пройдите за 30 минут</h3><p>Шесть блоков: зачем это нужно, главная идея, пример, практика, проверка и итог.</p></li>
+            <li className="step3"><span className="num">ШАГ 2</span><h3 className="h3">Выберите версию</h3><p>Короткая даёт главное за несколько минут. Полная разбирает тему подробно. Время каждой указано заранее.</p></li>
             <li className="step3"><span className="num">ШАГ 3</span><h3 className="h3">Примените сегодня</h3><p>Урок заканчивается карточкой «Ключевое знание» с одним действием на сегодня.</p></li>
           </ol>
         </div>
@@ -154,8 +156,8 @@ export default function Home() {
         <div className="wrap">
           <div className="sec-head">
             <div>
-              <h2 className="h2">Что внутри 30 минут</h2>
-              <p className="lead">Каждый урок устроен одинаково. Ширина отрезка на шкале равна доле времени блока.</p>
+              <h2 className="h2">Что внутри урока</h2>
+              <p className="lead">Шесть блоков в любой версии. Ширина отрезка показывает, какую долю времени блок обычно занимает в короткой версии.</p>
             </div>
           </div>
           <Timeline />
@@ -166,7 +168,7 @@ export default function Home() {
         <div className="wrap">
           <div className="sec-head"><h2 className="h2">Зачем учиться коротко</h2></div>
           <div className="cols3">
-            <div className="col3"><span className="tile-ic"><Icon name="trending-up" size={22} /></span><h3 className="h3">Быстро расти</h3><p>Полчаса в день складываются в десятки новых навыков за год. Каждый урок закончен и полезен сам по себе.</p></div>
+            <div className="col3"><span className="tile-ic"><Icon name="trending-up" size={22} /></span><h3 className="h3">Быстро расти</h3><p>Несколько минут в день складываются в десятки новых идей за год. Каждый урок закончен и полезен сам по себе.</p></div>
             <div className="col3"><span className="tile-ic"><Icon name="target" size={22} /></span><h3 className="h3">Принимать лучшие решения</h3><p>В уроках нет пересказа теории ради теории. Только модели и приёмы, которые меняют поступки.</p></div>
             <div className="col3"><span className="tile-ic"><Icon name="compass" size={22} /></span><h3 className="h3">Двигаться к своим целям</h3><p>Серия дней и коллекция ключевых знаний показывают, сколько уже пройдено и что из этого вы применили.</p></div>
           </div>
@@ -189,7 +191,7 @@ export default function Home() {
         <HeroFx />
         <div className="wrap">
           <h2 className="h1">Большие цели начинаются с малого.</h2>
-          <p className="lead">Первый урок займёт полчаса. Выберите тему и начните.</p>
+          <p className="lead">Первый урок займёт {aboutMin(minutes(COURSE_BY[START_COURSE], 'short'))}. Выберите тему и начните.</p>
           <div className="row"><Link className="btn btn-primary btn-lg" to="/courses">Выбрать курс <Icon name="arrow-right" size={18} /></Link></div>
         </div>
       </section>

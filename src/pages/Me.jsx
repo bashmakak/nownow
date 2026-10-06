@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BLOCKS, COURSE_BY, TOPIC_BY } from '../data';
-import { useStore, update, status, streak, dayKey, plural, resetAll, applyTheme } from '../lib/store.js';
+import { BLOCKS, COURSE_BY, TOPIC_BY, VERSION, WITH_FULL, lesson } from '../data';
+import { useStore, update, statusOf, splitKey, setVersion, streak, dayKey, plural, resetAll, applyTheme } from '../lib/store.js';
 import { useUI, useTitle } from '../lib/ui.jsx';
 import { Icon } from '../components/Icon.jsx';
 import { Mark } from '../components/Brand.jsx';
@@ -28,16 +28,21 @@ export default function Me() {
   const s = useStore();
   const { toast } = useUI();
   const [ask, setAsk] = useState(false);
-  const all = Object.keys(s.courses).filter(k => COURSE_BY[k]);
-  const inprog = all.filter(k => status(s, k) === 'progress').sort((a, b) => (s.courses[b].touched || 0) - (s.courses[a].touched || 0));
-  const completed = all.filter(k => s.courses[k].completed).sort((a, b) => s.courses[b].completed - s.courses[a].completed);
+  // ключ прогресса — это урок и его версия; of(k) разбирает ключ
+  const of = k => { const [slug, v] = splitKey(k), c = COURSE_BY[slug]; return { slug, v, c, L: lesson(c, v), tail: c.full ? ` · ${VERSION[v].toLowerCase()} версия` : '' }; };
+  const all = Object.keys(s.courses).filter(k => COURSE_BY[splitKey(k)[0]]);
+  const inprog = all.filter(k => statusOf(s, ...splitKey(k)) === 'progress').sort((a, b) => (s.courses[b].touched || 0) - (s.courses[a].touched || 0));
+  // одна карточка на урок: если пройдены обе версии, берём ту, что пройдена позже
+  const passed = all.filter(k => s.courses[k].completed).sort((a, b) => s.courses[b].completed - s.courses[a].completed);
+  const completed = passed.filter((k, i) => passed.findIndex(x => splitKey(x)[0] === splitKey(k)[0]) === i);
   const week = [...Array(7)].map((_, i) => { const d = new Date(); d.setDate(d.getDate() - i); return s.activity[dayKey(d)] || { sec: 0, blocks: 0 }; });
   const wkMin = Math.round(week.reduce((x, y) => x + y.sec, 0) / 60), wkBlocks = week.reduce((x, y) => x + y.blocks, 0), st = streak(s);
-  const notes = Object.entries(s.notes).filter(([k, v]) => v && v.trim() && COURSE_BY[k.split(':')[0]]);
+  const notes = Object.entries(s.notes).map(([k, v]) => [k.slice(0, k.lastIndexOf(':')), +k.slice(k.lastIndexOf(':') + 1), v])
+    .filter(([k, , v]) => v && v.trim() && COURSE_BY[splitKey(k)[0]]);
   const reflects = all.filter(k => (s.courses[k].reflect || '').trim());
-  const sheets = all.filter(k => COURSE_BY[k].practice.sheet && Object.values(s.courses[k].work || {}).some(v => (v || '').trim()));
+  const sheets = all.filter(k => of(k).L.practice.sheet && Object.values(s.courses[k].work || {}).some(v => (v || '').trim()));
   const bookmarks = s.bookmarks.filter(k => COURSE_BY[k]);
-  const cont = inprog[0] && COURSE_BY[inprog[0]];
+  const cont = inprog[0] && of(inprog[0]);
   const label = { textDecoration: 'none' };
 
   return (
@@ -55,15 +60,15 @@ export default function Me() {
               {cont ? (
                 <div className="cont">
                   <div className="stack" style={{ gap: 8, minWidth: 0 }}>
-                    <span className="label">{TOPIC_BY[cont.topic].title}</span>
-                    <Link to={`/courses/${cont.slug}`} className="h4" style={{ color: 'var(--text)', textDecoration: 'none' }}>{cont.title}</Link>
-                    <ProgressLine slug={cont.slug} />
+                    <span className="label">{TOPIC_BY[cont.c.topic].title}{cont.tail}</span>
+                    <Link to={`/courses/${cont.slug}`} className="h4" style={{ color: 'var(--text)', textDecoration: 'none' }}>{cont.c.title}</Link>
+                    <ProgressLine course={cont.c} version={cont.v} />
                   </div>
-                  <Link className="btn btn-primary" to={`/learn/${cont.slug}`}>Продолжить</Link>
+                  <Link className="btn btn-primary" to={`/learn/${cont.slug}/${cont.v}`}>Продолжить</Link>
                 </div>
               ) : (
                 <>
-                  <p className="muted">Незавершённых уроков нет. Выберите курс, первый блок займёт две минуты.</p>
+                  <p className="muted">Незавершённых уроков нет. Выберите курс: первый блок займёт меньше минуты.</p>
                   <div><Link className="btn btn-primary" to="/courses">Выбрать курс</Link></div>
                 </>
               )}
@@ -96,8 +101,8 @@ export default function Me() {
             <div className="kgrid">
               {completed.map(k => (
                 <div className="stack" style={{ gap: 8, minWidth: 0 }} key={k}>
-                  <Link className="label" to={`/courses/${k}`} style={label}>{COURSE_BY[k].title}</Link>
-                  <KeyCard course={COURSE_BY[k]} />
+                  <Link className="label" to={`/courses/${of(k).slug}`} style={label}>{of(k).c.title}</Link>
+                  <KeyCard course={of(k).L} />
                 </div>
               ))}
             </div>
@@ -119,20 +124,17 @@ export default function Me() {
           <div className="group">
             <h2 className="h3" style={{ marginBottom: 6 }}>Заметки и ответы</h2>
             <div className="panel" style={{ gap: 0, paddingBlock: 6 }}>
-              {notes.map(([k, v]) => {
-                const [slug, i] = k.split(':');
-                return (
-                  <div className="note-item" key={k}>
-                    <Link className="label" to={`/courses/${slug}`} style={label}>{COURSE_BY[slug].title} · блок {+i + 1}, {BLOCKS[+i].label.toLowerCase()}</Link>
-                    <p>{v}</p>
-                  </div>
-                );
-              })}
+              {notes.map(([k, i, v]) => (
+                <div className="note-item" key={`${k}:${i}`}>
+                  <Link className="label" to={`/courses/${of(k).slug}`} style={label}>{of(k).c.title}{of(k).tail} · блок {i + 1}, {BLOCKS[i].label.toLowerCase()}</Link>
+                  <p>{v}</p>
+                </div>
+              ))}
               {sheets.map(k => (
                 <div className="note-item" key={`w-${k}`}>
-                  <Link className="label" to={`/courses/${k}`} style={label}>{COURSE_BY[k].title} · рабочий лист</Link>
+                  <Link className="label" to={`/courses/${of(k).slug}`} style={label}>{of(k).c.title} · рабочий лист</Link>
                   <dl className="sheet-answers">
-                    {COURSE_BY[k].practice.sheet.map((f, i) => ((s.courses[k].work[i] || '').trim() ? (
+                    {of(k).L.practice.sheet.map((f, i) => ((s.courses[k].work[i] || '').trim() ? (
                       <div key={f.label}><dt>{f.label}</dt><dd>{s.courses[k].work[i]}</dd></div>
                     ) : null))}
                   </dl>
@@ -140,7 +142,7 @@ export default function Me() {
               ))}
               {reflects.map(k => (
                 <div className="note-item" key={`r-${k}`}>
-                  <Link className="label" to={`/courses/${k}`} style={label}>{COURSE_BY[k].title} · ответ в практике</Link>
+                  <Link className="label" to={`/courses/${of(k).slug}`} style={label}>{of(k).c.title}{of(k).tail} · ответ в практике</Link>
                   <p>{s.courses[k].reflect}</p>
                 </div>
               ))}
@@ -155,6 +157,17 @@ export default function Me() {
               <label htmlFor="me-name">Как к вам обращаться</label>
               <input className="input" id="me-name" type="text" maxLength={40} autoComplete="given-name" placeholder="Имя"
                 value={s.name} onChange={e => update(d => { d.name = e.target.value; })} />
+            </div>
+            <div className="form-row">
+              <span style={{ fontWeight: 500, fontSize: 14.5 }} id="me-ver">Версия уроков по умолчанию</span>
+              <div>
+                <div className="seg-ctl" role="radiogroup" aria-labelledby="me-ver">
+                  {['short', 'full'].map(v => (
+                    <button key={v} type="button" role="radio" aria-checked={(s.version || 'short') === v} onClick={() => setVersion(v)}>{VERSION[v]}</button>
+                  ))}
+                </div>
+              </div>
+              <p className="muted" style={{ fontSize: 14 }}>Короткая даёт главное за несколько минут, полная разбирает тему подробно. Полная версия пока есть у {WITH_FULL.length} {plural(WITH_FULL.length, ['урока', 'уроков', 'уроков'])}: у остальных откроется короткая. На странице урока версию можно сменить.</p>
             </div>
             <div className="form-row"><span style={{ fontWeight: 500, fontSize: 14.5 }}>Тема оформления</span><div><ThemeControl /></div></div>
             <div className="form-row">

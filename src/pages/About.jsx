@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { BLOCKS } from '../data';
+import { BLOCKS, BLOCK_SHARE, TIME, WITH_FULL, WPM } from '../data';
+import { plural, genMin, aboutMin } from '../lib/store.js';
 import { useTitle } from '../lib/ui.jsx';
 import { Icon } from '../components/Icon.jsx';
 
@@ -10,7 +11,7 @@ export default function About() {
       <div className="wrap">
         <header className="page-head">
           <h1 className="h1">О платформе</h1>
-          <p className="lead">NowNow — это микрообучение для тех, кто ценит своё время. Мы даём концентрированные знания, которые помогают быстро расти, принимать лучшие решения и двигаться к своим целям.</p>
+          <p className="lead">NowNow — это быстрые знания для тех, кто ценит своё время. Один урок даёт одну идею, которую можно применить сегодня. Сколько времени он займёт, видно заранее.</p>
         </header>
         <div className="cols3" style={{ marginTop: 8 }}>
           <div className="col3"><span className="tile-ic"><Icon name="zap" size={22} /></span><h2 className="h3">Скорость</h2><p>От главной страницы до первого блока урока меньше минуты. Регистрация для этого не нужна.</p></div>
@@ -18,18 +19,31 @@ export default function About() {
           <div className="col3"><span className="tile-ic"><Icon name="circle-check" size={22} /></span><h2 className="h3">Результат</h2><p>Каждый урок заканчивается карточкой с выводом и одним действием, которое можно сделать сегодня.</p></div>
         </div>
         <div className="group" style={{ maxWidth: 720 }}>
-          <h2 className="h3" style={{ marginBottom: 14 }}>Как устроен урок</h2>
+          <h2 className="h3" style={{ marginBottom: 8 }}>Как устроен урок</h2>
+          <p className="muted" style={{ marginBottom: 14 }}>Шесть блоков в любой версии. Справа доля времени, которую блок обычно занимает в короткой версии.</p>
           <ol className="syl">
             {BLOCKS.map((b, i) => (
-              <li key={b.kind}><span className="n">{i + 1}</span><span><b>{b.label}</b><small>{b.hint}</small></span><span className="m">{b.min} мин</span></li>
+              <li key={b.kind}><span className="n">{i + 1}</span><span><b>{b.label}</b><small>{b.hint}</small></span><span className="m">{BLOCK_SHARE[i]} %</span></li>
             ))}
           </ol>
         </div>
         <div className="group" style={{ maxWidth: 720 }}>
-          <h2 className="h3" style={{ marginBottom: 14 }}>Об этой версии</h2>
+          <h2 className="h3" style={{ marginBottom: 14 }}>Две версии урока</h2>
+          <div className="stack" style={{ gap: 12 }}>
+            <p><b>Короткая</b> занимает от {TIME.short.min} до {TIME.short.max} {genMin(TIME.short.max)}. В ней главная идея, один пример, короткая практика и три вопроса.</p>
+            <p><b>Полная</b> разбирает ту же тему подробно: больше примеров, вопросы для размышления по ходу, рабочий лист и пять вопросов.{TIME.full && ` Она занимает ${aboutMin(TIME.full.mid)}.`} Сейчас полная версия есть у {WITH_FULL.length} {plural(WITH_FULL.length, ['урока', 'уроков', 'уроков'])}, остальные готовятся.</p>
+            <p>Версию выбирают на странице урока. Выбор запоминается, изменить его можно в кабинете.</p>
+          </div>
+        </div>
+        <div className="group" style={{ maxWidth: 720 }}>
+          <h2 className="h3" style={{ marginBottom: 14 }}>Как считается время</h2>
+          <p>Время на карточке — оценка по объёму урока: чтение со скоростью {WPM} слов в минуту плюс небольшие паузы на вопросы и задания. Это средний темп внимательного чтения, ваш может отличаться. Счётчик в уроке ничего не ограничивает.</p>
+        </div>
+        <div className="group" style={{ maxWidth: 720 }}>
+          <h2 className="h3" style={{ marginBottom: 14 }}>Об этой версии сайта</h2>
           <div className="note-box">
             <Icon name="info" size={20} />
-            <p>Это демонстрационная версия сайта. Урок <Link to="/courses/psihologiya-prinyatiya-reshenij">«Психология принятия решений»</Link> написан в полную длину, остальные показаны в сокращённом виде: структура и главная идея. Аккаунтов и оплаты нет. Прогресс, закладки и заметки хранятся только в вашем браузере. Автор всех уроков — редакция NowNow.</p>
+            <p>Это демонстрационная версия сайта. Полная версия пока написана для урока <Link to="/courses/psihologiya-prinyatiya-reshenij">«Психология принятия решений»</Link>, у остальных есть только короткая. Аккаунтов и оплаты нет. Прогресс, закладки и заметки хранятся только в вашем браузере. Автор всех уроков — редакция NowNow.</p>
           </div>
         </div>
         <div className="group"><Link className="btn btn-primary btn-lg" to="/courses">Перейти в каталог <Icon name="arrow-right" size={18} /></Link></div>

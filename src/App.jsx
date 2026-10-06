@@ -22,7 +22,7 @@ export default function App() {
           <Route path="courses/:slug" element={<Course />} />
           <Route path="topics" element={<Topics />} />
           <Route path="topics/:slug" element={<Topic />} />
-          <Route path="learn/:slug" element={<Player />} />
+          <Route path="learn/:slug/:version?" element={<Player />} />
           <Route path="me" element={<Me />} />
           <Route path="about" element={<About />} />
           <Route path="*" element={<NotFound />} />

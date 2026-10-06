@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
-import { TOPIC_BY, coursesOf, metaLine } from '../data';
-import { useStore, status, remaining, toggleBookmark, setTheme, nCourses } from '../lib/store.js';
+import { TOPIC_BY, VERSION, coursesOf, metaLine, minutes, timing } from '../data';
+import { useStore, status, activeVersion, remainingSec, leftLabel, toggleBookmark, setTheme, nCourses } from '../lib/store.js';
 import { useUI } from '../lib/ui.jsx';
 import { Icon } from './Icon.jsx';
 import { Mark } from './Brand.jsx';
@@ -12,8 +12,8 @@ const STREAKS = [
   [['100,120 300,84 300,98 140,120', 0.45, 'nv-b6'], ['126,120 300,90 300,93 142,120', 1]],
 ];
 
-/* Обложка курса: световой луч, положение которого зависит от курса */
-export function Cover({ course, big = false }) {
+/* Обложка курса: световой луч, положение которого зависит от курса. min — расчётное время в минутах */
+export function Cover({ course, min, big = false }) {
   const t = TOPIC_BY[course.topic];
   const v = [...course.slug].reduce((s, ch) => s + ch.charCodeAt(0), 0) % 4;
   return (
@@ -22,7 +22,7 @@ export function Cover({ course, big = false }) {
         {STREAKS[v].map(([p, o, f], i) => <polygon key={i} points={p} fill="url(#nv-gs)" opacity={o} filter={f ? `url(#${f})` : undefined} />)}
       </svg>
       <span className="cover-ic"><Icon name={t.icon} size={big ? 24 : 22} /></span>
-      <span className="cover-min">30 МИН</span>
+      <span className="cover-min"><span className="sr">Время урока: </span>{min} мин</span>
     </div>
   );
 }
@@ -40,13 +40,15 @@ export function BookmarkButton({ slug, inline = false }) {
   );
 }
 
-export function ProgressLine({ slug }) {
+/* Полоса прогресса начатой версии. Доля считается по расчётному времени блоков */
+export function ProgressLine({ course, version }) {
   const s = useStore();
-  const left = remaining(s, slug);
+  const v = version || activeVersion(s, course);
+  const left = remainingSec(s, course, v), total = timing(course, v).total;
   return (
     <div className="ccard-prog">
-      <span className="bar"><i style={{ width: `${Math.round((30 - left) / 30 * 100)}%` }} /></span>
-      <span>Осталось {left} мин</span>
+      <span className="bar"><i style={{ width: `${Math.round((total - left) / total * 100)}%` }} /></span>
+      <span>{leftLabel(left)}</span>
     </div>
   );
 }
@@ -54,16 +56,17 @@ export function ProgressLine({ slug }) {
 export function CourseCard({ course }) {
   const s = useStore();
   const st = status(s, course.slug);
+  const v = activeVersion(s, course), other = v === 'full' ? 'short' : 'full';
   return (
     <article className="ccard">
       <Link className="ccard-link" to={`/courses/${course.slug}`}>
-        <Cover course={course} />
+        <Cover course={course} min={minutes(course, v)} />
         <div className="ccard-body">
           <span className="label">{TOPIC_BY[course.topic].title}</span>
           <h3 className="ccard-title">{course.title}</h3>
-          <p className="ccard-meta">{metaLine(course)}</p>
-          {course.full && <div><span className="badge badge-full"><Icon name="zap" size={13} />Полный урок</span></div>}
-          {st === 'progress' && <ProgressLine slug={course.slug} />}
+          <p className="ccard-meta">{metaLine(course, v)}</p>
+          {course.full && <div><span className="badge badge-full"><Icon name="zap" size={13} />{VERSION[other]} версия: {minutes(course, other)} мин</span></div>}
+          {st === 'progress' && <ProgressLine course={course} version={v} />}
           {st === 'done' && <div><span className="badge"><Icon name="check" size={13} />Пройден</span></div>}
         </div>
       </Link>

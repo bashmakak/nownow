@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { BLOCKS, COURSE_BY, DISCLAIMER, REC_ORDER, TOPIC_BY, coursesOf } from '../data';
-import { useStore, getState, update, ensureProgress, newProgress, today, status, streak, plural } from '../lib/store.js';
+import { BLOCKS, COURSE_BY, DISCLAIMER, REC_ORDER, TOPIC_BY, VERSION, coursesOf, lesson, minutes, timing } from '../data';
+import { useStore, getState, update, ensureProgress, newProgress, today, status, statusOf, activeVersion, pkey, leftLabel, streak, plural } from '../lib/store.js';
 import { useUI, useTitle, DialogHead } from '../lib/ui.jsx';
 import { Icon } from '../components/Icon.jsx';
 import { Mark } from '../components/Brand.jsx';
@@ -154,9 +154,10 @@ function Question({ slug, q, qi, total, answer }) {
   );
 }
 
-function Block({ course: c, p, hRef }) {
+/* c — урок в выбранной версии, pk — ключ его прогресса */
+function Block({ course: c, pk, note, p, hRef }) {
   const i = p.block, b = BLOCKS[i];
-  const kicker = <p className="label pl-kicker">Блок {i + 1} из 6 · {b.label} · {b.min} мин</p>;
+  const kicker = <p className="label pl-kicker">Блок {i + 1} из 6 · {b.label}{note}</p>;
   const h = text => <h1 className="h2" id="pl-h" tabIndex={-1} ref={hRef}>{text}</h1>;
   switch (b.kind) {
     case 'why': return (<>
@@ -184,14 +185,14 @@ function Block({ course: c, p, hRef }) {
       {kicker}{h(c.practice.title)}
       {c.practice.intro && <p className="pl-intro">{fmt(c.practice.intro)}</p>}
       {c.practice.body && <Rich nodes={c.practice.body} />}
-      {c.practice.sheet && <Sheet slug={c.slug} fields={c.practice.sheet} work={p.work || {}} />}
+      {c.practice.sheet && <Sheet slug={pk} fields={c.practice.sheet} work={p.work || {}} />}
       {c.practice.steps && (
         <ol className="psteps">
           {c.practice.steps.map((step, k) => (
             <li key={step}>
               <label className="pstep">
                 <input type="checkbox" id={`pl-step-${k}`} checked={Boolean(p.steps[k])}
-                  onChange={e => update(d => { ensureProgress(d, c.slug).steps[k] = e.target.checked; })} />
+                  onChange={e => update(d => { ensureProgress(d, pk).steps[k] = e.target.checked; })} />
                 <span className="box"><Icon name="check" size={16} /></span>
                 <span><small>Шаг {k + 1}</small>{fmt(step)}</span>
               </label>
@@ -203,7 +204,7 @@ function Block({ course: c, p, hRef }) {
         <div className="reflect">
           <label htmlFor="pl-reflect">{c.practice.reflect}</label>
           <textarea className="input" id="pl-reflect" rows={4} placeholder="Ответ сохранится в кабинете. Это поле можно пропустить."
-            value={p.reflect || ''} onChange={e => update(d => { ensureProgress(d, c.slug).reflect = e.target.value; })} />
+            value={p.reflect || ''} onChange={e => update(d => { ensureProgress(d, pk).reflect = e.target.value; })} />
           <p className="saved" aria-live="polite">{p.reflect ? 'Сохранено' : ''}</p>
         </div>
       )}
@@ -211,7 +212,7 @@ function Block({ course: c, p, hRef }) {
     case 'check': return (<>
       {kicker}{h('Проверьте себя')}
       <p className="pl-intro">{c.check.length} {plural(c.check.length, ['вопрос', 'вопроса', 'вопросов'])} по материалу урока. После ответа появится объяснение.</p>
-      {c.check.map((q, qi) => <Question key={q.q} slug={c.slug} q={q} qi={qi} total={c.check.length} answer={p.answers[qi] ?? null} />)}
+      {c.check.map((q, qi) => <Question key={q.q} slug={pk} q={q} qi={qi} total={c.check.length} answer={p.answers[qi] ?? null} />)}
     </>);
     default: return (<>
       {kicker}{h('Итог урока')}<p className="pl-intro">Главное из урока на одной карточке. Она сохранится в кабинете.</p>
@@ -220,13 +221,15 @@ function Block({ course: c, p, hRef }) {
   }
 }
 
-function Done({ course: c, p, hRef }) {
+function Done({ course: c, pk, version, p, hRef }) {
   const s = useStore();
   const right = c.check.filter((q, i) => p.answers[i] === q.correct).length;
   const st = streak(s);
   const mins = Math.max(1, Math.round(p.seconds / 60));
   const nextC = coursesOf(c.topic).concat(REC_ORDER.map(slug => COURSE_BY[slug])).find(x => x.slug !== c.slug && status(s, x.slug) !== 'done');
-  const rate = v => update(d => { ensureProgress(d, c.slug).useful = v; });
+  const rate = v => update(d => { ensureProgress(d, pk).useful = v; });
+  // после короткой версии предлагаем полную, если она есть и ещё не пройдена
+  const deeper = version === 'short' && c.full && statusOf(s, c.slug, 'full') !== 'done';
   return (
     <div className="done-wrap">
       <div className="flash" aria-hidden="true">
@@ -253,6 +256,12 @@ function Done({ course: c, p, hRef }) {
         </div>
         <p className="saved" aria-live="polite">{p.useful ? 'Спасибо, оценка сохранена.' : ''}</p>
       </div>
+      {deeper && (
+        <div className="deeper">
+          <div><b>Хотите разобраться глубже?</b><span>У этого урока есть полная версия: подробный разбор, рабочий лист и больше вопросов.</span></div>
+          <Link className="btn btn-secondary" to={`/learn/${c.slug}/full`}>Полная версия · {minutes(c, 'full')} мин</Link>
+        </div>
+      )}
       <div className="row">
         {nextC && <Link className="btn btn-primary btn-lg" to={`/courses/${nextC.slug}`}>Следующий курс <Icon name="arrow-right" size={18} /></Link>}
         <Link className="btn btn-secondary btn-lg" to="/me">В кабинет</Link>
@@ -264,9 +273,11 @@ function Done({ course: c, p, hRef }) {
 }
 
 /* ---------- плеер ---------- */
-function PlayerBody({ course: c }) {
+function PlayerBody({ course: base, version }) {
+  const c = lesson(base, version);         // урок в выбранной версии
   useTitle(c.title);
-  const slug = c.slug;
+  const slug = pkey(base.slug, version);   // ключ прогресса этой версии
+  const T = timing(base, version);         // расчётное время блоков в секундах
   const s = useStore();
   const ui = useUI();
   const hRef = useRef(null);
@@ -319,13 +330,15 @@ function PlayerBody({ course: c }) {
   const i = p.block;
   const fill = k => {
     if (p.done[k] || finished) return 100;
-    if (k === i) return Math.min(100, Math.max(5, p.elapsed[k] / (BLOCKS[k].min * 60) * 100));
+    if (k === i) return Math.min(100, Math.max(5, p.elapsed[k] / T.blocks[k] * 100));
     return 0;
   };
   const firstOpen = p.done.findIndex(d => !d);
   const reach = Math.max(firstOpen < 0 ? 5 : firstOpen, i);
-  let left = BLOCKS.reduce((sum, b, k) => sum + (k > i && !p.done[k] ? b.min : 0), 0);
-  if (!p.done[i]) left += Math.max(0, BLOCKS[i].min - p.elapsed[i] / 60);
+  // осталось по оценке: непройденные блоки впереди плюс остаток текущего
+  let left = T.blocks.reduce((sum, sec, k) => sum + (k > i && !p.done[k] ? sec : 0), 0);
+  if (!p.done[i]) left += Math.max(0, T.blocks[i] - p.elapsed[i]);
+  const note = base.full ? ` · ${VERSION[version].toLowerCase()} версия` : '';
   const unanswered = BLOCKS[i].kind === 'check' ? c.check.filter((q, qi) => p.answers[qi] == null).length : 0;
 
   return (
@@ -333,15 +346,15 @@ function PlayerBody({ course: c }) {
       <header className="pl-top">
         <div className="wrap">
           <div className="pl-top-row">
-            <Link className="icon-btn" to={`/courses/${slug}`} aria-label="Закрыть урок и вернуться к курсу"><Icon name="x" /></Link>
+            <Link className="icon-btn" to={`/courses/${base.slug}`} aria-label="Закрыть урок и вернуться к курсу"><Icon name="x" /></Link>
             <div className="pl-title"><Mark size={20} /><span>{c.title}</span></div>
-            <div className="pl-left" id="pl-left">{finished ? 'Урок пройден' : `Осталось ${Math.max(1, Math.ceil(left))} мин`}</div>
+            <div className="pl-left" id="pl-left">{finished ? 'Урок пройден' : leftLabel(left)}</div>
           </div>
           <ol className="segs" id="pl-segs" aria-label="Блоки урока">
             {BLOCKS.map((b, k) => (
-              <li key={b.kind} style={{ flex: `${b.min} 1 0` }}>
+              <li key={b.kind} style={{ flex: `${Math.max(T.blocks[k], T.total * 0.05)} 1 0` }}>
                 <button type="button" className="seg" disabled={k > reach || finished} aria-current={k === i && !finished ? 'step' : undefined}
-                  aria-label={`Блок ${k + 1}: ${b.label}, ${b.min} мин${p.done[k] ? ', пройден' : ''}`}
+                  aria-label={`Блок ${k + 1}: ${b.label}${p.done[k] ? ', пройден' : ''}`}
                   onClick={() => update(d => { ensureProgress(d, slug).block = k; })}>
                   <span><i style={{ width: `${fill(k)}%` }} /></span>
                 </button>
@@ -353,7 +366,7 @@ function PlayerBody({ course: c }) {
       <div className="pl-main">
         <div className="wrap">
           <article className="pl-col" id="pl-block">
-            {finished ? <Done course={c} p={p} hRef={hRef} /> : <Block course={c} p={p} hRef={hRef} />}
+            {finished ? <Done course={c} pk={slug} version={version} p={p} hRef={hRef} /> : <Block course={c} pk={slug} note={note} p={p} hRef={hRef} />}
           </article>
         </div>
       </div>
@@ -378,8 +391,16 @@ function PlayerBody({ course: c }) {
   );
 }
 
+/* Адрес /learn/урок/short или /learn/урок/full открывает названную версию.
+   Адрес без версии открывает начатую, а если начатых нет — ту, что человек выбрал по умолчанию. */
+function PlayerEntry({ course, asked }) {
+  const [version] = useState(() => asked || activeVersion(getState(), course));
+  return <PlayerBody course={course} version={version} />;
+}
+
 export default function Player() {
-  const { slug } = useParams();
+  const { slug, version } = useParams();
   const course = COURSE_BY[slug];
-  return course ? <PlayerBody course={course} key={slug} /> : <NotFound />;
+  const known = !version || version === 'short' || (version === 'full' && Boolean(course && course.full));
+  return course && known ? <PlayerEntry course={course} asked={version} key={`${slug}/${version || ''}`} /> : <NotFound />;
 }

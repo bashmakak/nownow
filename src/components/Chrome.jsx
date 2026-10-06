@@ -16,7 +16,7 @@ function MobileMenu() {
         <nav className="menu-links" aria-label="Меню">
           {links.map(([to, label]) => <Link key={to} to={to}>{label}<Icon name="arrow-right" size={20} /></Link>)}
         </nav>
-        <Link className="btn btn-primary btn-lg" to="/courses">Начать за 30 минут</Link>
+        <Link className="btn btn-primary btn-lg" to="/courses">Выбрать урок</Link>
       </div>
     </div>
   );
@@ -57,7 +57,7 @@ function Footer() {
           <div className="foot-brand">
             <Lockup />
             <span className="label">Быстрые знания / Большие возможности</span>
-            <p>Демо-версия. Большинство уроков сокращены, прогресс хранится только в вашем браузере.</p>
+            <p>Демо-версия. Полная версия пока есть не у всех уроков, прогресс хранится только в вашем браузере.</p>
           </div>
           <nav className="foot-col" aria-label="Платформа">
             <span className="label">Платформа</span>
@@ -69,7 +69,7 @@ function Footer() {
           </nav>
           <div className="foot-col"><span className="label">Тема оформления</span><ThemeControl /></div>
         </div>
-        <div className="foot-bottom"><span>© 2026 NowNow</span><span className="label">30 минут до новой идеи</span></div>
+        <div className="foot-bottom"><span>© 2026 NowNow</span><span className="label">Одно знание за несколько минут</span></div>
       </div>
     </footer>
   );

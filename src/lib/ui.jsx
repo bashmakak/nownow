@@ -59,5 +59,5 @@ export function DialogHead({ title }) {
 }
 
 export function useTitle(title) {
-  useEffect(() => { document.title = title ? `${title} — NowNow` : 'NowNow — микрообучение за 30 минут'; }, [title]);
+  useEffect(() => { document.title = title ? `${title} — NowNow` : 'NowNow — быстрые знания'; }, [title]);
 }
