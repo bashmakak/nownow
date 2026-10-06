@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>NowNow — микрообучение за 30 минут</title>
+    <meta name="description" content="NowNow: один курс даёт одно ключевое знание за 30 минут. Психология, финансы, ИИ, сон и другие темы." />
+    <meta name="theme-color" content="#0B0F14" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <script>
+      // тема применяется до отрисовки, чтобы страница не мигала
+      try {
+        var t = (JSON.parse(localStorage.getItem('nownow.v1') || '{}').theme) || 'dark';
+        if (t !== 'system') document.documentElement.setAttribute('data-theme', t);
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'dark'); }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
