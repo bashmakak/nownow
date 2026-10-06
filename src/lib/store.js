@@ -34,7 +34,7 @@ export const today = draft => draft.activity[dayKey()] || (draft.activity[dayKey
 
 export const newProgress = () => ({
   started: Date.now(), touched: Date.now(), completed: null, finished: false, block: 0,
-  done: [0, 0, 0, 0, 0, 0], elapsed: [0, 0, 0, 0, 0, 0], seconds: 0, answers: {}, steps: {}, reflect: '', useful: null,
+  done: [0, 0, 0, 0, 0, 0], elapsed: [0, 0, 0, 0, 0, 0], seconds: 0, answers: {}, steps: {}, work: {}, reflect: '', useful: null,
 });
 export const ensureProgress = (draft, slug) => draft.courses[slug] || (draft.courses[slug] = newProgress());
 

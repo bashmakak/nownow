@@ -42,6 +42,7 @@ function CourseBody({ course: c }) {
             <span><Icon name="clock" size={16} />30 минут</span>
             <span><Icon name="layout-grid" size={16} />{FORMAT[c.format]}</span>
             <span><Icon name="trending-up" size={16} />{LEVEL[c.level]} уровень</span>
+            {c.full && <span className="badge badge-full"><Icon name="zap" size={13} />Полный урок</span>}
             {st === 'done' && <span className="badge"><Icon name="check" size={13} />Пройден</span>}
           </div>
           <div className="row" style={{ marginTop: 8 }}><Cta course={c} big /><BookmarkButton slug={c.slug} inline /></div>
@@ -79,6 +80,7 @@ function CourseBody({ course: c }) {
               <Cta course={c} />
               <dl className="facts">
                 <div><dt>Длительность</dt><dd>30 минут</dd></div>
+                <div><dt>Версия</dt><dd>{c.full ? 'Полная' : 'Сокращённая'}</dd></div>
                 <div><dt>Блоков</dt><dd>6</dd></div>
                 <div><dt>Формат</dt><dd>{FORMAT[c.format]}</dd></div>
                 <div><dt>Уровень</dt><dd>{LEVEL[c.level]}</dd></div>

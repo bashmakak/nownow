@@ -24,13 +24,15 @@ export function Topics() {
             </div>
           ) : null;
         })}
-        <div className="soon">
-          <h2 className="h3">Готовятся</h2>
-          <p>Эти темы появятся в каталоге, когда в каждой будет минимум два курса.</p>
-          <div className="chips">
-            {SOON.map(t => <span className="chip chip-static" key={t.slug}><Icon name={t.icon} size={15} />{t.title}</span>)}
+        {SOON.length > 0 && (
+          <div className="soon">
+            <h2 className="h3">Готовятся</h2>
+            <p>Эти темы появятся в каталоге, когда в каждой будет минимум два курса.</p>
+            <div className="chips">
+              {SOON.map(t => <span className="chip chip-static" key={t.slug}><Icon name={t.icon} size={15} />{t.title}</span>)}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   );

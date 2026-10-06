@@ -432,3 +432,53 @@ dialog::backdrop{background:rgba(4,6,9,.72)}
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
   .flash .f-fill{clip-path:none}
 }
+
+/* ---------- развёрнутый урок: подзаголовки, списки, вопросы, код, таблицы, рабочий лист ---------- */
+.pl-col b{font-weight:600}
+.pl-col code{font:500 .92em/1.4 ui-monospace,'SF Mono',Menlo,Consolas,monospace;background:var(--bg-2);border-radius:5px;padding:.1em .35em}
+.rt-h{font:600 clamp(19px,2vw,22px)/1.3 var(--font-display);letter-spacing:-.01em;margin-top:14px;text-wrap:balance}
+.rt-list{display:flex;flex-direction:column;gap:10px;padding-left:24px;font-size:17.5px;line-height:1.6;list-style:disc}
+.rt-list.rt-ol{list-style:decimal}
+.rt-list li::marker{color:var(--accent-text);font-weight:600}
+.think{display:flex;flex-direction:column;gap:10px;padding:18px 20px;border-radius:var(--r-md);border:1px dashed var(--border-2);background:var(--bg-1)}
+.think small{font:500 12px/1.3 var(--font-body);letter-spacing:.12em;text-transform:uppercase;color:var(--accent-text)}
+.think > p{font:600 17.5px/1.5 var(--font-body)}
+.think summary{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-weight:500;color:var(--link);cursor:pointer;list-style:none}
+.think summary::-webkit-details-marker{display:none}
+.think summary .ic{transition:transform .2s}
+.think details[open] summary .ic{transform:rotate(180deg)}
+.think details p{color:var(--text-2);font-size:16.5px;line-height:1.6;padding-top:4px}
+.code{margin:0;padding:16px 18px;border-radius:var(--r-md);background:#0B0F14;color:#F5F7FA;border:1px solid #232B33;overflow-x:auto;font:500 14.5px/1.6 ui-monospace,'SF Mono',Menlo,Consolas,monospace;tab-size:4}
+.code code{background:none;padding:0;font:inherit;color:inherit;white-space:pre}
+.rt-quote{margin:0;padding:4px 0 4px 20px;border-left:3px solid var(--progress);display:flex;flex-direction:column;gap:8px}
+.rt-quote p{font:500 18.5px/1.55 var(--font-body)}
+.rt-quote cite{font-style:normal;font-size:14.5px;color:var(--text-3)}
+.rt-table{overflow-x:auto;border:1px solid var(--border);border-radius:var(--r-md)}
+.rt-table table{width:100%;min-width:440px;border-collapse:collapse;font-size:15.5px;line-height:1.45}
+.rt-table th,.rt-table td{padding:11px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--border)}
+.rt-table thead th{font:500 12px/1.3 var(--font-body);letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);background:var(--bg-1)}
+.rt-table tbody th{font-weight:600;color:var(--text)}
+.rt-table tbody tr:last-child th,.rt-table tbody tr:last-child td{border-bottom:0}
+.rt-table td{color:var(--text-2)}
+/* на телефоне строка таблицы становится карточкой, заголовок столбца подписывает каждую ячейку */
+@media (max-width:640px){
+  .rt-table{overflow:visible;border:0;border-radius:0}
+  .rt-table table{display:block;min-width:0}
+  .rt-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  .rt-table tbody{display:flex;flex-direction:column;gap:12px}
+  .rt-table tbody tr{display:block;padding:16px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg-1)}
+  .rt-table tbody th{display:block;padding:0;border:0;font-size:17px}
+  .rt-table tbody td{display:block;padding:12px 0 0;border:0;font-size:16px}
+  .rt-table tbody td::before{content:attr(data-label);display:block;margin-bottom:3px;font:500 11.5px/1.3 var(--font-body);letter-spacing:.1em;text-transform:uppercase;color:var(--text-3)}
+}
+.sheet{display:flex;flex-direction:column;gap:24px}
+.sheet-row{display:flex;flex-direction:column;gap:8px}
+.sheet-row label{display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;align-items:baseline;font:600 17px/1.4 var(--font-body)}
+.sheet-row label .num{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--bg-2);font:600 14px/1 var(--font-display);color:var(--text)}
+.sheet-hint{font-size:15px;line-height:1.5;color:var(--text-2);padding-left:40px}
+.sheet-row textarea{margin-left:40px;width:calc(100% - 40px)}
+@media (max-width:520px){.sheet-hint{padding-left:0}.sheet-row textarea{margin-left:0;width:100%}}
+.badge-full{background:var(--lime);color:var(--ink);box-shadow:inset 0 0 0 1px var(--edge)}
+.sheet-answers{display:flex;flex-direction:column;gap:10px;margin:0}
+.sheet-answers dt{font-weight:500;font-size:14.5px;color:var(--text)}
+.sheet-answers dd{margin:2px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--text-2)}

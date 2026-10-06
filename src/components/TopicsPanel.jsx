@@ -33,7 +33,7 @@ export function TopicsPanel({ onPick, selected = '' }) {
           ))}
         </div>
         {!groups.length && <p className="muted">Такой темы пока нет. Посмотрите полный список.</p>}
-        <Link className="more-link" to="/topics">Все темы и те, что готовятся <Icon name="arrow-right" size={16} /></Link>
+        <Link className="more-link" to="/topics">Все темы по разделам <Icon name="arrow-right" size={16} /></Link>
       </div>
     </div>
   );

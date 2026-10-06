@@ -56,10 +56,74 @@ function KeysDialog() {
 }
 
 /* ---------- содержимое блоков ---------- */
-const Paras = ({ text }) => text.map(x => <p key={x}>{x}</p>);
+// выделение внутри текста: **важное** и `код`
+const fmt = text => String(text).split(/(\*\*[^*]+\*\*|`[^`]+`)/).map((part, k) => {
+  if (part.startsWith('**')) return <b key={k}>{part.slice(2, -2)}</b>;
+  if (part.startsWith('`')) return <code key={k}>{part.slice(1, -1)}</code>;
+  return part;
+});
+const Paras = ({ text }) => text.map(x => <p key={x}>{fmt(x)}</p>);
 const Callout = ({ label, text, icon }) => (
-  <div className="callout"><Icon name={icon} size={20} /><p><small>{label}</small>{text}</p></div>
+  <div className="callout"><Icon name={icon} size={20} /><p><small>{label}</small>{fmt(text)}</p></div>
 );
+
+/* Развёрнутое содержимое блока. Узел — массив [тип, ...данные]:
+   p, h, ul, ol, note, think (вопрос с разбором), code, quote, table */
+function Rich({ nodes }) {
+  return nodes.map((n, k) => {
+    const [t, a, b, c] = n;
+    switch (t) {
+      case 'h': return <h2 className="rt-h" key={k}>{a}</h2>;
+      case 'ul': return <ul className="rt-list" key={k}>{a.map(x => <li key={x}>{fmt(x)}</li>)}</ul>;
+      case 'ol': return <ol className="rt-list rt-ol" key={k}>{a.map(x => <li key={x}>{fmt(x)}</li>)}</ol>;
+      case 'note': return <Callout key={k} label={a} text={b} icon={c || 'lightbulb'} />;
+      case 'think': return (
+        <div className="think" key={k}>
+          <small>Остановитесь и подумайте</small>
+          <p>{fmt(a)}</p>
+          <details><summary>Показать разбор<Icon name="chevron-down" size={18} /></summary><p>{fmt(b)}</p></details>
+        </div>
+      );
+      case 'code': return <pre className="code" key={k} tabIndex={0} aria-label="Пример кода"><code>{a}</code></pre>;
+      case 'quote': return <blockquote className="rt-quote" key={k}><p>{fmt(a)}</p>{b && <cite>{b}</cite>}</blockquote>;
+      case 'table': return (
+        <div className="rt-table" key={k} tabIndex={0} role="region" aria-label={c || 'Таблица'}>
+          {/* роли заданы явно: на узком экране таблица раскладывается в карточки через display:block */}
+          <table role="table">
+            <thead role="rowgroup"><tr role="row">{a.map(x => <th key={x} scope="col" role="columnheader">{x}</th>)}</tr></thead>
+            <tbody role="rowgroup">
+              {b.map((row, i) => (
+                <tr key={i} role="row">{row.map((x, j) => (j === 0
+                  ? <th key={j} scope="row" role="rowheader">{fmt(x)}</th>
+                  : <td key={j} role="cell" data-label={a[j]}>{fmt(x)}</td>))}</tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+      default: return <p key={k}>{fmt(a)}</p>;
+    }
+  });
+}
+
+/* Рабочий лист в практике: несколько полей, ответы сохраняются в прогрессе урока */
+function Sheet({ slug, fields, work }) {
+  const filled = fields.some((f, k) => (work[k] || '').trim());
+  return (
+    <div className="sheet">
+      {fields.map((f, k) => (
+        <div className="sheet-row" key={f.label}>
+          <label htmlFor={`pl-sheet-${k}`}><span className="num">{k + 1}</span>{f.label}</label>
+          {f.hint && <p className="sheet-hint">{f.hint}</p>}
+          <textarea className="input" id={`pl-sheet-${k}`} rows={f.rows || 3} placeholder={f.placeholder || 'Ваш ответ'}
+            value={work[k] || ''}
+            onChange={e => update(d => { const p = ensureProgress(d, slug); if (!p.work) p.work = {}; p.work[k] = e.target.value; })} />
+        </div>
+      ))}
+      <p className="saved" aria-live="polite">{filled ? 'Сохранено. Ответы появятся в кабинете.' : 'Поля можно пропустить, но урок работает, только если писать.'}</p>
+    </div>
+  );
+}
 
 function Question({ slug, q, qi, total, answer }) {
   const fb = useRef(null);
@@ -96,41 +160,57 @@ function Block({ course: c, p, hRef }) {
   const h = text => <h1 className="h2" id="pl-h" tabIndex={-1} ref={hRef}>{text}</h1>;
   switch (b.kind) {
     case 'why': return (<>
-      {kicker}{h(c.why.title)}<Paras text={c.why.text} />
+      {kicker}{h(c.why.title)}
+      {c.why.text && <Paras text={c.why.text} />}
+      {c.why.body && <Rich nodes={c.why.body} />}
       {c.disclaimer && <div className="note-box"><Icon name="info" size={20} /><p>{DISCLAIMER}</p></div>}
     </>);
     case 'idea': return (<>
-      {kicker}{h(c.idea.title)}<p className="pl-intro">{c.idea.intro}</p>
-      <ul className="points">{c.idea.points.map(([t, x]) => <li key={t}><div><h2 className="h4">{t}</h2><p>{x}</p></div></li>)}</ul>
-      <Callout label="Важно" text={c.idea.callout} icon="lightbulb" />
+      {kicker}{h(c.idea.title)}
+      {c.idea.intro && <p className="pl-intro">{fmt(c.idea.intro)}</p>}
+      {c.idea.points && (
+        <ul className="points">{c.idea.points.map(([t, x]) => <li key={t}><div><h2 className="h4">{t}</h2><p>{fmt(x)}</p></div></li>)}</ul>
+      )}
+      {c.idea.body && <Rich nodes={c.idea.body} />}
+      {c.idea.callout && <Callout label="Важно" text={c.idea.callout} icon="lightbulb" />}
     </>);
     case 'example': return (<>
-      {kicker}{h(c.example.title)}<Paras text={c.example.text} />
-      <Callout label="Вывод" text={c.example.takeaway} icon="circle-check" />
+      {kicker}{h(c.example.title)}
+      {c.example.text && <Paras text={c.example.text} />}
+      {c.example.body && <Rich nodes={c.example.body} />}
+      {c.example.takeaway && <Callout label="Вывод" text={c.example.takeaway} icon="circle-check" />}
     </>);
     case 'practice': return (<>
-      {kicker}{h(c.practice.title)}<p className="pl-intro">{c.practice.intro}</p>
-      <ol className="psteps">
-        {c.practice.steps.map((step, k) => (
-          <li key={step}>
-            <label className="pstep">
-              <input type="checkbox" id={`pl-step-${k}`} checked={Boolean(p.steps[k])}
-                onChange={e => update(d => { ensureProgress(d, c.slug).steps[k] = e.target.checked; })} />
-              <span className="box"><Icon name="check" size={16} /></span>
-              <span><small>Шаг {k + 1}</small>{step}</span>
-            </label>
-          </li>
-        ))}
-      </ol>
-      <div className="reflect">
-        <label htmlFor="pl-reflect">{c.practice.reflect}</label>
-        <textarea className="input" id="pl-reflect" rows={4} placeholder="Ответ сохранится в кабинете. Это поле можно пропустить."
-          value={p.reflect || ''} onChange={e => update(d => { ensureProgress(d, c.slug).reflect = e.target.value; })} />
-        <p className="saved" aria-live="polite">{p.reflect ? 'Сохранено' : ''}</p>
-      </div>
+      {kicker}{h(c.practice.title)}
+      {c.practice.intro && <p className="pl-intro">{fmt(c.practice.intro)}</p>}
+      {c.practice.body && <Rich nodes={c.practice.body} />}
+      {c.practice.sheet && <Sheet slug={c.slug} fields={c.practice.sheet} work={p.work || {}} />}
+      {c.practice.steps && (
+        <ol className="psteps">
+          {c.practice.steps.map((step, k) => (
+            <li key={step}>
+              <label className="pstep">
+                <input type="checkbox" id={`pl-step-${k}`} checked={Boolean(p.steps[k])}
+                  onChange={e => update(d => { ensureProgress(d, c.slug).steps[k] = e.target.checked; })} />
+                <span className="box"><Icon name="check" size={16} /></span>
+                <span><small>Шаг {k + 1}</small>{fmt(step)}</span>
+              </label>
+            </li>
+          ))}
+        </ol>
+      )}
+      {c.practice.reflect && (
+        <div className="reflect">
+          <label htmlFor="pl-reflect">{c.practice.reflect}</label>
+          <textarea className="input" id="pl-reflect" rows={4} placeholder="Ответ сохранится в кабинете. Это поле можно пропустить."
+            value={p.reflect || ''} onChange={e => update(d => { ensureProgress(d, c.slug).reflect = e.target.value; })} />
+          <p className="saved" aria-live="polite">{p.reflect ? 'Сохранено' : ''}</p>
+        </div>
+      )}
     </>);
     case 'check': return (<>
-      {kicker}{h('Проверьте себя')}<p className="pl-intro">Три вопроса по материалу урока. После ответа появится объяснение.</p>
+      {kicker}{h('Проверьте себя')}
+      <p className="pl-intro">{c.check.length} {plural(c.check.length, ['вопрос', 'вопроса', 'вопросов'])} по материалу урока. После ответа появится объяснение.</p>
       {c.check.map((q, qi) => <Question key={q.q} slug={c.slug} q={q} qi={qi} total={c.check.length} answer={p.answers[qi] ?? null} />)}
     </>);
     default: return (<>
@@ -222,6 +302,8 @@ function PlayerBody({ course: c }) {
       const tag = (e.target.tagName || '').toLowerCase();
       if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.metaKey || e.ctrlKey || e.altKey) return;
       if (document.querySelector('dialog[open]')) return;
+      // в коде и таблицах стрелки нужны для прокрутки
+      if (e.target.closest && e.target.closest('pre, .rt-table')) return;
       const onControl = tag === 'button' || tag === 'a' || tag === 'summary';
       if (e.key === 'ArrowRight') { e.preventDefault(); goNext(slug); }
       else if (e.key === 'ArrowLeft') { e.preventDefault(); goPrev(slug); }

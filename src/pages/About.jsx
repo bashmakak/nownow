@@ -29,7 +29,7 @@ export default function About() {
           <h2 className="h3" style={{ marginBottom: 14 }}>Об этой версии</h2>
           <div className="note-box">
             <Icon name="info" size={20} />
-            <p>Это демонстрационная версия сайта. Содержание уроков сокращено, аккаунтов и оплаты нет. Прогресс, закладки и заметки хранятся только в вашем браузере. Автор всех уроков — редакция NowNow.</p>
+            <p>Это демонстрационная версия сайта. Урок <Link to="/courses/psihologiya-prinyatiya-reshenij">«Психология принятия решений»</Link> написан в полную длину, остальные показаны в сокращённом виде: структура и главная идея. Аккаунтов и оплаты нет. Прогресс, закладки и заметки хранятся только в вашем браузере. Автор всех уроков — редакция NowNow.</p>
           </div>
         </div>
         <div className="group"><Link className="btn btn-primary btn-lg" to="/courses">Перейти в каталог <Icon name="arrow-right" size={18} /></Link></div>

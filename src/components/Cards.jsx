@@ -62,6 +62,7 @@ export function CourseCard({ course }) {
           <span className="label">{TOPIC_BY[course.topic].title}</span>
           <h3 className="ccard-title">{course.title}</h3>
           <p className="ccard-meta">{metaLine(course)}</p>
+          {course.full && <div><span className="badge badge-full"><Icon name="zap" size={13} />Полный урок</span></div>}
           {st === 'progress' && <ProgressLine slug={course.slug} />}
           {st === 'done' && <div><span className="badge"><Icon name="check" size={13} />Пройден</span></div>}
         </div>

@@ -35,6 +35,7 @@ export default function Me() {
   const wkMin = Math.round(week.reduce((x, y) => x + y.sec, 0) / 60), wkBlocks = week.reduce((x, y) => x + y.blocks, 0), st = streak(s);
   const notes = Object.entries(s.notes).filter(([k, v]) => v && v.trim() && COURSE_BY[k.split(':')[0]]);
   const reflects = all.filter(k => (s.courses[k].reflect || '').trim());
+  const sheets = all.filter(k => COURSE_BY[k].practice.sheet && Object.values(s.courses[k].work || {}).some(v => (v || '').trim()));
   const bookmarks = s.bookmarks.filter(k => COURSE_BY[k]);
   const cont = inprog[0] && COURSE_BY[inprog[0]];
   const label = { textDecoration: 'none' };
@@ -114,7 +115,7 @@ export default function Me() {
             : <EmptyState title="Закладок пока нет" text="Здесь появятся курсы, к которым вы захотите вернуться. Нажмите на значок закладки на карточке курса." />}
         </div>
 
-        {(notes.length > 0 || reflects.length > 0) && (
+        {(notes.length > 0 || reflects.length > 0 || sheets.length > 0) && (
           <div className="group">
             <h2 className="h3" style={{ marginBottom: 6 }}>Заметки и ответы</h2>
             <div className="panel" style={{ gap: 0, paddingBlock: 6 }}>
@@ -127,6 +128,16 @@ export default function Me() {
                   </div>
                 );
               })}
+              {sheets.map(k => (
+                <div className="note-item" key={`w-${k}`}>
+                  <Link className="label" to={`/courses/${k}`} style={label}>{COURSE_BY[k].title} · рабочий лист</Link>
+                  <dl className="sheet-answers">
+                    {COURSE_BY[k].practice.sheet.map((f, i) => ((s.courses[k].work[i] || '').trim() ? (
+                      <div key={f.label}><dt>{f.label}</dt><dd>{s.courses[k].work[i]}</dd></div>
+                    ) : null))}
+                  </dl>
+                </div>
+              ))}
               {reflects.map(k => (
                 <div className="note-item" key={`r-${k}`}>
                   <Link className="label" to={`/courses/${k}`} style={label}>{COURSE_BY[k].title} · ответ в практике</Link>

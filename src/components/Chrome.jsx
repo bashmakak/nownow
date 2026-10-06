@@ -57,7 +57,7 @@ function Footer() {
           <div className="foot-brand">
             <Lockup />
             <span className="label">Быстрые знания / Большие возможности</span>
-            <p>Демо-версия. Уроки сокращены, прогресс хранится только в вашем браузере.</p>
+            <p>Демо-версия. Большинство уроков сокращены, прогресс хранится только в вашем браузере.</p>
           </div>
           <nav className="foot-col" aria-label="Платформа">
             <span className="label">Платформа</span>

@@ -19,8 +19,10 @@ export const TOPICS = [
     desc: 'Почему планы срываются и как устроить привычку так, чтобы она держалась без усилия воли.' },
   { g: 'human', slug: 'peregovory', title: 'Переговоры', hook: 'Договариваться без проигравших', icon: 'handshake',
     desc: 'Подготовка, интересы сторон, альтернативы. Основа, с которой проще говорить о зарплате, сроках и цене.' },
-  { g: 'human', slug: 'emocionalnyj-intellekt', title: 'Эмоциональный интеллект', hook: 'Управлять эмоциями, а не наоборот', icon: 'heart-pulse' },
-  { g: 'human', slug: 'kak-uchitsya', title: 'Как учиться', hook: 'Запоминать быстрее, забывать меньше', icon: 'graduation-cap' },
+  { g: 'human', slug: 'emocionalnyj-intellekt', title: 'Эмоциональный интеллект', hook: 'Управлять эмоциями, а не наоборот', icon: 'heart-pulse',
+    desc: 'Замечать и называть свои эмоции, выдерживать паузу, понимать других. Навыки, от которых зависят и работа, и близкие отношения.' },
+  { g: 'human', slug: 'kak-uchitsya', title: 'Как учиться', hook: 'Запоминать быстрее, забывать меньше', icon: 'graduation-cap',
+    desc: 'Как устроены память и забывание и какие приёмы учёбы подтверждаются исследованиями, а какие только кажутся полезными.' },
 
   // Деньги и карьера
   { g: 'money', slug: 'lichnye-finansy', title: 'Личные финансы', hook: 'Бюджет, подушка, цели без стресса', icon: 'wallet',
@@ -29,46 +31,65 @@ export const TOPICS = [
     desc: 'Как показать опыт в резюме, отвечать на собеседовании и готовиться к разговору о следующем шаге.' },
   { g: 'money', slug: 'produktivnost', title: 'Продуктивность', hook: 'Успевать главное', icon: 'timer',
     desc: 'Приоритеты, концентрация, планирование. Приёмы, которые помещаются в обычный рабочий день.' },
-  { g: 'money', slug: 'investicii', title: 'Инвестиции', hook: 'Основы без жаргона', icon: 'trending-up' },
-  { g: 'money', slug: 'liderstvo', title: 'Лидерство', hook: 'Вести людей, а не командовать', icon: 'flag' },
-  { g: 'money', slug: 'marketing', title: 'Маркетинг', hook: 'Как продукт находит своих людей', icon: 'megaphone' },
-  { g: 'money', slug: 'prodazhi', title: 'Продажи', hook: 'Убеждать, не давя', icon: 'tag' },
-  { g: 'money', slug: 'predprinimatelstvo', title: 'Предпринимательство', hook: 'От идеи до первых клиентов', icon: 'rocket' },
+  { g: 'money', slug: 'investicii', title: 'Инвестиции', hook: 'Основы без жаргона', icon: 'trending-up',
+    desc: 'Как растут вложения и чем за доходность приходится платить. Принципы без советов, что покупать.' },
+  { g: 'money', slug: 'liderstvo', title: 'Лидерство', hook: 'Вести людей, а не командовать', icon: 'flag',
+    desc: 'Ставить задачи, делегировать и доверять. Для тех, кто недавно стал руководителем или готовится им стать.' },
+  { g: 'money', slug: 'marketing', title: 'Маркетинг', hook: 'Как продукт находит своих людей', icon: 'megaphone',
+    desc: 'Кто ваш клиент, чем вы для него отличаетесь и как это коротко объяснить. Основа до рекламы и каналов.' },
+  { g: 'money', slug: 'prodazhi', title: 'Продажи', hook: 'Убеждать, не давя', icon: 'tag',
+    desc: 'Как устроен разговор с клиентом и почему выгоды убеждают лучше характеристик. Без давления и уловок.' },
+  { g: 'money', slug: 'predprinimatelstvo', title: 'Предпринимательство', hook: 'От идеи до первых клиентов', icon: 'rocket',
+    desc: 'Как найти проблему, за решение которой платят, и проверить идею до того, как потратить на неё месяцы.' },
 
   // Технологии и ИИ
   { g: 'tech', slug: 'iskusstvennyj-intellekt', title: 'Искусственный интеллект', hook: 'Работа с нейросетями без магии', icon: 'bot',
     desc: 'Как ставить задачи языковым моделям и проверять их ответы. Практика для тех, кто не программирует.' },
-  { g: 'tech', slug: 'dannye-i-analitika', title: 'Данные и аналитика', hook: 'Находить ответы в цифрах', icon: 'chart-line' },
-  { g: 'tech', slug: 'programmirovanie', title: 'Программирование', hook: 'Основы и практика', icon: 'code' },
-  { g: 'tech', slug: 'kiberbezopasnost', title: 'Кибербезопасность', hook: 'Защитить себя и свои данные', icon: 'shield-check' },
-  { g: 'tech', slug: 'dizajn-i-ux', title: 'Дизайн и UX', hook: 'Как делают удобное и красивое', icon: 'pen-tool' },
+  { g: 'tech', slug: 'dannye-i-analitika', title: 'Данные и аналитика', hook: 'Находить ответы в цифрах', icon: 'chart-line',
+    desc: 'Читать цифры и графики так, чтобы они отвечали на вопрос, а не вводили в заблуждение.' },
+  { g: 'tech', slug: 'programmirovanie', title: 'Программирование', hook: 'Основы и практика', icon: 'code',
+    desc: 'Как объяснить задачу компьютеру и написать первые строки кода. Для тех, кто никогда не программировал.' },
+  { g: 'tech', slug: 'kiberbezopasnost', title: 'Кибербезопасность', hook: 'Защитить себя и свои данные', icon: 'shield-check',
+    desc: 'Пароли, поддельные письма, защита аккаунтов. Привычки, которые закрывают большинство бытовых угроз.' },
+  { g: 'tech', slug: 'dizajn-i-ux', title: 'Дизайн и UX', hook: 'Как делают удобное и красивое', icon: 'pen-tool',
+    desc: 'Почему одни экраны и страницы понятны сразу, а другие нет. Принципы, полезные и недизайнерам.' },
 
   // Тело и энергия
   { g: 'body', slug: 'son-i-vosstanovlenie', title: 'Сон и восстановление', hook: 'Высыпаться и держать энергию', icon: 'moon',
     desc: 'Режим, свет, вечерние привычки. Что влияет на сон на самом деле и с чего начать.' },
   { g: 'body', slug: 'stress-i-energiya', title: 'Стресс и энергия', hook: 'Не выгорать и восстанавливаться', icon: 'battery-charging',
     desc: 'Как работает стресс, когда он полезен и какие короткие приёмы помогают вернуть спокойствие.' },
-  { g: 'body', slug: 'pitanie', title: 'Питание', hook: 'Что и зачем мы едим', icon: 'apple' },
-  { g: 'body', slug: 'sport-i-dvizhenie', title: 'Спорт и движение', hook: 'Тренироваться с умом', icon: 'dumbbell' },
+  { g: 'body', slug: 'pitanie', title: 'Питание', hook: 'Что и зачем мы едим', icon: 'apple',
+    desc: 'Из чего состоит еда и как собрать обычный приём пищи. Общие принципы без диет и подсчёта калорий.' },
+  { g: 'body', slug: 'sport-i-dvizhenie', title: 'Спорт и движение', hook: 'Тренироваться с умом', icon: 'dumbbell',
+    desc: 'Сколько движения нужно взрослому и зачем всем силовая нагрузка. Основа, с которой можно начать с нуля.' },
 
   // Мир и идеи
   { g: 'world', slug: 'vystupleniya-i-teksty', title: 'Выступления и тексты', hook: 'Говорить и писать ясно', icon: 'mic',
     desc: 'Структура выступления и редактура рабочих писем. Чтобы вас понимали с первого раза.' },
-  { g: 'world', slug: 'istoriya', title: 'История', hook: 'Как прошлое объясняет сегодня', icon: 'landmark' },
-  { g: 'world', slug: 'filosofiya', title: 'Философия', hook: 'Большие вопросы за 30 минут', icon: 'compass' },
-  { g: 'world', slug: 'ekonomika', title: 'Экономика простыми словами', hook: 'Почему всё стоит столько, сколько стоит', icon: 'coins' },
-  { g: 'world', slug: 'pravo-na-kazhdyj-den', title: 'Право на каждый день', hook: 'Ваши права и как их использовать', icon: 'scale' },
-  { g: 'world', slug: 'kosmos-i-fizika', title: 'Космос и физика', hook: 'Как устроен мир на больших и малых масштабах', icon: 'orbit' },
-  { g: 'world', slug: 'nejronauka', title: 'Нейронаука', hook: 'Как работает мозг', icon: 'microscope' },
-  { g: 'world', slug: 'anglijskij-yazyk', title: 'Английский язык', hook: 'Говорить увереннее', icon: 'languages' },
-  { g: 'world', slug: 'kino-knigi-iskusstvo', title: 'Кино, книги, искусство', hook: 'Смотреть и читать глубже', icon: 'film' },
+  { g: 'world', slug: 'istoriya', title: 'История', hook: 'Как прошлое объясняет сегодня', icon: 'landmark',
+    desc: 'Откуда историки знают о прошлом и как большие перемены устроены изнутри.' },
+  { g: 'world', slug: 'filosofiya', title: 'Философия', hook: 'Большие вопросы за 30 минут', icon: 'compass',
+    desc: 'Старые идеи о том, как жить и как поступать, и что из них работает сегодня.' },
+  { g: 'world', slug: 'ekonomika', title: 'Экономика простыми словами', hook: 'Почему всё стоит столько, сколько стоит', icon: 'coins',
+    desc: 'Откуда берутся цены и почему деньги дешевеют. Экономика на бытовых примерах, без формул.' },
+  { g: 'world', slug: 'pravo-na-kazhdyj-den', title: 'Право на каждый день', hook: 'Ваши права и как их использовать', icon: 'scale',
+    desc: 'Как читать договоры и письменно отстаивать свои требования. Общие навыки: сроки и нормы зависят от страны.' },
+  { g: 'world', slug: 'kosmos-i-fizika', title: 'Космос и физика', hook: 'Как устроен мир на больших и малых масштабах', icon: 'orbit',
+    desc: 'Расстояния, время, тяготение. Большие идеи физики на понятных сравнениях.' },
+  { g: 'world', slug: 'nejronauka', title: 'Нейронаука', hook: 'Как работает мозг', icon: 'microscope',
+    desc: 'Как клетки мозга передают сигналы и какие популярные утверждения о мозге не подтверждаются.' },
+  { g: 'world', slug: 'anglijskij-yazyk', title: 'Английский язык', hook: 'Говорить увереннее', icon: 'languages',
+    desc: 'Готовые фразы и структуры для разговора и переписки. Для тех, кто знает базу, но теряется на практике.' },
+  { g: 'world', slug: 'kino-knigi-iskusstvo', title: 'Кино, книги, искусство', hook: 'Смотреть и читать глубже', icon: 'film',
+    desc: 'Как устроены фильм и картина и на что смотреть, чтобы видеть больше.' },
 ];
 
-/* Порядок показа тем на лендинге и в чипах каталога */
+/* Первые темы на лендинге и в чипах каталога: по две-три из каждого раздела. Остальные идут в порядке списка выше */
 export const TOPIC_ORDER = [
   'psihologiya', 'lichnye-finansy', 'iskusstvennyj-intellekt', 'son-i-vosstanovlenie',
-  'otnosheniya-i-obshchenie', 'produktivnost', 'kariera-i-najm', 'myshlenie-i-resheniya',
-  'privychki-i-motivaciya', 'peregovory', 'stress-i-energiya', 'vystupleniya-i-teksty',
+  'anglijskij-yazyk', 'investicii', 'programmirovanie', 'otnosheniya-i-obshchenie',
+  'pitanie', 'filosofiya', 'kariera-i-najm', 'kiberbezopasnost',
 ];
 
 /* Шесть блоков урока: сумма минут = 30 */
@@ -77,9 +98,9 @@ export const BLOCKS = [
   { kind: 'idea',     label: 'Идея',            min: 8, hint: 'Ядро знания: модель или правило' },
   { kind: 'example',  label: 'Пример',          min: 7, hint: 'Разбор реального случая' },
   { kind: 'practice', label: 'Практика',        min: 8, hint: 'Применение к своей ситуации' },
-  { kind: 'check',    label: 'Проверка',        min: 4, hint: 'Три вопроса на закрепление' },
+  { kind: 'check',    label: 'Проверка',        min: 4, hint: 'Вопросы на закрепление' },
   { kind: 'key',      label: 'Ключевое знание', min: 1, hint: 'Карточка: что применить сегодня' },
 ];
 export const FORMAT = { theory: 'Теория', practice: 'Практика', case: 'Кейс' };
 export const LEVEL = { 1: 'Начальный', 2: 'Средний', 3: 'Продвинутый' };
-export const DISCLAIMER = 'Образовательный материал, не консультация. Если вопрос касается здоровья или денег, решение принимайте вместе со специалистом.';
+export const DISCLAIMER = 'Образовательный материал, не консультация. Если вопрос касается здоровья, денег или права, решение принимайте вместе со специалистом.';
