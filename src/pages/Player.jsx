@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { BLOCKS, COURSE_BY, DISCLAIMER, REC_ORDER, TOPIC_BY, VERSION, about, coursesOf, lesson, minutes } from '../data';
+import { BLOCKS, COURSE_BY, DISCLAIMER, REC_ORDER, TOPIC_BY, VERSION, about, coursesOf, isCommunity, lesson, minutes } from '../data';
 import { useFull } from '../data/full-loader.js';
 import { useStore, getState, update, ensureProgress, newProgress, today, status, statusOf, activeVersion, pkey, leftLabel, streak, plural } from '../lib/store.js';
 import { useUI, useTitle, DialogHead } from '../lib/ui.jsx';
@@ -12,6 +12,10 @@ import { CountUp, XpBar } from '../components/GameUI.jsx';
 import { REVIEW, trainerFor } from '../data/trainers.js';
 import { REVIEW_MIN, XP, lessonXp, reviewPool, rightOf, xpOf } from '../lib/game.js';
 import { celebrate, sparkFrom } from '../lib/fx.js';
+import { CLOUD } from '../config.js';
+import { useAuth } from '../lib/cloud.js';
+import { settleCredits, useCommunityLesson } from '../lib/community.js';
+import { LessonWait } from '../components/Community.jsx';
 import NotFound from './NotFound.jsx';
 
 /* ---------- переходы между блоками ---------- */
@@ -26,6 +30,7 @@ function goNext(slug, c) {
       if (!p.completed) p.completed = Date.now();
       // лучший результат проверки остаётся за уроком и при повторном прохождении
       p.right = Math.max(p.right || 0, c.check.filter((q, k) => p.answers[k] === q.correct).length);
+      if (c.community) p.checks = c.check.length;     // число вопросов: по нему считается «без ошибок», когда текст урока не загружен
       p.finishedAt = Date.now();
     } else p.block = i + 1;
   });
@@ -254,6 +259,11 @@ function Done({ course: c, pk, version, p, hRef }) {
   const trainer = trainerFor(c.slug) || (reviewPool(s).length >= REVIEW_MIN ? REVIEW : null);
   // искры только в момент завершения, а не при каждом возвращении на этот экран
   useEffect(() => { if (Date.now() - (p.finishedAt || 0) < 4000) celebrate(); }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+  // авторский урок: автору начисляются его искры — за прохождение и отдельно за оценку «полезно».
+  // Нужен вход: без него неясно, за кого начислять. Повторный вызов ничего не добавляет (см. complete_lesson в базе)
+  const account = useAuth();
+  const uid = CLOUD && account.user ? account.user.id : null;
+  useEffect(() => { if (c.community && uid) settleCredits(); }, [c.community, uid, p.useful]);
   return (
     <div className="done-wrap">
       <div className="flash" aria-hidden="true">
@@ -289,6 +299,14 @@ function Done({ course: c, pk, version, p, hRef }) {
         </div>
         <p className="saved" aria-live="polite">{p.useful ? 'Спасибо, оценка сохранена.' : ''}</p>
       </div>
+      {c.community && (
+        <div className="deeper" id="done-author">
+          <div><b>Урок написал участник NowNow: {c.author.name}</b><span>{uid
+            ? 'Автор получает искры за каждого читателя, который прошёл урок, и ещё немного, если урок отмечен полезным.'
+            : 'Автор получает искры, когда урок проходят читатели, вошедшие в учётную запись. Войдите, и ваше прохождение тоже будет учтено.'}</span></div>
+          {!uid && CLOUD && <Link className="btn btn-secondary" to="/login">Войти</Link>}
+        </div>
+      )}
       {deeper && (
         <div className="deeper">
           <div><b>Хотите разобраться глубже?</b><span>У этого урока есть полная версия: подробный разбор, рабочий лист и больше вопросов.</span></div>
@@ -461,7 +479,10 @@ function PlayerEntry({ course, asked }) {
 
 export default function Player() {
   const { slug, version } = useParams();
+  // авторский урок скачивается из базы при открытии
+  const state = useCommunityLesson(slug);
   const course = COURSE_BY[slug];
+  if (!course && isCommunity(slug)) return <LessonWait slug={slug} state={state} player />;
   const known = !version || version === 'short' || (version === 'full' && Boolean(course && course.full));
   return course && known ? <PlayerEntry course={course} asked={version} key={`${slug}/${version || ''}`} /> : <NotFound />;
 }

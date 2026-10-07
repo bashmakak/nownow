@@ -123,6 +123,16 @@ test('мини-игры: результат в своих единицах бе�
   assert.equal(merge(r, l, null).game.best['g-schulte'].raw, 30.1);
 });
 
+test('авторский урок: отметка о начислении искр и число вопросов не теряются', () => {
+  const done = { touched: 10, completed: 10, finished: true, right: 3, checks: 3, credited: 2, useful: 'yes' };
+  const again = { touched: 20, completed: null, finished: false, right: 1 };      // на другом устройстве урок начали заново
+  const m = merge(st({ courses: { 'u-abc': again } }), st({ courses: { 'u-abc': done } }), null).courses['u-abc'];
+  assert.equal(m.credited, 2);
+  assert.equal(m.checks, 3);
+  assert.equal(m.right, 3);
+  assert.equal(m.completed, 10);
+});
+
 test('неполные данные из облака не ломают слияние', () => {
   const m = merge(st({ bookmarks: ['a'] }), { bookmarks: ['b'] }, null);
   assert.deepEqual([...m.bookmarks].sort(), ['a', 'b']);

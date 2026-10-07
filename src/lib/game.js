@@ -1,4 +1,4 @@
-import { COURSES, COURSE_BY, TOPIC_BY, coursesOf, isPublic } from '../data';
+import { COURSES, COURSE_BY, TOPIC_BY, coursesOf, isCommunity, isPublic } from '../data';
 import { TRAINERS, TRAINER_BY, REVIEW, ROUND } from '../data/trainers.js';
 import { GAMES, GAME_BY, SKILLS, isGame, skillKey } from '../data/brain.js';
 import { update, splitKey, streak, dayKey, today, ensureProgress, status } from './store.js';
@@ -20,6 +20,8 @@ const playsOf = p => Object.values((p && p.play) || {}).filter(x => x && x.done)
 /* Сколько опыта принёс один урок в одной версии */
 export function lessonXp(s, key) {
   const p = s.courses[key], [slug, v] = splitKey(key), c = COURSE_BY[slug];
+  // авторский урок: его текст скачивается отдельно, поэтому опыт считаем по тому, что записано в прогрессе
+  if (p && isCommunity(slug)) return p.completed ? XP.short + (p.right || 0) * XP.answer : 0;
   if (!p || !c) return 0;
   return playsOf(p) * XP.play + (p.completed ? XP[v] + rightOf(c, v, p) * XP.answer : 0);
 }
@@ -37,17 +39,18 @@ export const boltsFor = (right, total) => (!total ? 0 : right >= total ? 3 : rig
 
 /* ---------- сводка для достижений ---------- */
 export function stats(s) {
-  const all = Object.keys(s.courses).filter(k => COURSE_BY[splitKey(k)[0]]);
+  const all = Object.keys(s.courses).filter(k => COURSE_BY[splitKey(k)[0]] || isCommunity(splitKey(k)[0]));
   const done = all.filter(k => s.courses[k].completed);
   const slugs = [...new Set(done.map(k => splitKey(k)[0]))];
+  const known = slugs.filter(x => COURSE_BY[x] && !isCommunity(x));     // уроки редакции: у них известны тема и вопросы
   const ai = coursesOf(AI_TOPIC);
   const best = (s.game && s.game.best) || {};
   return {
     lessons: slugs.length,
     slugs,
     fulls: done.filter(k => splitKey(k)[1] === 'full').length,
-    perfect: done.some(k => { const [slug, v] = splitKey(k), c = COURSE_BY[slug]; return rightOf(c, v, s.courses[k]) >= totalOf(c, v); }) ? 1 : 0,
-    groups: new Set(slugs.map(x => TOPIC_BY[COURSE_BY[x].topic].g)).size,
+    perfect: done.some(k => { const [slug, v] = splitKey(k), c = COURSE_BY[slug], p = s.courses[k]; return isCommunity(slug) ? (p.right || 0) >= (p.checks || 3) : rightOf(c, v, p) >= totalOf(c, v); }) ? 1 : 0,
+    groups: new Set(known.map(x => TOPIC_BY[COURSE_BY[x].topic].g)).size,
     ai: ai.filter(c => slugs.includes(c.slug)).length,
     aiTotal: ai.length,
     plays: all.reduce((n, k) => n + playsOf(s.courses[k]), 0),
@@ -106,7 +109,7 @@ export function shuffle(list, rnd = Math.random) {
 /* ---------- тренажёры ---------- */
 /* Вопросы для повторения: проверки уроков, которые человек прошёл в любой версии */
 export function reviewPool(s) {
-  return stats(s).slugs.flatMap(slug => COURSE_BY[slug].check.map(q => ({ ...q, from: COURSE_BY[slug].title, slug })));
+  return stats(s).slugs.filter(slug => COURSE_BY[slug] && !isCommunity(slug)).flatMap(slug => COURSE_BY[slug].check.map(q => ({ ...q, from: COURSE_BY[slug].title, slug })));
 }
 export const REVIEW_MIN = 3;
 

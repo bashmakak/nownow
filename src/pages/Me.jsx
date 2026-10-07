@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BLOCKS, COURSE_BY, TOPIC_BY, VERSION, WITH_FULL, about } from '../data';
+import { BLOCKS, COURSE_BY, TOPIC_BY, VERSION, WITH_FULL, about, isCommunity } from '../data';
 import { useStore, update, statusOf, splitKey, setVersion, streak, dayKey, activeDay, plural, resetAll, applyTheme } from '../lib/store.js';
 import { useUI, useTitle } from '../lib/ui.jsx';
 import { Icon } from '../components/Icon.jsx';
@@ -14,6 +14,7 @@ import { CLOUD } from '../config.js';
 import { useAuth } from '../lib/cloud.js';
 import { AccountPanel, downloadMyData } from '../components/Account.jsx';
 import { InterestsPanel } from '../components/Interests.jsx';
+import { loadMine, settleCredits, useCommunityTick } from '../lib/community.js';
 
 function Calendar({ activity }) {
   const now = new Date(), dow = (now.getDay() + 6) % 7;
@@ -38,6 +39,11 @@ export default function Me() {
   const account = useAuth();
   const signedIn = CLOUD && Boolean(account.user);
   const [ask, setAsk] = useState(false);
+  // авторские уроки, которые человек начинал или добавил в закладки, скачиваются из базы; заодно доводим начисления их авторам
+  useCommunityTick();
+  const uid = signedIn ? account.user.id : null;
+  const theirs = [...Object.keys(s.courses), ...s.bookmarks].filter(isCommunity).join(' ');
+  useEffect(() => { if (theirs) loadMine().then(settleCredits); }, [uid, theirs]);
   // ключ прогресса — это урок и его версия; of(k) разбирает ключ
   const of = k => { const [slug, v] = splitKey(k), c = COURSE_BY[slug]; return { slug, v, c, A: about(c, v), tail: c.full ? ` · ${VERSION[v].toLowerCase()} версия` : '' }; };
   const all = Object.keys(s.courses).filter(k => COURSE_BY[splitKey(k)[0]]);
@@ -198,6 +204,16 @@ export default function Me() {
           <h2 className="h3" style={{ marginBottom: 18 }}>Интересы</h2>
           <InterestsPanel />
         </div>
+
+        {CLOUD && (
+          <div className="group" id="me-studio">
+            <h2 className="h3" style={{ marginBottom: 18 }}>Авторам</h2>
+            <div className="panel" style={{ maxWidth: 640 }}>
+              <p className="muted">Знаете тему, которую можно объяснить за пять минут? Напишите урок в мастерской. После проверки модератором он появится в каталоге под вашим именем автора, а за читателей начисляются искры — внутренние очки сайта.</p>
+              <div className="row"><Link className="btn btn-secondary" to="/studio"><Icon name="pen-line" size={17} />Открыть мастерскую</Link><Link className="btn btn-ghost" to="/courses?by=authors">Уроки авторов</Link></div>
+            </div>
+          </div>
+        )}
 
         {CLOUD && (
           <div className="group" id="me-account">

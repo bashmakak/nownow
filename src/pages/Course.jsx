@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { BLOCKS, COURSE_BY, DISCLAIMER, FORMAT, LEVEL, REC_ORDER, TOPIC_BY, VERSION, about, coursesOf, minutes } from '../data';
+import { BLOCKS, COURSE_BY, DISCLAIMER, FORMAT, LEVEL, REC_ORDER, TOPIC_BY, VERSION, about, coursesOf, isCommunity, minutes } from '../data';
 import { loadFull } from '../data/full-loader.js';
 import { useStore, pkey, statusOf, activeVersion, remainingSec, leftLabel, restartCourse, setVersion, nMin, aboutMin, plural } from '../lib/store.js';
 import { useTitle } from '../lib/ui.jsx';
 import { Icon } from '../components/Icon.jsx';
 import { BookmarkButton, CourseCard, Cover, Crumbs, KeyCard } from '../components/Cards.jsx';
+import { AuthorBox, LessonWait } from '../components/Community.jsx';
+import { useCommunityLesson } from '../lib/community.js';
 import NotFound from './NotFound.jsx';
 
 const learnPath = (slug, v) => `/learn/${slug}/${v}`;
@@ -75,21 +77,24 @@ function CourseBody({ course: c }) {
     <section className="page">
       <div className="wrap">
         <header className="page-head">
-          <Crumbs items={[['Каталог', '/courses'], [t.title, `/topics/${t.slug}`], [c.title]]} />
+          <Crumbs items={[['Каталог', c.community ? '/courses?by=authors' : '/courses'], [t.title, `/topics/${t.slug}`], [c.title]]} />
           <h1 className="h1" style={{ maxWidth: '22ch' }}>{c.title}</h1>
           <p className="lead">{c.summary}</p>
           <div className="course-meta">
             <span id="course-time"><Icon name="clock" size={16} />{nMin(T.min)}</span>
             <span><Icon name="layout-grid" size={16} />{FORMAT[c.format]}</span>
             <span><Icon name="trending-up" size={16} />{LEVEL[c.level]} уровень</span>
+            {c.community && <span id="course-author"><Icon name="pen-line" size={16} />{c.author.name}</span>}
             {passed && <span className="badge"><Icon name="check" size={13} />Пройден</span>}
           </div>
-          <VersionPicker course={c} value={v} onChange={pick} />
+          {/* у авторского урока одна версия: выбирать нечего */}
+          {c.community ? <p className="ver-note">{contents(T)}</p> : <VersionPicker course={c} value={v} onChange={pick} />}
           <div className="row" style={{ marginTop: 4 }}><Cta course={c} version={v} big /><BookmarkButton slug={c.slug} inline /></div>
         </header>
         <div className="course-grid">
           <div className="course-main">
             {c.disclaimer && <div className="note-box"><Icon name="info" size={20} /><p>{DISCLAIMER}</p></div>}
+            {c.community && <AuthorBox course={c} />}
             <div className="blk">
               <h2 className="h3">Что вы узнаете</h2>
               <ul className="outcomes">{c.outcomes.map(o => <li key={o}><Icon name="check" size={20} /><span>{o}</span></li>)}</ul>
@@ -121,13 +126,13 @@ function CourseBody({ course: c }) {
               <Cta course={c} version={v} />
               <dl className="facts">
                 <div><dt>Время</dt><dd>{aboutMin(T.min)}</dd></div>
-                <div><dt>Версия</dt><dd>{VERSION[v]}</dd></div>
+                {!c.community && <div><dt>Версия</dt><dd>{VERSION[v]}</dd></div>}
                 <div><dt>Блоков</dt><dd>6</dd></div>
                 {T.plays > 0 && <div><dt>Заданий</dt><dd>{T.plays}</dd></div>}
                 <div><dt>Формат</dt><dd>{FORMAT[c.format]}</dd></div>
                 <div><dt>Уровень</dt><dd>{LEVEL[c.level]}</dd></div>
                 <div><dt>Тема</dt><dd><Link to={`/topics/${t.slug}`}>{t.title}</Link></dd></div>
-                <div><dt>Автор</dt><dd>Редакция NowNow</dd></div>
+                <div><dt>Автор</dt><dd>{c.community ? c.author.name : 'Редакция NowNow'}</dd></div>
               </dl>
             </div>
           </aside>
@@ -143,6 +148,9 @@ function CourseBody({ course: c }) {
 
 export default function Course() {
   const { slug } = useParams();
+  // авторский урок скачивается из базы при открытии; уроки редакции уже на месте
+  const state = useCommunityLesson(slug);
   const course = COURSE_BY[slug];
-  return course ? <CourseBody course={course} key={slug} /> : <NotFound />;
+  if (course) return <CourseBody course={course} key={slug} />;
+  return isCommunity(slug) ? <LessonWait slug={slug} state={state} /> : <NotFound />;
 }

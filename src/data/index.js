@@ -40,6 +40,9 @@ export const lesson = (x, v) => {
 
 export const TOPIC_BY = Object.fromEntries(TOPICS.map(t => [t.slug, t]));
 export const COURSE_BY = Object.fromEntries(COURSES.map(x => [x.slug, x]));
+/* Авторские уроки приходят из базы уже после запуска сайта и добавляются сюда (см. lib/community.js).
+   Их slug начинается с «u-». В COURSES, в порядок каталога и в темы они не попадают: у них свой раздел. */
+export const isCommunity = slug => typeof slug === 'string' && slug.startsWith('u-');
 
 /* Маршрут по теме: порядок, в котором уроки лучше проходить. Темы без маршрута показывают уроки в порядке добавления */
 export const PATHS = {
@@ -66,6 +69,7 @@ export const START_COURSE = 'psihologiya-prinyatiya-reshenij';
    Сервера и статистики прохождений у сайта нет, поэтому время считается по тексту (см. timing.js).
    Когда появятся данные о реальных прохождениях, среднее по ним должно заменить эту оценку. */
 const shortInfo = new Map();
+export function registerCourse(c) { COURSE_BY[c.slug] = c; shortInfo.delete(c.slug); }
 /* Сводка версии: blocks и total в секундах, min, titles, checks, thinks, sheet, key */
 export function about(x, v = 'short') {
   if (v === 'full' && x.full) return x.full;

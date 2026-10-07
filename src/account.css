@@ -84,6 +84,7 @@
 .legal-body p,.legal-body li{max-width:74ch;color:var(--text-2)}
 .legal-body b{color:var(--text);font-weight:600}
 .legal-body ul{list-style:disc;padding-left:22px;display:grid;gap:7px}
+.legal-body ol{list-style:decimal;padding-left:22px;display:grid;gap:7px;margin-top:12px}
 .legal-body li::marker{color:var(--text-3)}
 .ltable-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--r-md)}
 .ltable{width:100%;border-collapse:collapse;font-size:14.5px;line-height:1.5}

@@ -13,7 +13,7 @@ import { AccountLink, AuthNotice, ConsentBar } from './Account.jsx';
 import { useAuth } from '../lib/cloud.js';
 
 function MobileMenu() {
-  const links = [['/courses', 'Каталог'], ['/topics', 'Темы'], ['/train', 'Тренажёры'], ['/me', 'Кабинет'], ['/about', 'О платформе']];
+  const links = [['/courses', 'Каталог'], ['/topics', 'Темы'], ['/train', 'Тренажёры'], ['/me', 'Кабинет'], ...(CLOUD ? [['/studio', 'Мастерская автора']] : []), ['/about', 'О платформе']];
   return (
     <div className="dlg">
       <DialogHead title="Меню" />
@@ -79,7 +79,7 @@ function Footer() {
           </div>
           <nav className="foot-col" aria-label="Платформа">
             <span className="label">Платформа</span>
-            <Link to="/courses">Каталог</Link><Link to="/topics">Темы</Link><Link to="/train">Тренажёры</Link><Link to="/me">Кабинет</Link><Link to="/about">О платформе</Link>
+            <Link to="/courses">Каталог</Link><Link to="/topics">Темы</Link><Link to="/train">Тренажёры</Link><Link to="/me">Кабинет</Link>{CLOUD && <Link to="/studio">Мастерская автора</Link>}<Link to="/about">О платформе</Link>
           </nav>
           <nav className="foot-col" aria-label="Темы">
             <span className="label">Темы</span>

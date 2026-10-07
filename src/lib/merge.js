@@ -54,6 +54,9 @@ function mergeCourse(l, r) {
   Object.entries(a.play || {}).forEach(([k, v]) => { const w = play[k]; play[k] = w ? { done: Boolean(v.done || w.done), right: Math.max(num(v.right), num(w.right)), total: Math.max(num(v.total), num(w.total)) } : v; });
   if (Object.keys(play).length) out.play = play;
   if (a.useful == null && o.useful != null) out.useful = o.useful;
+  // авторские уроки: число вопросов и отметка о том, что автору уже начислены искры
+  if (a.checks == null && o.checks != null) out.checks = o.checks;
+  if (a.credited || o.credited) out.credited = Math.max(num(a.credited), num(o.credited));
   return out;
 }
 

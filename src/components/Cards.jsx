@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { TOPIC_BY, VERSION, about, coursesOf, metaLine, minutes, timing } from '../data';
+import { FORMAT, LEVEL, TOPIC_BY, VERSION, about, coursesOf, metaLine, minutes, timing } from '../data';
 import { useStore, status, activeVersion, remainingSec, leftLabel, toggleBookmark, setTheme, nCourses } from '../lib/store.js';
 import { useUI } from '../lib/ui.jsx';
 import { Icon } from './Icon.jsx';
@@ -68,6 +68,7 @@ export function CourseCard({ course }) {
           <span className="label">{TOPIC_BY[course.topic].title}</span>
           <h3 className="ccard-title">{course.title}</h3>
           <p className="ccard-meta">{metaLine(course, v)}</p>
+          {course.community && <p className="ccard-by"><Icon name="pen-line" size={14} />{course.author.name}</p>}
           {(course.full || about(course).plays > 0) && (
             <div className="badges">
               {about(course).plays > 0 && <span className="badge badge-play"><Icon name="mouse-pointer-click" size={13} />Интерактив</span>}
@@ -79,6 +80,28 @@ export function CourseCard({ course }) {
         </div>
       </Link>
       <BookmarkButton slug={course.slug} />
+    </article>
+  );
+}
+
+/* Карточка авторского урока в каталоге. Текст урока ещё не загружен, поэтому время и сведения берутся из сводки (lib/community.js) */
+export function CommunityCard({ item }) {
+  const s = useStore();
+  const st = status(s, item.slug);
+  return (
+    <article className="ccard" data-community={item.slug}>
+      <Link className="ccard-link" to={`/courses/${item.slug}`}>
+        <Cover course={item} min={item.minutes} />
+        <div className="ccard-body">
+          <span className="label">{TOPIC_BY[item.topic].title}</span>
+          <h3 className="ccard-title">{item.title}</h3>
+          <p className="ccard-meta">{item.minutes} мин · {FORMAT[item.format]} · {LEVEL[item.level]}</p>
+          <p className="ccard-by"><Icon name="pen-line" size={14} />{item.author}{item.learners > 0 && <span> · прошли {item.learners}</span>}</p>
+          {st === 'progress' && <div><span className="badge badge-play">В процессе</span></div>}
+          {st === 'done' && <div><span className="badge"><Icon name="check" size={13} />Пройден</span></div>}
+        </div>
+      </Link>
+      <BookmarkButton slug={item.slug} />
     </article>
   );
 }

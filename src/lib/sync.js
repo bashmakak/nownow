@@ -173,15 +173,27 @@ export async function signOut(force = false) {
 /* Копия всех данных человека одним файлом */
 export async function exportData() {
   const a = getAuth().user;
-  let consent = null;
+  let consent = null, author = null;
   if (a) {
     try {
       const c = await client();
       const res = await c.from('profiles').select('terms_version,privacy_version,consent_at,created_at').eq('id', a.id).maybeSingle();
       consent = res.data || null;
+      // всё, что связано с авторскими уроками: профиль автора, уроки, искры, отметки о пройденных чужих уроках, жалобы
+      const [profile, lessons, sparks, completed, reports] = await Promise.all([
+        c.from('authors').select('name,bio,created_at').eq('user_id', a.id).maybeSingle(),
+        c.from('lesson_drafts').select('id,status,note,data,created_at,updated_at,submitted_at,reviewed_at').eq('author_id', a.id),
+        c.from('ledger').select('amount,kind,lesson_id,created_at').eq('user_id', a.id),
+        c.from('completions').select('lesson_id,useful,created_at').eq('user_id', a.id),
+        c.from('reports').select('lesson_id,reason,resolved,created_at').eq('user_id', a.id),
+      ]);
+      const rows = r => (r && !r.error && r.data) || [];
+      if (profile.data || rows(completed).length || rows(reports).length) {
+        author = { profile: profile.data || null, lessons: rows(lessons), sparks: rows(sparks), completed_lessons: rows(completed), reports: rows(reports) };
+      }
     } catch { /* без сети выгрузим то, что есть в браузере */ }
   }
-  return { exported_at: new Date().toISOString(), account: a ? { email: a.email, id: a.id, created_at: a.createdAt } : null, consent, progress: synced(getState()) };
+  return { exported_at: new Date().toISOString(), account: a ? { email: a.email, id: a.id, created_at: a.createdAt } : null, consent, progress: synced(getState()), ...(author ? { author } : {}) };
 }
 
 /* Удаление учётной записи. Возвращает 'deleted' или 'requested'.
