@@ -1,28 +1,35 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { COURSE_BY, TOPIC_BY } from '../data';
+import { COURSE_BY, PUBLIC, TOPIC_BY } from '../data';
 import { ROUND, TRAINERS } from '../data/trainers.js';
+import { GAMES, SKILLS, gamesOf, isGame } from '../data/brain.js';
 import { useStore, getState, streak, plural } from '../lib/store.js';
 import { useTitle } from '../lib/ui.jsx';
-import { AI_TOPIC, REVIEW_MIN, SPEED_MS, XP, dailyPlan, makeRound, normalize, playedToday, points, recordRound, reviewPool, trainerOf, xpOf } from '../lib/game.js';
+import { AI_TOPIC, REVIEW_MIN, SPEED_MS, XP, dailyPlan, makeRound, myTopics, normalize, playedToday, points, poolSize, recordRound, topicQuizId, trainerOf, xpOf } from '../lib/game.js';
 import { celebrate, sparkFrom } from '../lib/fx.js';
 import { Icon } from '../components/Icon.jsx';
 import { Mark } from '../components/Brand.jsx';
 import { ChoiceView, Steps } from '../components/Play.jsx';
 import { Bolts, CountUp, DailyPanel, TrainerCard, XpBar } from '../components/GameUI.jsx';
+import { InterestsPrompt, useInterestsDialog } from '../components/Interests.jsx';
 import NotFound from './NotFound.jsx';
+
+// мини-игры скачиваются, когда человек открывает игру
+const GameRound = lazy(() => import('./Brain.jsx'));
 
 /* ---------- список тренажёров ---------- */
 export function Train() {
   useTitle('Тренажёры');
   const s = useStore();
   const st = streak(s);
+  const mine = myTopics(s);
+  const pickInterests = useInterestsDialog();
   return (
     <section className="page">
       <div className="wrap">
         <header className="page-head">
           <h1 className="h1">Тренажёры</h1>
-          <p className="lead">Раунд из {ROUND} заданий занимает около двух минут. За точность даются молнии, за каждый раунд — опыт. После раунда показан разбор ошибок.</p>
+          <p className="lead">Короткие раунды на каждый день: мини-игры на внимание, реакцию и память, вопросы по темам каталога и тренажёры по ИИ. За результат даются молнии, за раунд — опыт.</p>
         </header>
         <div className="train-top">
           <DailyPanel />
@@ -32,6 +39,31 @@ export function Train() {
             <Link className="more-link" to="/me">Достижения в кабинете <Icon name="arrow-right" size={16} /></Link>
           </div>
         </div>
+        <InterestsPrompt id="train-prompt" />
+
+        {mine.length > 0 && (
+          <div className="group" id="train-mine">
+            <div className="group-head">
+              <h2 className="h3">По вашим темам</h2>
+              <button type="button" className="more-link link-plain" onClick={pickInterests}>Изменить интересы <Icon name="sliders-horizontal" size={16} /></button>
+            </div>
+            <p className="muted" style={{ marginBottom: 18, maxWidth: '62ch' }}>Вопросы из уроков тем, которые вы отметили. Отвечать можно и до уроков: в разборе ошибок будет урок, из которого вопрос.</p>
+            <div className="tcards">{mine.map(slug => <TrainerCard id={topicQuizId(slug)} key={slug} />)}</div>
+          </div>
+        )}
+
+        <div className="group" id="train-brain">
+          <h2 className="h3" style={{ marginBottom: 6 }}>Мини-игры</h2>
+          <p className="muted" style={{ marginBottom: 6, maxWidth: '66ch' }}>{GAMES.length} игр на внимание, реакцию, память и счёт. Раунд длится от полуминуты до двух минут.</p>
+          <p className="muted brain-honest" style={{ marginBottom: 22, maxWidth: '66ch' }}>Игры тренируют то, что в них делаешь: искать глазами, отвечать быстро, удерживать в голове. Исследования не подтверждают, что от таких игр человек становится умнее в целом, поэтому здесь нет таких обещаний. Это разминка и повод не прерывать серию.</p>
+          {SKILLS.map(k => (
+            <div className="brain-skill" key={k.id} data-skill={k.id}>
+              <h3 className="h4"><Icon name={k.icon} size={18} />{k.title}<span>{k.hook}</span></h3>
+              <div className="tcards">{gamesOf(k.id).map(g => <TrainerCard id={g.id} key={g.id} />)}</div>
+            </div>
+          ))}
+        </div>
+
         <div className="group">
           <h2 className="h3" style={{ marginBottom: 6 }}>{TOPIC_BY[AI_TOPIC].title}</h2>
           <p className="muted" style={{ marginBottom: 18, maxWidth: '62ch' }}>Каждый тренажёр закрепляет один урок темы. Если раунд даётся тяжело, урок открывается по ссылке на карточке результата.</p>
@@ -42,8 +74,13 @@ export function Train() {
           <p className="muted" style={{ marginBottom: 18, maxWidth: '62ch' }}>Вопросы из уроков любых тем, которые вы уже прошли. Чем больше пройдено, тем разнообразнее раунд.</p>
           <div className="tcards"><TrainerCard id="review" /></div>
         </div>
+        <div className="group" id="train-topics">
+          <h2 className="h3" style={{ marginBottom: 6 }}>Вопросы по любой теме</h2>
+          <p className="muted" style={{ marginBottom: 18, maxWidth: '62ch' }}>Раунд из вопросов по урокам темы. Хороший способ понять, с чего в ней начать.</p>
+          <div className="chips">{PUBLIC.map(t => <Link className="chip" to={`/train/${topicQuizId(t.slug)}`} key={t.slug}><Icon name={t.icon} size={15} />{t.title}</Link>)}</div>
+        </div>
         <div className="group" style={{ maxWidth: 720 }}>
-          <h2 className="h3" style={{ marginBottom: 14 }}>Как считаются очки</h2>
+          <h2 className="h3" style={{ marginBottom: 14 }}>Как считаются очки в тренажёрах</h2>
           <ul className="rules">
             <li><b>100</b><span>за каждый верный ответ</span></li>
             <li><b>до 50</b><span>за скорость: чем быстрее ответ, тем больше</span></li>
@@ -81,7 +118,7 @@ function Round({ id, daily }) {
   let runLen = 0; for (let j = log.length - 1; j >= 0 && log[j].ok; j--) runLen++;
   const waiting = picked != null && !(log[i] && log[i].ok && cfg.type !== 'predict');   // ждём нажатия «Дальше»
   const best = s.game.best[id];
-  const pool = id === 'review' ? reviewPool(s).length : t.items.length;
+  const pool = poolSize(id, s);
   const locked = id === 'review' && pool < REVIEW_MIN;
 
   useEffect(() => () => clearTimeout(timer.current), []);
@@ -133,6 +170,7 @@ function Round({ id, daily }) {
   const plan = dailyPlan(s), played = playedToday(s), nextDaily = plan.find(x => !played.includes(x));
   const dailyAt = plan.indexOf(id);
   const lesson = t.lesson && COURSE_BY[t.lesson];
+  const quizTopic = t.kind === 'topic' ? TOPIC_BY[t.topicSlug] : null;
 
   return (
     <div className="player trainer" data-phase={phase}>
@@ -160,7 +198,9 @@ function Round({ id, daily }) {
           {phase === 'intro' && (
             <div className="pl-col tr-intro">
               <span className="tr-ic"><Icon name={t.icon} size={30} /></span>
-              {daily && dailyAt >= 0 && <p className="label pl-kicker">Тренировка дня · раунд {dailyAt + 1} из {plan.length}</p>}
+              {daily && dailyAt >= 0
+                ? <p className="label pl-kicker">Тренировка дня · раунд {dailyAt + 1} из {plan.length}</p>
+                : t.sub && <p className="label pl-kicker">{t.sub}</p>}
               <h1 className="h2" id="pl-h">{t.title}</h1>
               <p className="pl-intro">{t.hook}</p>
               {locked ? (
@@ -227,6 +267,7 @@ function Round({ id, daily }) {
                         <p className="tr-rv-q">{x.n.stim.replace('___', '…')}</p>
                         <p className="tr-rv-a"><span className="bad"><Icon name="x" size={14} />{x.n.options[x.picked]}</span><span className="ok"><Icon name="check" size={14} />{x.n.options[x.n.correct]}</span></p>
                         <p className="tr-rv-w">{x.n.why}</p>
+                        {x.n.slug && COURSE_BY[x.n.slug] && <p className="tr-rv-from">Урок: <Link to={`/courses/${x.n.slug}`}>{COURSE_BY[x.n.slug].title}</Link></p>}
                       </li>
                     ))}
                   </ul>
@@ -240,6 +281,7 @@ function Round({ id, daily }) {
                 <Link className="btn btn-ghost btn-lg" to="/train">К тренажёрам</Link>
               </div>
               {lesson && <p className="muted" style={{ fontSize: 15 }}>Материал этого тренажёра: урок <Link to={`/courses/${lesson.slug}`}>«{lesson.title}»</Link>.</p>}
+              {quizTopic && <p className="muted" style={{ fontSize: 15 }}>Все уроки темы: <Link to={`/topics/${quizTopic.slug}`}>«{quizTopic.title}»</Link>.</p>}
               <div style={{ width: '100%' }}><XpBar xp={xpOf(s)} /></div>
             </div>
           )}
@@ -253,5 +295,7 @@ export function Trainer() {
   const { id } = useParams();
   const [params] = useSearchParams();
   if (!trainerOf(id)) return <NotFound />;
-  return <Round id={id} daily={params.get('daily') === '1'} key={id} />;
+  const daily = params.get('daily') === '1';
+  if (isGame(id)) return <Suspense fallback={<div className="player trainer" aria-busy="true" />}><GameRound id={id} daily={daily} key={id} /></Suspense>;
+  return <Round id={id} daily={daily} key={id} />;
 }

@@ -1,5 +1,5 @@
 import {
-  Apple, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Award, BadgeCheck, BatteryCharging, Blocks, BookOpen, Bookmark,
+  Apple, ArrowDown, Calculator, CircleDot, Delete, Grid3x3, Hash, Palette, ArrowLeft, ArrowRight, ArrowUp, Award, BadgeCheck, BatteryCharging, Blocks, BookOpen, Bookmark,
   BookmarkCheck, Bot, Brain, Briefcase, CalendarCheck, ChartLine, Check, ChevronDown, ChevronRight, CircleCheck,
   Clock, Code, Coins, Compass, Crown, Dumbbell, Eye, EyeOff, Film, Flag, Flame, Gamepad2, Gauge, GraduationCap,
   Handshake, HeartPulse, History, Info, Keyboard, Landmark, Languages, Layers, LayoutGrid, Lightbulb, ListOrdered,
@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 
 const MAP = {
+  calculator: Calculator, 'circle-dot': CircleDot, delete: Delete, 'grid-3x3': Grid3x3, hash: Hash, palette: Palette,
   apple: Apple, 'arrow-down': ArrowDown, 'arrow-left': ArrowLeft, 'arrow-right': ArrowRight, 'arrow-up': ArrowUp,
   award: Award, 'badge-check': BadgeCheck, 'battery-charging': BatteryCharging, blocks: Blocks,
   'book-open': BookOpen, bookmark: Bookmark, 'bookmark-check': BookmarkCheck, bot: Bot, brain: Brain,

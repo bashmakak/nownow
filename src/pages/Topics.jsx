@@ -6,10 +6,13 @@ import { Icon } from '../components/Icon.jsx';
 import { CourseCard, Crumbs, TopicTile } from '../components/Cards.jsx';
 import { PathMap, TrainerCard } from '../components/GameUI.jsx';
 import { trainersOf } from '../data/trainers.js';
+import { useStore } from '../lib/store.js';
+import { myTopics, topicQuizId } from '../lib/game.js';
 import NotFound from './NotFound.jsx';
 
 export function Topics() {
   useTitle('Темы');
+  const mine = myTopics(useStore());
   return (
     <section className="page">
       <div className="wrap">
@@ -17,6 +20,12 @@ export function Topics() {
           <h1 className="h1">Темы</h1>
           <p className="lead">Выбирайте по тому, что интересно сейчас. В каждой открытой теме минимум два курса.</p>
         </header>
+        {mine.length > 0 && (
+          <div className="group" id="topics-mine">
+            <span className="label">Ваши темы</span>
+            <div className="tiles">{mine.map(slug => <TopicTile topic={TOPIC_BY[slug]} key={slug} />)}</div>
+          </div>
+        )}
         {GROUPS.map(g => {
           const list = PUBLIC.filter(t => t.g === g.id);
           return list.length ? (
@@ -68,13 +77,16 @@ function TopicBody({ topic }) {
           ))}
         </div>
         <div className="cards" data-rv-kids="">{shown.map(c => <CourseCard course={c} key={c.slug} />)}</div>
-        {trainers.length > 0 && (
+        {(
           <div className="group" id="topic-trainers">
             <div className="sec-head" style={{ marginBottom: 18 }}>
-              <div><h2 className="h3">Тренажёры по теме</h2><p className="muted" style={{ marginTop: 6, maxWidth: '60ch' }}>Короткие раунды на закрепление уроков: восемь заданий, очки и разбор ошибок.</p></div>
+              <div><h2 className="h3">{trainers.length ? 'Тренажёры по теме' : 'Проверьте себя'}</h2><p className="muted" style={{ marginTop: 6, maxWidth: '60ch' }}>{trainers.length ? 'Короткие раунды на закрепление уроков: вопросы по теме и тренажёры, очки и разбор ошибок в конце.' : 'Раунд из вопросов по урокам этой темы. Отвечать можно и до уроков: разбор ошибок подскажет, с чего начать.'}</p></div>
               <Link className="more-link" to="/train">Все тренажёры <Icon name="arrow-right" size={16} /></Link>
             </div>
-            <div className="tcards" data-rv-kids="">{trainers.map(t => <TrainerCard id={t.id} key={t.id} />)}</div>
+            <div className="tcards" data-rv-kids="">
+              <TrainerCard id={topicQuizId(topic.slug)} />
+              {trainers.map(t => <TrainerCard id={t.id} key={t.id} />)}
+            </div>
           </div>
         )}
         <div className="group">

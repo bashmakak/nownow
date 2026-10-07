@@ -8,10 +8,12 @@ import { Mark } from '../components/Brand.jsx';
 import { CourseCard, EmptyState, KeyCard, ProgressLine, ThemeControl } from '../components/Cards.jsx';
 import { Achievements, Bolts, XpBar, achievementCount } from '../components/GameUI.jsx';
 import { TRAINERS } from '../data/trainers.js';
+import { GAMES } from '../data/brain.js';
 import { dailyDone, xpOf } from '../lib/game.js';
 import { CLOUD } from '../config.js';
 import { useAuth } from '../lib/cloud.js';
 import { AccountPanel, downloadMyData } from '../components/Account.jsx';
+import { InterestsPanel } from '../components/Interests.jsx';
 
 function Calendar({ activity }) {
   const now = new Date(), dow = (now.getDay() + 6) % 7;
@@ -52,7 +54,8 @@ export default function Me() {
   const bookmarks = s.bookmarks.filter(k => COURSE_BY[k]);
   const cont = inprog[0] && of(inprog[0]);
   const [achGot, achAll] = achievementCount(s);
-  const played = TRAINERS.filter(t => s.game.best[t.id]);
+  // лучшие результаты: тренажёры — в очках, мини-игры — в своих единицах (секунды, клетки)
+  const played = [...TRAINERS, ...GAMES].filter(t => s.game.best[t.id]);
   const label = { textDecoration: 'none' };
 
   return (
@@ -120,9 +123,9 @@ export default function Me() {
                 <div>
                   {played.length > 0 ? (
                     <ul className="bests" aria-label="Лучшие результаты в тренажёрах">
-                      {played.map(t => <li key={t.id}><Link to={`/train/${t.id}`}>{t.title}</Link><Bolts n={s.game.best[t.id].bolts} size={16} /><b className="num">{s.game.best[t.id].score}</b></li>)}
+                      {played.map(t => <li key={t.id}><Link to={`/train/${t.id}`}>{t.title}</Link><Bolts n={s.game.best[t.id].bolts} size={16} /><b className="num">{t.fmt && s.game.best[t.id].raw != null ? t.fmt(s.game.best[t.id].raw) : s.game.best[t.id].score}</b></li>)}
                     </ul>
-                  ) : <p className="muted">В тренажёрах вы ещё не играли. Раунд из восьми заданий занимает около двух минут.</p>}
+                  ) : <p className="muted">В тренажёрах и мини-играх вы ещё не играли. Раунд занимает от полуминуты до двух минут.</p>}
                   <div className="row">
                     <Link className="btn btn-secondary" to="/train"><Icon name="gamepad-2" size={17} />{dailyDone(s) ? 'Тренажёры' : 'Тренировка дня'}</Link>
                   </div>
@@ -190,6 +193,11 @@ export default function Me() {
             </div>
           </div>
         )}
+
+        <div className="group" id="me-interests">
+          <h2 className="h3" style={{ marginBottom: 18 }}>Интересы</h2>
+          <InterestsPanel />
+        </div>
 
         {CLOUD && (
           <div className="group" id="me-account">

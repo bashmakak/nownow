@@ -6,6 +6,7 @@ import { clearNotice, resendConfirmation, sendReset, setPassword, signIn, signUp
 import { useTitle, useUI } from '../lib/ui.jsx';
 import { Icon } from '../components/Icon.jsx';
 import { EmptyState } from '../components/Cards.jsx';
+import { InterestPicker } from '../components/Interests.jsx';
 
 /* ===== Вход, регистрация, восстановление пароля =====
    Адрес почты и пароль живут только в полях формы, пока страница открыта: их нет ни в адресе страницы,
@@ -14,7 +15,7 @@ import { EmptyState } from '../components/Cards.jsx';
 
 const emailOk = v => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
 
-function Shell({ title, lead, children, foot }) {
+function Shell({ title, lead, children, foot, after }) {
   return (
     <section className="page auth-page">
       <div className="wrap">
@@ -26,6 +27,7 @@ function Shell({ title, lead, children, foot }) {
           {children}
         </div>
         {foot && <p className="auth-foot">{foot}</p>}
+        {after}
       </div>
     </section>
   );
@@ -161,7 +163,16 @@ function SignupForm() {
 
   if (sent) {
     return (
-      <Shell title="Проверьте почту" foot={<>Уже подтвердили адрес? <Link to="/login">Войти</Link></>}>
+      <Shell title="Проверьте почту" foot={<>Уже подтвердили адрес? <Link to="/login">Войти</Link></>}
+        after={(
+          <div className="panel auth-ints" id="auth-ints">
+            <header className="stack" style={{ gap: 6 }}>
+              <h2 className="h3">Пока идёт письмо: что вам интересно?</h2>
+              <p className="muted">По этим темам будут собираться тренировка дня и подборка уроков. Выбор сохраняется сразу и попадёт в учётную запись после входа. Изменить его можно в кабинете.</p>
+            </header>
+            <InterestPicker id="interests-signup" />
+          </div>
+        )}>
         <div className="auth-form" id="auth-sent">
           <p>Мы отправили письмо на <b className="auth-mail">{email.trim()}</b>. Откройте его и перейдите по ссылке: так мы убедимся, что адрес ваш. После этого войдите с паролем.</p>
           <p className="muted">Письма нет? Проверьте папку «Спам». Если учётная запись с таким адресом уже есть, новое письмо не придёт: войдите или восстановите пароль.</p>

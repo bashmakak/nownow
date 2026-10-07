@@ -324,3 +324,28 @@ a.tcard:hover .tcard-ic,a.tcard:focus-visible .tcard-ic{background:var(--lime);c
 .toast-rich b{font:600 15px/1.25 var(--font-body);color:#F5F7FA}
 .toast-ic{display:grid;place-items:center;flex:none;width:38px;height:38px;border-radius:11px;background:linear-gradient(155deg,#D8FF5A,#00C897);color:#0B0F14}
 .fx-canvas{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;pointer-events:none;z-index:140}
+
+/* ---------- интересы ---------- */
+.ints{display:flex;flex-direction:column;gap:18px}
+.ints-group{display:flex;flex-direction:column;gap:10px}
+.ints-group legend{margin-bottom:10px;padding:0}
+.ints .chip{min-height:36px;padding:0 13px;font-size:14px}
+.ints-count{font-size:14px;color:var(--text-3)}
+.ints-prompt{display:grid;gap:14px 18px;align-items:center;padding:clamp(18px,2.6vw,24px);border-radius:var(--r-lg);border:1px solid var(--accent-line);background:var(--bg-1);box-shadow:var(--shadow)}
+.ints-prompt .tile-ic{margin-bottom:0}
+@media (min-width:820px){.ints-prompt{grid-template-columns:auto minmax(0,1fr) auto}}
+.sec-foryou{padding-bottom:0}
+.sec-foryou + .sec{padding-top:clamp(40px,6vw,72px)}
+#train-prompt{margin-top:20px}
+.auth-ints{width:min(760px,100%);margin:28px auto 0;gap:20px}
+.link-plain{padding:0;border:0;background:none;font:inherit;font-weight:500;cursor:pointer}
+.group-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 20px;margin-bottom:6px}
+
+/* ---------- мини-игры в разделе тренажёров ---------- */
+.brain-skill{margin-top:26px}
+.brain-skill:first-of-type{margin-top:0}
+.brain-skill .h4{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}
+.brain-skill .h4 .ic{color:var(--accent-text)}
+.brain-skill .h4 span{font:400 14.5px/1.4 var(--font-body);color:var(--text-3)}
+.brain-honest{font-size:14.5px;line-height:1.55;padding-left:14px;border-left:2px solid var(--border-2)}
+.tr-rv-from{font-size:14px;color:var(--text-3);margin-top:4px}

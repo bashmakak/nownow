@@ -9,7 +9,9 @@ const KEY = 'nownow.v1';
 const freshGame = () => ({ xp: 0, best: {}, days: {}, dailies: 0, seen: null, lvl: 1 });
 /* owner — чья это копия: идентификатор учётной записи или null, пока человек не входил.
    resetAt — когда прогресс сбросили: по нему другие устройства понимают, что данные надо убрать, а не вернуть. */
-const fresh = () => ({ theme: 'dark', name: '', version: 'short', bookmarks: [], courses: {}, notes: {}, activity: {}, game: freshGame(), owner: null, resetAt: 0 });
+/* interests — что человеку интересно: slug тем каталога и навыки мини-игр («brain-attention»).
+   interestsAt — когда он выбирал в последний раз; 0 значит, что его ещё не спрашивали. */
+const fresh = () => ({ theme: 'dark', name: '', version: 'short', bookmarks: [], courses: {}, notes: {}, activity: {}, game: freshGame(), interests: [], interestsAt: 0, owner: null, resetAt: 0 });
 
 /* Прогресс короткой версии хранится под slug урока, полной — под «slug@full».
    Заметки к блокам: «ключ:номер блока». */
@@ -134,6 +136,16 @@ export function toggleBookmark(slug) {
   });
   return added;
 }
+/* Интересы: по ним подбираются тренировка дня и уроки на главной */
+export function toggleInterest(id) {
+  update(d => {
+    const i = d.interests.indexOf(id);
+    if (i < 0) d.interests.push(id); else d.interests.splice(i, 1);
+    d.interestsAt = Date.now();
+  });
+}
+/* Человек видел предложение выбрать интересы и закрыл его: больше не напоминаем */
+export function skipInterests() { update(d => { if (!d.interestsAt) d.interestsAt = Date.now(); }); }
 export function applyTheme(theme) {
   const el = document.documentElement;
   if (theme === 'system') el.removeAttribute('data-theme'); else el.setAttribute('data-theme', theme);
@@ -141,7 +153,11 @@ export function applyTheme(theme) {
 export function setTheme(theme) { update(d => { d.theme = theme; }); applyTheme(theme); }
 /* Сброс прогресса. Для вошедшего человека запоминаем время сброса: другие его устройства тоже очистятся.
    Без входа отметка не нужна, иначе при первом входе пустая копия стёрла бы прогресс в учётной записи. */
-export function resetAll() { const { theme, owner } = state; update(d => { Object.assign(d, fresh(), { theme, owner, resetAt: owner ? Date.now() : 0 }); }); }
+export function resetAll() {
+  // интересы — это настройка, а не прогресс: при сбросе они остаются
+  const { theme, owner, interests, interestsAt } = state;
+  update(d => { Object.assign(d, fresh(), { theme, owner, interests, interestsAt, resetAt: owner ? Date.now() : 0 }); });
+}
 
 export const plural = (n, f) => {
   const a = Math.abs(n) % 100, b = a % 10;

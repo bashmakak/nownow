@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { floorBase, merge, same, synced } from '../src/lib/merge.js';
 
 const game = (xp = 0, best = {}) => ({ xp, best, days: {}, dailies: 0, seen: null, lvl: 1 });
-const st = (over = {}) => ({ name: '', version: 'short', bookmarks: [], courses: {}, notes: {}, activity: {}, game: game(), resetAt: 0, ...over });
+const st = (over = {}) => ({ name: '', version: 'short', bookmarks: [], courses: {}, notes: {}, activity: {}, game: game(), interests: [], interestsAt: 0, resetAt: 0, ...over });
 const lesson = (over = {}) => ({ started: 100, touched: 100, completed: null, finished: false, block: 0, done: [0, 0, 0, 0, 0, 0], elapsed: [0, 0, 0, 0, 0, 0], seconds: 0, answers: {}, steps: {}, work: {}, reflect: '', useful: null, ...over });
 let n = 0;
 const test = (name, fn) => { fn(); n++; console.log(`  ok  ${name}`); };
@@ -101,6 +101,26 @@ test('база потерялась: опыт не удваивается', () =
   const g = merge(l, r, floorBase(l, r)).game;
   assert.equal(g.xp, 160);
   assert.equal(g.best.t.plays, 4);
+});
+
+test('интересы: добавленное на двух устройствах объединяется, убранное не возвращается', () => {
+  const b = st({ interests: ['son', 'pitanie'], interestsAt: 10 });
+  const l = st({ interests: ['son', 'brain-memory'], interestsAt: 30 });          // здесь убрали питание и добавили память
+  const r = st({ interests: ['son', 'pitanie', 'istoriya'], interestsAt: 20 });   // там добавили историю
+  const m = merge(l, r, b);
+  assert.deepEqual([...m.interests].sort(), ['brain-memory', 'istoriya', 'son']);
+  assert.equal(m.interestsAt, 30);
+  // первый вход: выбранное до входа и выбранное в учётной записи складываются
+  assert.deepEqual([...merge(st({ interests: ['a'] }), st({ interests: ['b'] }), null).interests].sort(), ['a', 'b']);
+});
+
+test('мини-игры: результат в своих единицах берётся у лучшей попытки', () => {
+  const l = st({ game: game(0, { 'g-schulte': { score: 1800, bolts: 3, plays: 2, raw: 30.1 } }) });
+  const r = st({ game: game(0, { 'g-schulte': { score: 1200, bolts: 2, plays: 1, raw: 45.2 } }) });
+  const g = merge(l, r, null).game.best['g-schulte'];
+  assert.equal(g.raw, 30.1);
+  assert.equal(g.score, 1800);
+  assert.equal(merge(r, l, null).game.best['g-schulte'].raw, 30.1);
 });
 
 test('неполные данные из облака не ломают слияние', () => {

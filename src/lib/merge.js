@@ -11,8 +11,8 @@
      счётчики (опыт, число раундов) складываем, отметки и списки объединяем;
    - если прогресс сбросили, побеждает сторона с более поздним сбросом. */
 
-export const SYNC_KEYS = ['name', 'version', 'bookmarks', 'courses', 'notes', 'activity', 'game', 'resetAt'];
-const EMPTY = { name: '', version: 'short', bookmarks: [], courses: {}, notes: {}, activity: {}, game: { xp: 0, best: {}, days: {}, dailies: 0, seen: null, lvl: 1 }, resetAt: 0 };
+export const SYNC_KEYS = ['name', 'version', 'bookmarks', 'courses', 'notes', 'activity', 'game', 'interests', 'interestsAt', 'resetAt'];
+const EMPTY = { name: '', version: 'short', bookmarks: [], courses: {}, notes: {}, activity: {}, game: { xp: 0, best: {}, days: {}, dailies: 0, seen: null, lvl: 1 }, interests: [], interestsAt: 0, resetAt: 0 };
 
 /* Равенство по содержимому: порядок ключей не важен (база данных хранит их в своём порядке) */
 export function same(a, b) {
@@ -78,6 +78,9 @@ function mergeGame(l, r, b) {
   new Set([...Object.keys(l.best), ...Object.keys(r.best)]).forEach(id => {
     const x = l.best[id] || {}, y = r.best[id] || {}, z = (b.best || {})[id] || {};
     best[id] = { score: Math.max(num(x.score), num(y.score)), bolts: Math.max(num(x.bolts), num(y.bolts)), plays: grow(x.plays, y.plays, z.plays), last: Math.max(num(x.last), num(y.last)) || undefined };
+    // у мини-игр рядом с очками лежит результат в своих единицах (секунды, клетки): берём его у лучшей попытки
+    const top = num(x.score) >= num(y.score) ? x : y;
+    if (top.raw != null) best[id].raw = top.raw;
   });
   const days = {};
   new Set([...Object.keys(l.days), ...Object.keys(r.days)]).forEach(d => {
@@ -115,6 +118,8 @@ export function merge(localState, remoteState, baseState) {
     notes: mergeMap(l.notes, r.notes, b.notes, (x, y) => (filled(x) ? x : y)),
     activity,
     game: mergeGame(l.game, r.game, b.game),
+    interests: mergeList(l.interests, r.interests, b.interests),
+    interestsAt: Math.max(num(l.interestsAt), num(r.interestsAt)),
     resetAt: num(l.resetAt),
   };
 }

@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { COURSE_BY, minutes, pathOf } from '../data';
 import { ROUND } from '../data/trainers.js';
+import { SKILL_BY, isGame } from '../data/brain.js';
 import { useStore, update, status, streak, plural } from '../lib/store.js';
 import { useUI } from '../lib/ui.jsx';
-import { ACHIEVEMENTS, ACH_BY, REVIEW_MIN, dailyPlan, earned, earnedNow, levelOf, playedToday, reviewPool, stats, trainerOf, xpOf } from '../lib/game.js';
+import { ACHIEVEMENTS, ACH_BY, REVIEW_MIN, dailyPlan, earned, earnedNow, levelOf, playedToday, poolSize, reviewPool, stats, trainerOf, xpOf } from '../lib/game.js';
 import { celebrate } from '../lib/fx.js';
 import { Icon } from './Icon.jsx';
 
@@ -130,10 +131,18 @@ export function Achievements() {
 }
 export const achievementCount = s => [earned(s).length, ACHIEVEMENTS.length];
 
-/* Карточка тренажёра */
+/* Сколько длится раунд: у игр своё время, у остальных — число заданий */
+export const roundMeta = (t, s) => {
+  if (isGame(t.id)) return t.time;
+  const n = Math.min(ROUND, poolSize(t.id, s) || ROUND);
+  return `${n} ${plural(n, ['задание', 'задания', 'заданий'])}`;
+};
+
+/* Карточка тренажёра: набор по ИИ, повторение, вопросы по теме или мини-игра */
 export function TrainerCard({ id, daily = false }) {
   const s = useStore();
   const t = trainerOf(id), b = s.game.best[id];
+  const game = isGame(id);
   const pool = id === 'review' ? reviewPool(s).length : null;
   const locked = id === 'review' && pool < REVIEW_MIN;
   const lesson = t.lesson && COURSE_BY[t.lesson];
@@ -142,13 +151,15 @@ export function TrainerCard({ id, daily = false }) {
       <span className="tcard-ic"><Icon name={t.icon} size={22} /></span>
       <span className="tcard-body">
         <b className="tcard-title">{t.title}</b>
-        <span className="tcard-hook">{t.hook}</span>
+        <span className="tcard-hook">{t.card || t.hook}</span>
         {lesson && <span className="tcard-from">По уроку «{lesson.title}»</span>}
+        {game && <span className="tcard-from">{SKILL_BY[t.skill].title} · {t.time}</span>}
+        {t.kind === 'topic' && <span className="tcard-from">{t.sub} · {roundMeta(t, s)}</span>}
         {locked && <span className="tcard-from">Откроется, когда вы пройдёте первый урок.</span>}
       </span>
       <span className="tcard-foot">
         <Bolts n={b ? b.bolts : 0} />
-        <span className="tcard-best">{b ? <>Лучший результат: <b className="num">{b.score}</b></> : locked ? 'Пока закрыто' : 'Ещё не играли'}</span>
+        <span className="tcard-best">{b ? <>Лучший результат: <b className="num">{game && b.raw != null ? t.fmt(b.raw) : b.score}</b></> : locked ? 'Пока закрыто' : 'Ещё не играли'}</span>
       </span>
     </>
   );
@@ -165,7 +176,9 @@ export function DailyPanel() {
     <div className="daily theme-dark" id="daily">
       <div className="daily-main">
         <h2 className="h3">Тренировка дня</h2>
-        <p>{next ? 'Три коротких раунда. Набор меняется каждый день, а день с тренировкой идёт в серию.' : 'На сегодня всё. Завтра будет новый набор.'}</p>
+        <p>{next
+          ? `Три коротких раунда: разминка, тема и повторение. ${s.interests.length ? 'Набор собран по вашим интересам и меняется каждый день.' : 'Набор меняется каждый день, а день с тренировкой идёт в серию.'}`
+          : 'На сегодня всё. Завтра будет новый набор.'}</p>
         <div className="daily-prog">
           <span className="daily-dots" role="img" aria-label={`Сыграно ${done} из ${plan.length}`}>{plan.map(id => <i key={id} className={played.includes(id) ? 'on' : ''} />)}</span>
           <span className="num">{done} из {plan.length}</span>
@@ -180,7 +193,7 @@ export function DailyPanel() {
           return (
             <li key={id} className={ok ? 'on' : id === next ? 'next' : ''}>
               <span className="daily-n">{ok ? <Icon name="check" size={16} /> : k + 1}</span>
-              <span className="daily-t"><b>{t.title}</b><small>{ROUND} заданий</small></span>
+              <span className="daily-t"><b>{t.title}</b><small>{[t.sub, roundMeta(t, s)].filter(Boolean).join(' · ')}</small></span>
               <Icon name={t.icon} size={20} />
             </li>
           );

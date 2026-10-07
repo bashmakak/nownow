@@ -6,6 +6,7 @@ import { useUI, useTitle } from '../lib/ui.jsx';
 import { Icon } from '../components/Icon.jsx';
 import { CourseCard, EmptyState } from '../components/Cards.jsx';
 import { TopicsPanel } from '../components/TopicsPanel.jsx';
+import { myTopics } from '../lib/game.js';
 
 const PAGE = 12;
 const SELECTS = [
@@ -25,7 +26,8 @@ export default function Catalog() {
   const [params, setParams] = useSearchParams();
   const [shown, setShown] = useState(PAGE);
   const input = useRef(null);
-  const f = Object.fromEntries(['q', 'topic', 'tag', 'format', 'level', 'version', 'play', 'status', 'sort'].map(k => [k, params.get(k) || '']));
+  const f = Object.fromEntries(['q', 'topic', 'tag', 'mine', 'format', 'level', 'version', 'play', 'status', 'sort'].map(k => [k, params.get(k) || '']));
+  const mine = myTopics(s);
 
   // состояние фильтров хранится в адресе: страницей можно поделиться
   const set = patch => {
@@ -41,6 +43,7 @@ export default function Catalog() {
   let list = REC_ORDER.map(slug => COURSE_BY[slug]).filter(c => isPublic(TOPIC_BY[c.topic]));
   if (q) list = list.filter(c => norm([c.title, c.summary, c.tags.join(' '), TOPIC_BY[c.topic].title].join(' ')).includes(q));
   if (f.topic) list = list.filter(c => c.topic === f.topic);
+  else if (f.mine && mine.length) list = list.filter(c => mine.includes(c.topic));
   if (f.tag) list = list.filter(c => c.tags.includes(f.tag));
   if (f.format) list = list.filter(c => c.format === f.format);
   if (f.level) list = list.filter(c => String(c.level) === f.level);
@@ -53,8 +56,8 @@ export default function Catalog() {
   if (f.sort === 'fast') list = [...list].sort((a, b) => sec(a) - sec(b));
   if (f.sort === 'long') list = [...list].sort((a, b) => sec(b) - sec(a));
 
-  // в ряду чипов сначала темы, где человек уже занимался
-  const started = PUBLIC.filter(t => coursesOf(t.slug).some(c => status(s, c.slug) !== 'new'));
+  // в ряду чипов сначала выбранные темы и темы, где человек уже занимался
+  const started = PUBLIC.filter(t => mine.includes(t.slug)).concat(PUBLIC.filter(t => !mine.includes(t.slug) && coursesOf(t.slug).some(c => status(s, c.slug) !== 'new')));
   let chips = started.concat(PUBLIC.filter(t => !started.includes(t))).slice(0, 7);
   if (f.topic && TOPIC_BY[f.topic] && !chips.some(t => t.slug === f.topic)) chips = [TOPIC_BY[f.topic], ...chips.slice(0, 6)];
 
@@ -73,12 +76,13 @@ export default function Catalog() {
               value={f.q} onChange={e => set({ q: e.target.value })} />
           </form>
           <div className="chips chips-scroll" role="group" aria-label="Темы" id="cat-topics">
-            <button type="button" className="chip" aria-pressed={!f.topic} onClick={() => set({ topic: '', tag: '' })}>Все</button>
+            <button type="button" className="chip" aria-pressed={!f.topic && !(f.mine && mine.length)} onClick={() => set({ topic: '', tag: '', mine: '' })}>Все</button>
+            {mine.length > 0 && <button type="button" className="chip" id="cat-mine" aria-pressed={!f.topic && Boolean(f.mine)} onClick={() => set({ topic: '', tag: '', mine: '1' })}><Icon name="sliders-horizontal" size={15} />Мои темы</button>}
             {chips.map(t => (
-              <button key={t.slug} type="button" className="chip" aria-pressed={f.topic === t.slug} onClick={() => set({ topic: t.slug, tag: '' })}>{t.title}</button>
+              <button key={t.slug} type="button" className="chip" aria-pressed={f.topic === t.slug} onClick={() => set({ topic: t.slug, tag: '', mine: '' })}>{t.title}</button>
             ))}
             <button type="button" className="chip" aria-haspopup="dialog"
-              onClick={() => ui.open(<TopicsPanel selected={f.topic} onPick={slug => { set({ topic: slug, tag: '' }); ui.close(); }} />)}>
+              onClick={() => ui.open(<TopicsPanel selected={f.topic} onPick={slug => { set({ topic: slug, tag: '', mine: '' }); ui.close(); }} />)}>
               Ещё темы <Icon name="chevron-down" size={15} />
             </button>
           </div>
