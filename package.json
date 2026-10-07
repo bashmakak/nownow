@@ -5,15 +5,20 @@
   "type": "module",
   "scripts": {
     "meta": "node scripts/full-meta.mjs",
+    "check": "node scripts/check-secrets.mjs",
+    "check:history": "node scripts/check-secrets.mjs --history",
+    "test": "node scripts/test-merge.mjs",
     "predev": "npm run meta",
     "dev": "vite",
-    "prebuild": "npm run meta",
+    "prebuild": "npm run meta && npm run check",
     "build": "vite build",
+    "postbuild": "node scripts/check-secrets.mjs --dist",
     "preview": "vite preview"
   },
   "dependencies": {
     "@fontsource/inter": "^5.0.0",
     "@fontsource/sora": "^5.0.0",
+    "@supabase/supabase-js": "^2.117.2",
     "lucide-react": "^1.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

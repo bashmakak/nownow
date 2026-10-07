@@ -16,11 +16,17 @@ import '@fontsource/sora/latin-700.css';
 import './styles.css';
 import './play.css';
 import './motion.css';
+import './account.css';
 
 import App from './App.jsx';
 import { getState, applyTheme } from './lib/store.js';
+// cloud.js при загрузке разбирает ссылку из письма и убирает её из адреса: это должно случиться до запуска страниц
+import { boot } from './lib/cloud.js';
+import { watch } from './lib/sync.js';
 
 applyTheme(getState().theme);
+watch();
+boot();
 
 // HashRouter: адреса вида /#/courses работают на любом статическом хостинге без настройки сервера
 createRoot(document.getElementById('root')).render(

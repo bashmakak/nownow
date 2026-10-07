@@ -3,3 +3,16 @@ dist
 .DS_Store
 *.local
 src/data/full-meta.js
+
+# настройки окружения: в них могут оказаться ключи и пароли. В репозитории остаётся только образец без значений
+.env
+.env.*
+!.env.example
+
+# служебная папка Supabase CLI и выгрузки базы: в них бывают данные пользователей
+supabase/.temp
+supabase/.branches
+*.dump
+*.sql.gz
+*.pem
+*.key

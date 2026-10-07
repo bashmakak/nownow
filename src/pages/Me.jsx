@@ -9,6 +9,9 @@ import { CourseCard, EmptyState, KeyCard, ProgressLine, ThemeControl } from '../
 import { Achievements, Bolts, XpBar, achievementCount } from '../components/GameUI.jsx';
 import { TRAINERS } from '../data/trainers.js';
 import { dailyDone, xpOf } from '../lib/game.js';
+import { CLOUD } from '../config.js';
+import { useAuth } from '../lib/cloud.js';
+import { AccountPanel, downloadMyData } from '../components/Account.jsx';
 
 function Calendar({ activity }) {
   const now = new Date(), dow = (now.getDay() + 6) % 7;
@@ -30,6 +33,8 @@ export default function Me() {
   useTitle('Кабинет');
   const s = useStore();
   const { toast } = useUI();
+  const account = useAuth();
+  const signedIn = CLOUD && Boolean(account.user);
   const [ask, setAsk] = useState(false);
   // ключ прогресса — это урок и его версия; of(k) разбирает ключ
   const of = k => { const [slug, v] = splitKey(k), c = COURSE_BY[slug]; return { slug, v, c, A: about(c, v), tail: c.full ? ` · ${VERSION[v].toLowerCase()} версия` : '' }; };
@@ -55,7 +60,10 @@ export default function Me() {
       <div className="wrap">
         <header className="page-head">
           <h1 className="h1">{s.name ? `Здравствуйте, ${s.name}` : 'Кабинет'}</h1>
-          <p className="lead">Прогресс, закладки и заметки хранятся только в этом браузере.</p>
+          <p className="lead">{signedIn
+            ? 'Прогресс, закладки и заметки сохраняются в учётной записи и доступны на других устройствах.'
+            : CLOUD ? <>Прогресс, закладки и заметки хранятся в этом браузере. <Link to="/signup">Создайте учётную запись</Link>, чтобы они сохранялись в облаке.</>
+              : 'Прогресс, закладки и заметки хранятся только в этом браузере.'}</p>
         </header>
 
         <div className="dash">
@@ -183,6 +191,13 @@ export default function Me() {
           </div>
         )}
 
+        {CLOUD && (
+          <div className="group" id="me-account">
+            <h2 className="h3" style={{ marginBottom: 18 }}>Учётная запись</h2>
+            <div style={{ maxWidth: 640 }}><AccountPanel /></div>
+          </div>
+        )}
+
         <div className="group">
           <h2 className="h3" style={{ marginBottom: 18 }}>Настройки</h2>
           <div className="panel" style={{ maxWidth: 640 }}>
@@ -207,16 +222,21 @@ export default function Me() {
               <span style={{ fontWeight: 500, fontSize: 14.5 }}>Данные</span>
               {ask ? (
                 <>
-                  <p className="muted">Прогресс, закладки и заметки будут удалены из этого браузера. Вернуть их не получится.</p>
+                  <p className="muted">{signedIn
+                    ? 'Прогресс, закладки и заметки будут удалены из учётной записи на всех ваших устройствах. Сама учётная запись останется. Вернуть данные не получится.'
+                    : 'Прогресс, закладки и заметки будут удалены из этого браузера. Вернуть их не получится.'}</p>
                   <div className="row">
-                    <button type="button" className="btn btn-danger" onClick={() => { resetAll(); applyTheme(s.theme); setAsk(false); toast('Прогресс удалён из этого браузера'); }}>
+                    <button type="button" className="btn btn-danger" id="me-reset-yes" onClick={() => { resetAll(); applyTheme(s.theme); setAsk(false); toast(signedIn ? 'Прогресс удалён' : 'Прогресс удалён из этого браузера'); }}>
                       <Icon name="trash-2" size={17} />Удалить всё
                     </button>
                     <button type="button" className="btn btn-ghost" onClick={() => setAsk(false)}>Отмена</button>
                   </div>
                 </>
               ) : (
-                <div><button type="button" className="btn btn-secondary" onClick={() => setAsk(true)}>Сбросить прогресс</button></div>
+                <div className="row">
+                  <button type="button" className="btn btn-secondary" id="me-export" onClick={() => downloadMyData()}>Скачать мои данные</button>
+                  <button type="button" className="btn btn-ghost" id="me-reset" onClick={() => setAsk(true)}>Сбросить прогресс</button>
+                </div>
               )}
             </div>
           </div>

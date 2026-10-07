@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { PUBLIC } from '../data';
 import { useUI, DialogHead } from '../lib/ui.jsx';
@@ -8,6 +8,9 @@ import { ThemeControl } from './Cards.jsx';
 import { TopicsPanel } from './TopicsPanel.jsx';
 import { LevelChip, Rewards } from './GameUI.jsx';
 import { usePointerLight, useReveal, useStuck } from '../lib/motion.js';
+import { CLOUD } from '../config.js';
+import { AccountLink, AuthNotice, ConsentBar } from './Account.jsx';
+import { useAuth } from '../lib/cloud.js';
 
 function MobileMenu() {
   const links = [['/courses', 'Каталог'], ['/topics', 'Темы'], ['/train', 'Тренажёры'], ['/me', 'Кабинет'], ['/about', 'О платформе']];
@@ -18,7 +21,10 @@ function MobileMenu() {
         <nav className="menu-links" aria-label="Меню">
           {links.map(([to, label]) => <Link key={to} to={to}>{label}<Icon name="arrow-right" size={20} /></Link>)}
         </nav>
-        <Link className="btn btn-primary btn-lg" to="/courses">Выбрать урок</Link>
+        <div className="row">
+          <Link className="btn btn-primary btn-lg" to="/courses">Выбрать урок</Link>
+          <AccountLink className="btn btn-secondary btn-lg" />
+        </div>
       </div>
     </div>
   );
@@ -29,6 +35,9 @@ function Header() {
   const nav = useNavigate();
   const { pathname } = useLocation();
   const head = useRef(null);
+  const account = useAuth();
+  // гость видит кнопку «Войти»: на узком экране шапка уступает ей место
+  const guest = CLOUD && account.ready && !account.user;
   useStuck(head);
   return (
     <header className="site-head theme-dark" ref={head}>
@@ -41,11 +50,12 @@ function Header() {
           <NavLink to="/train">Тренажёры</NavLink>
           <NavLink to="/about">О платформе</NavLink>
         </nav>
-        <div className="head-actions">
+        <div className={`head-actions${guest ? ' guest' : ''}`}>
           <button type="button" className="icon-btn" aria-label="Поиск курсов"
             onClick={() => nav('/courses', { state: { focusSearch: Date.now() } })}><Icon name="search" /></button>
           <LevelChip />
-          <NavLink className="btn btn-ghost btn-sm head-me" to="/me"><Icon name="user" size={16} />Кабинет</NavLink>
+          <NavLink className="btn btn-ghost btn-sm head-me" to="/me"><Icon name="user" size={16} /><span>Кабинет</span></NavLink>
+          <AccountLink />
           <Link className="btn btn-primary btn-sm head-cta" to="/courses">Начать</Link>
           <button type="button" className="icon-btn head-menu" aria-label="Меню" aria-haspopup="dialog"
             onClick={() => ui.open(<MobileMenu />, 'dlg-sm')}><Icon name="menu" /></button>
@@ -63,7 +73,9 @@ function Footer() {
           <div className="foot-brand">
             <Lockup />
             <span className="label">Быстрые знания / Большие возможности</span>
-            <p>Демо-версия. Полная версия пока есть не у всех уроков, прогресс хранится только в вашем браузере.</p>
+            <p>{CLOUD
+              ? 'Демо-версия. Полная версия пока есть не у всех уроков. Учётная запись необязательна: без неё прогресс хранится в вашем браузере.'
+              : 'Демо-версия. Полная версия пока есть не у всех уроков, прогресс хранится только в вашем браузере.'}</p>
           </div>
           <nav className="foot-col" aria-label="Платформа">
             <span className="label">Платформа</span>
@@ -75,7 +87,13 @@ function Footer() {
           </nav>
           <div className="foot-col"><span className="label">Тема оформления</span><ThemeControl /></div>
         </div>
-        <div className="foot-bottom"><span>© 2026 NowNow</span><span className="label">Одно знание за несколько минут</span></div>
+        <div className="foot-bottom">
+          <span>© 2026 NowNow</span>
+          <nav className="foot-legal" aria-label="Документы">
+            <Link to="/legal/terms">Пользовательское соглашение</Link>
+            <Link to="/legal/privacy">Политика конфиденциальности</Link>
+          </nav>
+        </div>
       </div>
     </footer>
   );
@@ -112,10 +130,12 @@ export function Layout() {
   return (
     <>
       <Rewards />
+      <AuthNotice />
       <a className="skip" href="#view" onClick={e => { e.preventDefault(); main.current?.focus(); }}>Перейти к содержанию</a>
       {!inPlayer && <Header />}
-      <main id="view" tabIndex={-1} ref={main}><Outlet /></main>
+      <main id="view" tabIndex={-1} ref={main}><Suspense fallback={<div className="page" aria-busy="true" />}><Outlet /></Suspense></main>
       {!inPlayer && <Footer />}
+      {!inPlayer && <ConsentBar />}
     </>
   );
 }

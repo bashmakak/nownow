@@ -1,12 +1,15 @@
 import { useSyncExternalStore } from 'react';
 import { COURSE_BY, timing } from '../data';
 
-/* Прогресс, закладки и заметки живут в браузере: сервера у сайта нет. */
+/* Прогресс, закладки и заметки живут в браузере. Если человек вошёл в учётную запись, копия
+   хранится в облаке и сводится с другими устройствами (см. lib/sync.js); без входа сайт работает так же. */
 const KEY = 'nownow.v1';
 /* game — всё, что относится к тренажёрам и наградам: опыт за раунды, лучшие результаты, сыгранное по дням,
    показанные достижения. Опыт за уроки здесь не хранится: он считается по прогрессу (см. lib/game.js). */
 const freshGame = () => ({ xp: 0, best: {}, days: {}, dailies: 0, seen: null, lvl: 1 });
-const fresh = () => ({ theme: 'dark', name: '', version: 'short', bookmarks: [], courses: {}, notes: {}, activity: {}, game: freshGame() });
+/* owner — чья это копия: идентификатор учётной записи или null, пока человек не входил.
+   resetAt — когда прогресс сбросили: по нему другие устройства понимают, что данные надо убрать, а не вернуть. */
+const fresh = () => ({ theme: 'dark', name: '', version: 'short', bookmarks: [], courses: {}, notes: {}, activity: {}, game: freshGame(), owner: null, resetAt: 0 });
 
 /* Прогресс короткой версии хранится под slug урока, полной — под «slug@full».
    Заметки к блокам: «ключ:номер блока». */
@@ -27,10 +30,11 @@ function migrate(st) {
   return st;
 }
 
+const shape = raw => { const st = { ...fresh(), ...raw }; st.game = { ...freshGame(), ...(st.game || {}) }; return migrate(st); };
 function load() {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) { const st = { ...fresh(), ...JSON.parse(raw) }; st.game = { ...freshGame(), ...(st.game || {}) }; return migrate(st); }
+    if (raw) return shape(JSON.parse(raw));
   } catch { /* хранилище недоступно: работаем в памяти */ }
   return fresh();
 }
@@ -39,6 +43,15 @@ let state = load();
 const subs = new Set();
 const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* без сохранения */ } };
 const subscribe = cb => { subs.add(cb); return () => subs.delete(cb); };
+export const onChange = subscribe;
+
+/* Сайт открыт в двух вкладках: изменения из соседней вкладки подхватываем сразу, чтобы вкладки не затирали друг друга */
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', e => {
+    if (e.key !== KEY || !e.newValue) return;
+    try { state = shape(JSON.parse(e.newValue)); subs.forEach(f => f()); } catch { /* чужая запись не разобралась: остаёмся при своём */ }
+  });
+}
 
 export const getState = () => state;
 export function update(fn) {
@@ -49,6 +62,14 @@ export function update(fn) {
   subs.forEach(f => f());
 }
 export const useStore = () => useSyncExternalStore(subscribe, getState);
+/* Подставить состояние целиком: так приходят данные из облака. Тема оформления остаётся своей на каждом устройстве. */
+export function replaceState(next, owner) {
+  state = shape({ ...next, theme: state.theme, owner });
+  persist();
+  subs.forEach(f => f());
+}
+/* Выход из учётной записи: в браузере не остаётся ни прогресса, ни заметок */
+export function clearLocal() { replaceState(fresh(), null); }
 
 export const dayKey = (d = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -118,7 +139,9 @@ export function applyTheme(theme) {
   if (theme === 'system') el.removeAttribute('data-theme'); else el.setAttribute('data-theme', theme);
 }
 export function setTheme(theme) { update(d => { d.theme = theme; }); applyTheme(theme); }
-export function resetAll() { const theme = state.theme; update(d => { Object.assign(d, fresh(), { theme }); }); }
+/* Сброс прогресса. Для вошедшего человека запоминаем время сброса: другие его устройства тоже очистятся.
+   Без входа отметка не нужна, иначе при первом входе пустая копия стёрла бы прогресс в учётной записи. */
+export function resetAll() { const { theme, owner } = state; update(d => { Object.assign(d, fresh(), { theme, owner, resetAt: owner ? Date.now() : 0 }); }); }
 
 export const plural = (n, f) => {
   const a = Math.abs(n) % 100, b = a % 10;

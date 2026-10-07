@@ -1,3 +1,4 @@
+import { lazy } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { UIProvider } from './lib/ui.jsx';
 import { Defs } from './components/Brand.jsx';
@@ -11,6 +12,12 @@ import Me from './pages/Me.jsx';
 import { Train, Trainer } from './pages/Train.jsx';
 import About from './pages/About.jsx';
 import NotFound from './pages/NotFound.jsx';
+
+// вход и документы нужны не каждому посетителю: они скачиваются, когда человек открывает эти страницы
+const auth = name => lazy(() => import('./pages/Auth.jsx').then(m => ({ default: m[name] })));
+const legal = name => lazy(() => import('./pages/Legal.jsx').then(m => ({ default: m[name] })));
+const Login = auth('Login'), Signup = auth('Signup'), Reset = auth('Reset'), NewPassword = auth('NewPassword');
+const Terms = legal('Terms'), Privacy = legal('Privacy');
 
 export default function App() {
   return (
@@ -28,6 +35,12 @@ export default function App() {
           <Route path="train/:id" element={<Trainer />} />
           <Route path="me" element={<Me />} />
           <Route path="about" element={<About />} />
+          <Route path="login" element={<Login />} />
+          <Route path="signup" element={<Signup />} />
+          <Route path="reset" element={<Reset />} />
+          <Route path="account/password" element={<NewPassword />} />
+          <Route path="legal/terms" element={<Terms />} />
+          <Route path="legal/privacy" element={<Privacy />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
