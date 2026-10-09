@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { audioUrl, hasAudio, playUrl, stopAudio } from './audio.js';
 
-/* ===== Озвучка фраз голосом браузера =====
-   Пока у сайта нет своих записей, фразы читает синтезатор речи браузера или системы.
+/* ===== Озвучка фраз =====
+   Сначала — свои файлы сайта (lib/audio.js): записи носителей и синтез, собранные заранее. Если у трека файлов нет
+   или для фразы файла не нашлось, фразу читает синтезатор речи браузера или системы.
    Голос выбирается по языку; для китайского — путунхуа (zh-CN), кантонский (zh-HK) не подходит.
    Голоса, которые работают на самом устройстве, предпочтительнее: сетевые голоса отправляют текст фразы
    на сервер разработчика браузера (см. политику конфиденциальности).
@@ -50,18 +52,25 @@ if (ok()) {
   setTimeout(() => { settled = true; refresh(); }, 1500);
 }
 
-/* Состояние голоса для языка: { status: 'checking' | 'ready' | 'none', voice } */
+/* Состояние голоса для языка: { status: 'checking' | 'ready' | 'none', voice }.
+   У трека со своими файлами голос есть всегда: voice — метка FILES */
+export const FILES = { name: 'files', files: true };
 export function useVoice(lang) {
   const [, tick] = useState(0);
   useEffect(() => { const f = () => tick(n => n + 1); subs.add(f); return () => subs.delete(f); }, []);
+  if (hasAudio(lang)) return { status: 'ready', voice: FILES };
   const voice = ok() ? pickVoice(voices, lang) : null;
   return { status: voice ? 'ready' : settled || !ok() ? 'none' : 'checking', voice };
 }
 
-/* Прочитать фразу. slow — медленнее, для разбора на слух. Возвращает false, если голоса нет */
-export function speak(text, lang, { slow = false, voice } = {}) {
+/* Прочитать фразу или слог. py — пиньинь: по нему находится запись слога. slow — медленнее.
+   Возвращает false, если ни файла, ни голоса нет */
+export function speak(text, lang, { slow = false, voice, py } = {}) {
+  const url = audioUrl(lang, { zh: text, py });
+  if (url) { if (ok()) window.speechSynthesis.cancel(); playUrl(url, { slow }); return true; }
   if (!ok()) return false;
-  const v = voice || pickVoice(voices, lang);
+  stopAudio();
+  const v = voice && !voice.files ? voice : pickVoice(voices, lang);
   if (!v) return false;
   const s = window.speechSynthesis;
   s.cancel();
@@ -70,4 +79,4 @@ export function speak(text, lang, { slow = false, voice } = {}) {
   s.speak(u);
   return true;
 }
-export const stopSpeech = () => { if (ok()) window.speechSynthesis.cancel(); };
+export const stopSpeech = () => { stopAudio(); if (ok()) window.speechSynthesis.cancel(); };

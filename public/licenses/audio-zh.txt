@@ -1,0 +1,19 @@
+Звук китайского курса NowNow (audio/zh/)
+
+1. Слоги (файлы cmn-*.mp3) — проект audio-cmn, голос Chen Wang.
+   Лицензия: Creative Commons Attribution-ShareAlike (CC BY-SA).
+   Источник: https://github.com/hugolpz/audio-cmn (папка 24k-abr/syllabs). Файлы не изменялись.
+
+2. Слова (файлы w-*.mp3) — проект audio-cmn, набор HSK, голос Yue Tan (проект Shtooka).
+   Лицензия: Creative Commons Attribution-ShareAlike (CC BY-SA).
+   Источник: https://github.com/hugolpz/audio-cmn (папка 24k-abr/hsk). Файлы не изменялись, изменены только имена.
+   Слоги, которых нет среди записей Chen Wang (например, jù), озвучены записью отдельного иероглифа
+   с тем же чтением из этого набора.
+
+3. Слова 星期一 и 星期天 (файлы g-*.mp3) склеены из записей слогов пункта 1 с короткими паузами
+   и выравниванием громкости. Это переработка записей Chen Wang, она распространяется на тех же условиях CC BY-SA.
+
+4. Фразы (файлы t-*.mp3) — синтез речи моделью Kokoro-82M v1.1-zh (hexgrad, лицензия Apache 2.0)
+   через sherpa-onnx (k2-fsa, лицензия Apache 2.0). Сборка: scripts/audio/make_audio.py в репозитории сайта.
+
+Файлы из пунктов 1–3 можно копировать и использовать на условиях CC BY-SA с указанием авторов.

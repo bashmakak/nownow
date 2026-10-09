@@ -51,6 +51,19 @@ export function mark(base, tone) {
   if (at < 0) return base;
   return base.slice(0, at) + MARKS[base[at]][tone - 1] + base.slice(at + 1);
 }
+/* Инициали путунхуа; длинные — первыми, чтобы zh не разобралось как z + h */
+export const INITIALS = ['zh', 'ch', 'sh', 'b', 'p', 'm', 'f', 'd', 't', 'n', 'l', 'g', 'k', 'h', 'j', 'q', 'x', 'r', 'z', 'c', 's'];
+/* «zhang» → { initial: 'zh', final: 'ang' }; слоги без инициали (a, yi, wu) — initial: '' */
+export function splitSyllable(base) {
+  const ini = INITIALS.find(x => base.startsWith(x) && base.length > x.length) || '';
+  return { initial: ini, final: base.slice(ini.length) };
+}
+/* Запись с цифрой тона для имён звуковых файлов: «lǜ» → «lv4», «mā» → «ma1». Без тона — null */
+export function numbered(py) {
+  const { base, tone } = parseSyllable(py);
+  return tone ? `${base.replace(/ü/g, 'v')}${tone}` : null;
+}
+
 /* Слог во всех четырёх тонах: «ma» → mā má mǎ mà */
 export const toneVariants = base => [1, 2, 3, 4].map(t => mark(base, t));
 
@@ -94,6 +107,13 @@ export function retone(text, at, tone) {
     const out = syl.map(x => { if (x.erhua) return 'r'; k++; return mark(x.base, k === at ? tone : x.tone); }).join('');
     return part[0] !== part[0].toLowerCase() ? out[0].toUpperCase() + out.slice(1) : out;
   }).join(''));
+}
+/* Как слово звучит, если в нём два третьих тона подряд: первый из них произносят вторым.
+   «nǐ hǎo» → «ní hǎo». Если ничего не меняется — null */
+export function spoken3(py) {
+  const syl = (syllables(py) || []).filter(x => !x.erhua);
+  const at = syl.map((x, i) => (x.tone === 3 && syl[i + 1]?.tone === 3 ? i : -1)).filter(i => i >= 0);
+  return at.length ? at.reduce((t, i) => retone(t, i, 2), py) : null;
 }
 /* Сколько слогов с тоном (без эризации) в тексте */
 export const syllableCount = text => text.split(/[\s?!.,:;，。？！]+/).filter(Boolean).reduce((n, w) => n + ((syllables(w) || []).filter(x => !x.erhua).length), 0);

@@ -5,8 +5,10 @@ import { LETTER_GROUPS } from '../data/lang/letters.js';
 import { PLACEMENT, TONE_NAMES, buildLesson, buildPlacement, buildReview, charTable, duePhrases, indexTrack, isGraded, lessonPhrases, levelLessonsOf, nextLessonOf, shuffle } from '../lib/lang-engine.js';
 import { finishLesson, finishReview, langOf, practiceWrite, setLevel } from '../lib/lang-progress.js';
 import { speak, stopSpeech, useVoice } from '../lib/speech.js';
+import { audioUrl, preload, registerAudio } from '../lib/audio.js';
 import { getState, plural, update, useStore } from '../lib/store.js';
 import { useTitle } from '../lib/ui.jsx';
+import { mark as markPy } from '../lib/pinyin.js';
 import { xpOf } from '../lib/game.js';
 import { celebrate, sparkFrom } from '../lib/fx.js';
 import { Icon } from '../components/Icon.jsx';
@@ -41,7 +43,11 @@ function useTrack(code) {
     if (ready[code]) { setSt({ ix: ready[code] }); return undefined; }
     let alive = true;
     setSt({ loading: true });
-    loadTrack(code).then(t => { ready[code] = indexTrack(t); if (alive) setSt({ ix: ready[code] }); }, () => { if (alive) setSt({ error: true }); });
+    loadTrack(code).then(t => {
+      // свои звуковые файлы трека: speak() найдёт их раньше голоса браузера
+      if (t.audio) registerAudio(t.lang, t.audio, `${import.meta.env.BASE_URL}audio/${t.code}/`);
+      ready[code] = indexTrack(t); if (alive) setSt({ ix: ready[code] });
+    }, () => { if (alive) setSt({ error: true }); });
     return () => { alive = false; };
   }, [code]);
   // браузер запоминает неудачную загрузку модуля, поэтому повторная попытка — это перезагрузка страницы
@@ -64,11 +70,11 @@ function Gate({ code, player = false, children }) {
 }
 
 /* ---------- озвучка ---------- */
-function SpeakBtn({ text, lang, voice, big = false, slow = false, label, id }) {
+function SpeakBtn({ text, py, lang, voice, big = false, slow = false, label, id }) {
   if (!voice) return null;
   return (
     <button type="button" className={`lg-say ${big ? 'big' : ''} ${slow ? 'slow' : ''}`} id={id} aria-label={label || (slow ? 'Медленно' : 'Послушать')}
-      onClick={() => speak(text, lang, { slow, voice })}>
+      onClick={() => speak(text, lang, { slow, voice, py })}>
       <Icon name={slow ? 'turtle' : 'volume-2'} size={big ? 30 : 18} />
     </button>
   );
@@ -116,7 +122,7 @@ export function LangHub() {
       <div className="wrap">
         <header className="page-head">
           <h1 className="h1">Языки для путешествий</h1>
-          <p className="lead">Короткие уроки под ситуации поездки, по уровням от нуля: звуки и письмо, аэропорт, такси, отель, кафе, покупки и помощь. Плюс местные правила, которые стоит знать до вылета. Учётная запись не нужна.</p>
+          <p className="lead">Короткие уроки по уровням. «С нуля» — вводный курс произношения и письма, как в учебниках, дальше — ситуации поездки: аэропорт, такси, отель, кафе, покупки и помощь. Плюс местные правила, которые стоит знать до вылета. Учётная запись не нужна.</p>
         </header>
         <div className="lg-tracks">
           {TRACKS.map(t => {
@@ -158,7 +164,7 @@ export function LangHub() {
             <p><b>Повторение.</b> Каждая выученная фраза возвращается через день, три дня, неделю и дальше реже. Если ошиблись, она вернётся завтра.</p>
             <p><b>Разговорник.</b> Все выученные фразы собираются на одной странице, её можно распечатать и взять с собой.</p>
             <p><b>Прописи.</b> Знаки обводят по контуру, а потом пишут по памяти. Ошибка в черте не влияет на результат урока: это тренировка руки и глаза.</p>
-            <p><b>Звук.</b> Фразы читает голос вашего браузера или системы. Если голоса для языка нет, задания на слух заменяются заданиями на чтение.</p>
+            <p><b>Звук.</b> Слоги и многие слова записаны носителями языка, остальные фразы озвучены синтезатором речи. Все файлы лежат на сайте, поэтому звук работает в любом браузере. Озвучку можно выключить — тогда задания на слух заменятся заданиями на чтение.</p>
           </div>
         </div>
       </div>
@@ -278,6 +284,9 @@ function TrackBody({ ix }) {
           <p className="muted" style={{ marginBottom: 18, maxWidth: '64ch' }}>Правила, которые меняются. У каждой карточки указан источник и дата проверки: перед поездкой сверьтесь с официальными сайтами.</p>
           <div className="lg-cards">{t.before.map(c => <Card c={c} key={c.t} />)}</div>
         </div>
+        {t.audio && (
+          <p className="wr-credits" id="lg-audio-credits">Звук: слоги — записи носителя из проекта <a href="https://github.com/hugolpz/audio-cmn" target="_blank" rel="noopener noreferrer">audio-cmn</a> (голос Chen Wang), слова — записи Yue Tan из того же проекта (Shtooka), обе коллекции — по лицензии CC BY-SA; фразы — синтез речи Kokoro (Apache 2.0). <a href="licenses/audio-zh.txt" target="_blank" rel="noopener">Подробнее о лицензиях</a>.</p>
+        )}
       </div>
     </section>
   );
@@ -325,6 +334,7 @@ export function LangReview() {
 const PROMPT = {
   meaning: 'Что это значит?', reverse: 'Как сказать по-китайски?', listen: 'Что прозвучало?',
   tone: 'Каким тоном произнесён слог?', toneRead: 'Какой это тон?', toneWord: 'Где тоны записаны верно?', toneWordRead: 'Где тоны записаны верно?', sound: 'Какой слог прозвучал?',
+  radPick: 'Какой ключ у этого знака?',
 };
 
 function Player({ ix, lessonId, review = false }) {
@@ -355,6 +365,7 @@ function Player({ ix, lessonId, review = false }) {
     if (review) { const r = buildReview(ix, getState().lang?.[t.code]?.ph || {}, { audio }); tasks = r.tasks; ids.current = r.ids; }
     else tasks = buildLesson(ix, lessonId, { audio });
     first.current = {}; wrong.current = new Set(); written.current = 0;
+    if (audio) preload(tasks.flatMap(x => [x.p, x.syl, x.ch, ...(x.options || []).map(o => (typeof o === 'string' ? { py: o } : o))].filter(Boolean).map(o => audioUrl(t.lang, { zh: o.zh, py: o.py }))));
     setQueue(tasks.map((x, k) => ({ ...x, key: k }))); setI(0); setAnswer(null); setMarks([]); setRes(null); setPhase('play');
   };
   const task = phase === 'play' ? queue[i] : null;
@@ -395,7 +406,7 @@ function Player({ ix, lessonId, review = false }) {
       if (phase !== 'play' || e.metaKey || e.ctrlKey || e.altKey || document.querySelector('dialog[open]')) return;
       const tag = (e.target.tagName || '').toLowerCase();
       if (/^[1-9]$/.test(e.key) && !answer) {
-        const b = document.querySelectorAll('.lg-body .lg-opts > button')[+e.key - 1];
+        const b = document.querySelectorAll('.lg-body .lg-opts .ch-opt')[+e.key - 1];
         if (b && !b.disabled) { e.preventDefault(); b.click(); }
       } else if (e.key === 'Enter' && answer && tag !== 'button' && tag !== 'a') { e.preventDefault(); next(); }
     };
@@ -494,8 +505,11 @@ function Player({ ix, lessonId, review = false }) {
 /* Пояснение после ответа: верный вариант и перевод */
 function Explain({ task: x }) {
   if (x.p) return <span className="lg-ex"><span className="zh" lang="zh-CN">{x.p.zh}</span> <span className="py">{x.p.py}</span> — {x.p.ru}{x.p.note ? `. ${x.p.note}` : ''}</span>;
+  if (x.type === 'spell') return <span className="lg-ex"><span className="py">{x.options[x.correct]}</span>{x.why ? ` — ${x.why}` : ''}</span>;
+  if (x.type === 'radPick') return <span className="lg-ex"><span className="zh" lang="zh-CN">{x.ch.zh}</span> <span className="py">{x.ch.py}</span> — {x.ch.ru}; ключ <span className="zh" lang="zh-CN">{x.options[x.correct].zh}</span> «{x.options[x.correct].ru}»</span>;
+  if (['build', 'compose', 'hear2'].includes(x.type) || (x.type === 'sound' && !x.syl.zh)) return <span className="lg-ex">Это <span className="py">{x.syl.py}</span>.</span>;
   if (x.ch) return <span className="lg-ex"><span className="zh" lang="zh-CN">{x.ch.zh}</span> <span className="py">{x.ch.py}</span> — {x.ch.ru}</span>;
-  if (x.syl) return <span className="lg-ex"><span className="zh" lang="zh-CN">{x.syl.zh}</span> <span className="py">{x.syl.py}</span>{x.syl.ru ? ` — ${x.syl.ru}` : ''}{x.type === 'toneRead' ? `: ${TONE_NAMES[x.correct]} тон` : ''}</span>;
+  if (x.syl) return <span className="lg-ex"><span className="zh" lang="zh-CN">{x.syl.zh}</span> <span className="py">{x.syl.py}</span>{x.syl.ru ? ` — ${x.syl.ru}` : ''}{x.type === 'toneRead' ? `: ${TONE_NAMES[x.correct]} тон` : ''}{x.syl.spoken ? <>. Звучит <span className="py">{x.syl.spoken}</span>: из двух третьих тонов подряд первый произносят вторым, а пишут третьим</> : ''}</span>;
   return null;
 }
 
@@ -510,17 +524,22 @@ function Task(props) {
     case 'tiles': return <Tiles {...props} />;
     case 'pairs': return <Pairs {...props} />;
     case 'write': return <WriteTask {...props} />;
+    case 'soundIntro': return <SoundIntro {...props} />;
+    case 'repeat': return <Repeat {...props} />;
+    case 'hear2': return <Hear2 {...props} />;
+    case 'build': return <Build {...props} />;
+    case 'radIntro': return <RadIntro {...props} />;
     default: return <Choice {...props} />;
   }
 }
 function Big({ p, lang, voice, auto }) {
-  useEffect(() => { if (auto && voice) speak(p.zh, lang, { voice }); }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (auto && voice) speak(p.zh, lang, { voice, py: p.py }); }, []);  // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className={`lg-big ${p.kind === 'sign' ? 'sign' : ''}`}>
       <div className="lg-big-row">
         <span className="zh" lang="zh-CN" id="lg-zh">{p.zh}</span>
-        <SpeakBtn text={p.zh} lang={lang} voice={voice} id="lg-play" />
-        <SpeakBtn text={p.zh} lang={lang} voice={voice} slow />
+        <SpeakBtn text={p.zh} py={p.py} lang={lang} voice={voice} id="lg-play" />
+        <SpeakBtn text={p.zh} py={p.py} lang={lang} voice={voice} slow />
       </div>
       <span className="py" id="lg-py">{p.py}</span>
     </div>
@@ -564,35 +583,37 @@ function Choice({ task: x, lang, voice, answer, onAnswer }) {
     if (answer) return;
     const ok = k === x.correct;
     if (ok) sparkFrom(el);
-    if (ok && voice && (x.type === 'reverse' || x.type === 'reply')) speak(x.p.zh, lang, { voice });
+    if (ok && voice && (x.type === 'reverse' || x.type === 'reply')) speak(x.p.zh, lang, { voice, py: x.p.py });
     onAnswer(ok, { picked: k });
   };
   const last = x.type === 'reply' ? x.history.filter(h => h.who === 'them').at(-1) : null;
   useEffect(() => {
     if (!voice) return;
-    if (x.type === 'listen') speak(x.p.zh, lang, { voice });
-    if (['tone', 'toneWord', 'sound'].includes(x.type)) speak(x.syl.zh, lang, { voice });
-    if (last) speak(last.zh, lang, { voice });
+    if (x.type === 'listen') speak(x.p.zh, lang, { voice, py: x.p.py });
+    if (['tone', 'toneWord', 'sound'].includes(x.type)) speak(x.syl.zh, lang, { voice, py: x.syl.py });
+    if (last) speak(last.zh, lang, { voice, py: last.py });
   }, []);  // eslint-disable-line react-hooks/exhaustive-deps
   const cls = k => (!answer ? '' : k === x.correct ? 'ok' : k === picked ? 'bad' : 'dim');
   const optText = o => (typeof o === 'string'
-    ? <span className={x.type === 'toneRead' ? '' : 'py py-opt'}>{o}</span>
+    ? <span className={x.type === 'toneRead' || x.type === 'radPick' ? '' : 'py py-opt'}>{o}</span>
     : x.type === 'meaning' ? <span>{o.ru}</span> : <span className="lg-opt-zh"><span className="zh" lang="zh-CN">{o.zh}</span><span className="py">{o.py}</span></span>);
   return (
     <>
       {x.type === 'reply' && <Chat history={x.history} lang={lang} voice={voice} />}
-      <p className="tr-ask lg-ask">{x.type === 'reply' ? x.ask : x.p && x.p.kind === 'char' ? (x.type === 'meaning' ? 'Что значит этот знак?' : 'Какой знак это значит?') : PROMPT[x.type]}</p>
+      <p className="tr-ask lg-ask">{x.type === 'reply' || x.type === 'spell' ? x.ask : x.type === 'compose' ? 'Как это записать?' : x.p && x.p.kind === 'char' ? (x.type === 'meaning' ? 'Что значит этот знак?' : 'Какой знак это значит?') : PROMPT[x.type]}</p>
       {x.type === 'meaning' && <Big p={x.p} lang={lang} voice={voice} />}
       {x.type === 'reverse' && <p className="lg-ru big" id="lg-ru">{x.p.ru}</p>}
-      {x.type === 'listen' && <div className="lg-listen"><SpeakBtn text={x.p.zh} lang={lang} voice={voice} big id="lg-play" label="Послушать ещё раз" /><SpeakBtn text={x.p.zh} lang={lang} voice={voice} slow /></div>}
-      {['tone', 'toneWord'].includes(x.type) && <div className="lg-big"><div className="lg-big-row"><span className="zh" lang="zh-CN">{x.syl.zh}</span><SpeakBtn text={x.syl.zh} lang={lang} voice={voice} id="lg-play" /><SpeakBtn text={x.syl.zh} lang={lang} voice={voice} slow /></div>{x.syl.ru && <span className="lg-ru">{x.syl.ru}</span>}</div>}
-      {['toneRead', 'toneWordRead'].includes(x.type) && <div className="lg-big"><span className="zh" lang="zh-CN">{x.syl.zh}</span>{x.type === 'toneRead' ? <span className="py">{x.syl.py}</span> : x.syl.ru && <span className="lg-ru">{x.syl.ru}</span>}</div>}
-      {x.type === 'sound' && <div className="lg-listen"><SpeakBtn text={x.syl.zh} lang={lang} voice={voice} big id="lg-play" label="Послушать ещё раз" /><SpeakBtn text={x.syl.zh} lang={lang} voice={voice} slow /></div>}
+      {x.type === 'listen' && <div className="lg-listen"><SpeakBtn text={x.p.zh} py={x.p.py} lang={lang} voice={voice} big id="lg-play" label="Послушать ещё раз" /><SpeakBtn text={x.p.zh} py={x.p.py} lang={lang} voice={voice} slow /></div>}
+      {['tone', 'toneWord'].includes(x.type) && <div className="lg-big"><div className="lg-big-row">{x.syl.zh ? <span className="zh" lang="zh-CN">{x.syl.zh}</span> : <span className="lg-pyb" id="lg-base">{x.syl.base}</span>}<SpeakBtn text={x.syl.zh} py={x.syl.py} lang={lang} voice={voice} id="lg-play" /><SpeakBtn text={x.syl.zh} py={x.syl.py} lang={lang} voice={voice} slow /></div>{x.syl.ru && x.type === 'toneWord' && <span className="lg-ru">{x.syl.ru}</span>}</div>}
+      {['toneRead', 'toneWordRead'].includes(x.type) && <div className="lg-big">{x.syl.zh ? <span className="zh" lang="zh-CN">{x.syl.zh}</span> : null}{x.type === 'toneRead' ? <span className={x.syl.zh ? 'py' : 'lg-pyb'}>{x.syl.py}</span> : x.syl.ru && <span className="lg-ru">{x.syl.ru}</span>}</div>}
+      {x.type === 'sound' && <div className="lg-listen"><SpeakBtn text={x.syl.zh} py={x.syl.py} lang={lang} voice={voice} big id="lg-play" label="Послушать ещё раз" /><SpeakBtn text={x.syl.zh} py={x.syl.py} lang={lang} voice={voice} slow /></div>}
+      {x.type === 'compose' && <div className="lg-big lg-parts" id="lg-parts"><span className="lg-pyb">{x.parts.initial || '—'}</span><span className="lg-plus">+</span><span className="lg-pyb">{x.parts.final}</span><span className="lg-plus">,</span><span className="lg-tone-name">{TONE_NAMES[x.parts.tone - 1]} тон</span></div>}
+      {x.type === 'radPick' && <div className="lg-big"><div className="lg-big-row"><span className="zh" lang="zh-CN">{x.ch.zh}</span><SpeakBtn text={x.ch.zh} py={x.ch.py} lang={lang} voice={voice} /></div><span className="py">{x.ch.py}</span></div>}
       <div className="lg-opts ch-list" role="group" aria-label="Варианты ответа">
         {x.options.map((o, k) => (
-          <button key={typeof o === 'string' ? o : o.id} type="button" className={`ch-opt ${cls(k)}`} disabled={Boolean(answer)} aria-pressed={picked === k} data-ok={k === x.correct ? '1' : undefined} onClick={e => pick(k, e.currentTarget)}>
+          <button key={typeof o === 'string' ? o : o.id || o.zh} type="button" className={`ch-opt ${cls(k)}`} disabled={Boolean(answer)} aria-pressed={picked === k} data-ok={k === x.correct ? '1' : undefined} onClick={e => pick(k, e.currentTarget)}>
             <span className="ch-key" aria-hidden="true">{answer && k === x.correct ? <Icon name="check" size={16} /> : answer && k === picked ? <Icon name="x" size={16} /> : LETTERS[k]}</span>
-            {optText(o)}
+            {x.type === 'radPick' ? <span className="lg-rad-opt"><span className="zh" lang="zh-CN">{o.zh}</span><span>{o.ru}</span></span> : optText(o)}
             {answer && k === x.correct && <span className="sr"> (верный ответ)</span>}
           </button>
         ))}
@@ -609,7 +630,7 @@ function Chat({ history, lang, voice }) {
           <span className="zh" lang="zh-CN">{h.zh}</span>
           <span className="py">{h.py}</span>
           <span className="lg-chat-ru">{h.ru}</span>
-          {h.who === 'them' && <SpeakBtn text={h.zh} lang={lang} voice={voice} />}
+          {h.who === 'them' && <SpeakBtn text={h.zh} py={h.py} lang={lang} voice={voice} />}
         </li>
       ))}
     </ul>
@@ -704,6 +725,118 @@ function Say({ task: { p }, lang, voice, answer, onAnswer }) {
   );
 }
 
+/* ---------- вводный фонетический курс ---------- */
+/* Слог-кнопка: нажать — услышать */
+function SylBtn({ py, lang, voice, id }) {
+  return (
+    <button type="button" className="lg-syl" id={id} data-py={py} onClick={() => voice && speak('', lang, { voice, py })} aria-label={`Послушать ${py}`}>
+      <span className="lg-syl-py">{py}</span>{voice && <Icon name="volume-2" size={15} />}
+    </button>
+  );
+}
+/* Знакомство со звуком: как произносить и примеры */
+function SoundIntro({ task: { s }, lang, voice, onNext }) {
+  useEffect(() => { if (voice && s.ex[0]) speak('', lang, { voice, py: s.ex[0] }); }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <div className="lg-rule lg-sound" id="lg-sound-intro">
+      <p className="label pl-kicker">Новый звук</p>
+      <div className="lg-sound-head"><span className="lg-pyb" id="lg-sound-py">{s.py}</span><p>{s.how}</p></div>
+      <div className="lg-syls" aria-label="Примеры">{s.ex.map((py, k) => <SylBtn key={py} py={py} lang={lang} voice={voice} id={k === 0 ? 'lg-ex0' : undefined} />)}</div>
+      {!voice && <p className="muted">Озвучка выключена: включите её, чтобы услышать примеры.</p>}
+      <div className="row"><button type="button" className="btn btn-primary" id="lg-next" onClick={onNext}>Дальше<Icon name="arrow-right" size={17} /></button></div>
+    </div>
+  );
+}
+/* Послушайте и повторите: по очереди или все подряд */
+function Repeat({ task: { items }, lang, voice, onNext }) {
+  const timers = useRef([]);
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+  const all = () => {
+    timers.current.forEach(clearTimeout);
+    timers.current = items.map((py, k) => setTimeout(() => speak('', lang, { voice, py }), k * 1300));
+  };
+  return (
+    <div className="lg-rule" id="lg-repeat">
+      <p className="label pl-kicker">Послушайте и повторите</p>
+      <p>Нажимайте на слоги по очереди и повторяйте каждый вслух, подражая высоте голоса.</p>
+      <div className="lg-syls">{items.map(py => <SylBtn key={py} py={py} lang={lang} voice={voice} />)}</div>
+      <div className="row">
+        <button type="button" className="btn btn-secondary" id="lg-play-all" onClick={all}><Icon name="play" size={16} />Все подряд</button>
+        <button type="button" className="btn btn-primary" id="lg-next" onClick={onNext}>Готово<Icon name="arrow-right" size={17} /></button>
+      </div>
+    </div>
+  );
+}
+/* Две записи: в какой звучит нужный слог */
+function Hear2({ task: x, lang, voice, answer, onAnswer }) {
+  const timers = useRef([]);
+  const play = k => speak('', lang, { voice, py: x.options[k] });
+  useEffect(() => {
+    if (voice) timers.current = [setTimeout(() => play(0), 150), setTimeout(() => play(1), 1500)];
+    return () => timers.current.forEach(clearTimeout);
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+  const picked = answer ? answer.picked : null;
+  const cls = k => (!answer ? '' : k === x.correct ? 'ok' : k === picked ? 'bad' : 'dim');
+  return (
+    <>
+      <p className="tr-ask lg-ask">Где звучит <span className="py py-opt" id="lg-target">{x.syl.py}</span>?</p>
+      <div className="lg-opts lg-h2s" role="group" aria-label="Варианты ответа">
+        {x.options.map((py, k) => (
+          <div className="lg-h2" key={py}>
+            <button type="button" className="lg-say big" aria-label={`Послушать вариант ${k + 1}`} data-play={k} onClick={() => play(k)}><Icon name="volume-2" size={26} /></button>
+            <button type="button" className={`ch-opt ${cls(k)}`} disabled={Boolean(answer)} aria-pressed={picked === k} data-ok={k === x.correct ? '1' : undefined}
+              onClick={e => { if (answer) return; const ok = k === x.correct; if (ok) sparkFrom(e.currentTarget); onAnswer(ok, { picked: k }); }}>
+              <span className="ch-key" aria-hidden="true">{answer && k === x.correct ? <Icon name="check" size={16} /> : answer && k === picked ? <Icon name="x" size={16} /> : LETTERS[k]}</span>
+              <span>Вариант {k + 1}{answer && <> — <span className="py">{py}</span></>}</span>
+            </button>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+/* Диктант слога: начало, конец и тон */
+const TONE_MARKS = ['ˉ', 'ˊ', 'ˇ', 'ˋ'];
+function Build({ task: x, lang, voice, answer, onAnswer }) {
+  const [sel, setSel] = useState({ initial: null, final: null, tone: null });
+  useEffect(() => { if (voice) speak('', lang, { voice, py: x.syl.py }); }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+  const ready = sel.initial != null && sel.final != null && sel.tone != null;
+  const preview = ready ? markPy(`${sel.initial}${sel.final}`, sel.tone) : `${sel.initial ?? '…'} + ${sel.final ?? '…'}${sel.tone ? ` ${TONE_MARKS[sel.tone - 1]}` : ''}`;
+  const check = () => onAnswer(sel.initial === x.answer.initial && sel.final === x.answer.final && sel.tone === x.answer.tone, { built: preview });
+  const group = (name, label, items, show = v => v) => (
+    <div className="lg-bgrp" role="radiogroup" aria-label={label} data-group={name}>
+      <span className="label">{label}</span>
+      <div className="lg-chips">
+        {items.map(v => <button key={v} type="button" role="radio" aria-checked={sel[name] === v} className={`lg-chip ${sel[name] === v ? 'on' : ''}`} disabled={Boolean(answer)} data-v={v} onClick={() => setSel(s => ({ ...s, [name]: v }))}>{show(v)}</button>)}
+      </div>
+    </div>
+  );
+  return (
+    <div className="lg-build" data-i={x.answer.initial} data-f={x.answer.final} data-t={x.answer.tone}>
+      <p className="tr-ask lg-ask">Соберите услышанный слог</p>
+      <div className="lg-listen"><SpeakBtn text="" py={x.syl.py} lang={lang} voice={voice} big id="lg-play" label="Послушать ещё раз" /><SpeakBtn text="" py={x.syl.py} lang={lang} voice={voice} slow /></div>
+      {group('initial', 'Начало', x.initials)}
+      {group('final', 'Конец', x.finals)}
+      {group('tone', 'Тон', [1, 2, 3, 4], v => <><b>{TONE_MARKS[v - 1]}</b> {v}-й</>)}
+      <p className={`lg-built ${answer ? (answer.ok ? 'ok' : 'bad') : ''}`} id="lg-built" aria-live="polite">{preview}</p>
+      {!answer && <div className="row"><button type="button" className="btn btn-primary" id="lg-check" disabled={!ready} onClick={check}>Проверить</button></div>}
+    </div>
+  );
+}
+/* Ключ иероглифа: что значит и в каких знаках встречается */
+function RadIntro({ task: { rad }, lang, voice, onNext }) {
+  return (
+    <div className="lg-rule lg-rad" id="lg-rad-intro">
+      <p className="label pl-kicker">Ключ</p>
+      <div className="lg-sound-head"><span className="zh lg-rad-big" lang="zh-CN">{rad.zh}</span><div><b className="lg-rad-ru">«{rad.ru}»</b><p>{rad.how}</p></div></div>
+      <ul className="lg-rad-ex">
+        {rad.ex.map(e => <li key={e.zh}><span className="zh" lang="zh-CN">{e.zh}</span><span className="py">{e.py}</span><span>{e.ru}</span><SpeakBtn text={e.zh} py={e.py} lang={lang} voice={voice} /></li>)}
+      </ul>
+      <div className="row"><button type="button" className="btn btn-primary" id="lg-next" onClick={onNext}>Дальше<Icon name="arrow-right" size={17} /></button></div>
+    </div>
+  );
+}
+
 /* Прописи в уроке: знак по контуру или по памяти. Ошибка в черте не считается ошибкой урока */
 function WriteTask({ task: x, lang, voice, answer, onAnswer }) {
   const memory = x.mode === 'memory';
@@ -713,7 +846,7 @@ function WriteTask({ task: x, lang, voice, answer, onAnswer }) {
       <div className="lg-write-head">
         {!memory && <span className="zh lg-write-zh" lang="zh-CN">{x.ch.zh}</span>}
         <div className="lg-write-meta"><span className="py">{x.ch.py}</span><span className="lg-write-ru">{x.ch.ru}</span></div>
-        <SpeakBtn text={x.ch.zh} lang={lang} voice={voice} />
+        <SpeakBtn text={x.ch.zh} py={x.ch.py} lang={lang} voice={voice} />
       </div>
       <Writer ch={x.ch.zh} mode={memory ? 'memory' : 'trace'} onDone={({ mistakes }) => onAnswer(true, { mistakes })}
         label={memory ? `Поле для письма: знак «${x.ch.ru}»` : `Поле для письма: знак ${x.ch.zh}, «${x.ch.ru}»`} />
@@ -769,7 +902,7 @@ function Placement({ ix }) {
       if (phase !== 'play' || e.metaKey || e.ctrlKey || e.altKey || document.querySelector('dialog[open]')) return;
       const tag = (e.target.tagName || '').toLowerCase();
       if (/^[1-9]$/.test(e.key) && !answer) {
-        const b = document.querySelectorAll('.lg-body .lg-opts > button')[+e.key - 1];
+        const b = document.querySelectorAll('.lg-body .lg-opts .ch-opt')[+e.key - 1];
         if (b && !b.disabled) { e.preventDefault(); b.click(); }
       } else if (e.key === 'Enter' && answer && tag !== 'button' && tag !== 'a') { e.preventDefault(); next(); }
     };
@@ -815,7 +948,7 @@ function Placement({ ix }) {
             <div className="pl-col lg-body" key={`${stage}-${i}`} data-type={task.type} data-level={levels[stage].id} data-i={i}>
               <p className="label lg-test-level">{levelName(levels[stage].id)}</p>
               <h1 className="sr" tabIndex={-1} ref={headRef}>Проверка уровня {levels[stage].code}: задание {i + 1} из {tasks.length}</h1>
-              <Choice task={task} lang={t.lang} voice={voice.voice} answer={answer} onAnswer={onAnswer} />
+              <Task task={task} lang={t.lang} voice={voice.voice} answer={answer} onAnswer={onAnswer} onNext={next} />
               {answer && (
                 <div className={`lg-fb ${answer.ok ? 'ok' : 'bad'}`} id="lg-fb" aria-live="polite">
                   <p><b>{answer.ok ? 'Верно.' : 'Не совсем.'}</b> <Explain task={task} /></p>
@@ -923,7 +1056,7 @@ function WritePage({ code, script, lang, groups, wr, title, crumbs, lead, filter
                   {c.ru && <span className="wr-ru">{c.ru}</span>}
                   {wr[c.zh] && <span className="badge"><Icon name="check" size={13} />написан {wr[c.zh].n} {plural(wr[c.zh].n, ['раз', 'раза', 'раз'])}</span>}
                 </div>
-                {script === 'hanzi' && <SpeakBtn text={c.zh} lang={lang} voice={voice.voice} />}
+                {script === 'hanzi' && <SpeakBtn text={c.zh} py={c.py} lang={lang} voice={voice.voice} />}
               </div>
               <div className="seg-ctl wr-modes" role="radiogroup" aria-label="Режим прописи">
                 {MODES.map(([m, label]) => <button key={m} type="button" role="radio" aria-checked={mode === m} data-mode={m} onClick={() => { setMode(m); setGain(null); }}>{label}</button>)}
@@ -969,7 +1102,7 @@ function PhraseRow({ p, lang, voice, locked = false }) {
         <span className="py">{p.py}</span>
       </div>
       <span className="lg-phrase-ru">{p.ru}</span>
-      <SpeakBtn text={p.zh} lang={lang} voice={voice} />
+      <SpeakBtn text={p.zh} py={p.py} lang={lang} voice={voice} />
     </li>
   );
 }

@@ -1,4 +1,4 @@
-import { mark, parseSyllable, retone, syllables, toneVariants } from './pinyin.js';
+import { SYLLABLES, mark, parseSyllable, retone, splitSyllable, spoken3, syllables, toneVariants } from './pinyin.js';
 
 /* ===== Языковые уроки: из данных трека — в задания =====
    Чистые функции без React и без хранилища: их проверяет scripts/validate-lang.mjs.
@@ -89,30 +89,97 @@ function toneTask([zh, py, ru], audio, rnd) {
   const { base, tone } = parseSyllable(py);
   if (audio) {
     const options = toneVariants(base);
-    return { type: 'tone', syl: { zh, py, ru }, options, correct: tone - 1 };
+    return { type: 'tone', syl: { zh: zh || '', py, ru: ru || '', base }, options, correct: tone - 1 };
   }
-  return { type: 'toneRead', syl: { zh, py, ru }, options: TONE_NAMES, correct: tone - 1 };
+  return { type: 'toneRead', syl: { zh: zh || '', py, ru: ru || '', base }, options: TONE_NAMES, correct: tone - 1 };
 }
 /* Слово из нескольких слогов: верный рисунок тонов и три неверных */
 function toneWordTask([zh, py, ru], audio, rnd) {
   const syl = (syllables(py) || []).filter(s => !s.erhua);
+  const hz = [...(zh || '')].filter(ch => /\p{Script=Han}/u.test(ch));
+  // варианты, которые неверными не назовёшь: так слово звучит (два третьих подряд) или так его пишут словари (不 bù, 一 yī)
+  const spoken = spoken3(py), also = new Set([spoken]);
+  if (hz.length === syl.length) hz.forEach((ch, k) => {
+    if (ch === '不' && syl[k].tone !== 4) also.add(retone(py, k, 4));
+    if (ch === '一' && syl[k].tone !== 1) also.add(retone(py, k, 1));
+  });
   const wrong = new Set();
-  for (let guard = 0; wrong.size < 3 && guard < 40; guard++) {
+  for (let guard = 0; wrong.size < 3 && guard < 60; guard++) {
     const at = Math.floor(rnd() * syl.length), t = 1 + Math.floor(rnd() * 4);
     const v = retone(py, at, t);
-    if (v !== py) wrong.add(v);
+    if (v !== py && !also.has(v)) wrong.add(v);
   }
   const options = shuffle([py, ...wrong], rnd);
-  return { type: audio ? 'toneWord' : 'toneWordRead', syl: { zh, py, ru }, options, correct: options.indexOf(py) };
+  return { type: audio ? 'toneWord' : 'toneWordRead', syl: { zh, py, ru, spoken: spoken || '' }, options, correct: options.indexOf(py) };
 }
 /* Похожие звуки: только на слух */
 function soundTask([zh, py, others], rnd) {
   const options = shuffle([py, ...others], rnd);
-  return { type: 'sound', syl: { zh, py }, options, correct: options.indexOf(py) };
+  return { type: 'sound', syl: { zh: zh || '', py }, options, correct: options.indexOf(py) };
+}
+
+/* ---------- задания вводного фонетического курса ---------- */
+const SOUND_GROUPS = [['b', 'p'], ['d', 't'], ['g', 'k'], ['j', 'q', 'x'], ['z', 'c', 's'], ['zh', 'ch', 'sh', 'r'], ['m', 'n', 'l', 'f', 'h'],
+  ['an', 'ang'], ['en', 'eng'], ['in', 'ing'], ['ai', 'ei'], ['ao', 'ou'], ['ian', 'iang'], ['uan', 'uang'], ['u', 'ü'], ['i', 'ü'], ['ie', 'iu', 'iao'], ['ui', 'un', 'uo']];
+function confusable(x, pool, n, rnd) {
+  const near = SOUND_GROUPS.filter(g => g.includes(x)).flat().filter(y => y !== x);
+  const rest = shuffle(pool.filter(y => y !== x && !near.includes(y)), rnd);
+  return [...new Set([...shuffle(near, rnd), ...rest])].slice(0, n);
+}
+/* Диктант слога: услышать и собрать из начала, конца и тона */
+function buildTask(py, lessonSyl, rnd) {
+  const { base, tone } = parseSyllable(py);
+  const { initial, final } = splitSyllable(base);
+  const parts = lessonSyl.map(x => splitSyllable(parseSyllable(x).base));
+  const inis = shuffle([initial, ...confusable(initial, [...new Set(parts.map(x => x.initial).filter(Boolean))], 3, rnd)], rnd);
+  // после j, q, x пишут u, а звучит ü: варианты u и ü тут оба «верны», поэтому ü не предлагается
+  const jqx = ['j', 'q', 'x'].includes(initial);
+  const okFinal = f => !(jqx && (f.startsWith('ü') || f === final.replace(/^u/, 'ü')));
+  const fins = shuffle([final, ...confusable(final, [...new Set(parts.map(x => x.final))].filter(okFinal), 6, rnd).filter(okFinal).slice(0, 3)], rnd);
+  return { type: 'build', syl: { zh: '', py }, initials: inis, finals: fins, answer: { initial, final, tone } };
+}
+/* Без звука: та же запись на чтение — «b + a, первый тон» → выбрать bā */
+function composeTask(py, lessonSyl, rnd) {
+  const { base, tone } = parseSyllable(py);
+  const { initial, final } = splitSyllable(base);
+  const wrong = new Set();
+  const others = lessonSyl.filter(x => x !== py);
+  for (let g = 0; wrong.size < 3 && g < 30; g++) {
+    const k = g % 3;
+    const v = k === 0 ? mark(base, 1 + ((tone + Math.floor(rnd() * 3)) % 4)) : k === 1 && others.length ? others[Math.floor(rnd() * others.length)] : mark(`${confusable(initial, [], 1, rnd)[0] || initial}${final}`, tone);
+    if (v && v !== py && SYLLABLES.has(parseSyllable(v).base)) wrong.add(v);
+  }
+  const options = shuffle([py, ...wrong], rnd);
+  return { type: 'compose', syl: { zh: '', py }, parts: { initial, final, tone }, options, correct: options.indexOf(py) };
+}
+/* Две записи на слух: какая из них — нужный слог */
+function hear2Task([target, other], rnd) {
+  const options = shuffle([target, other], rnd);
+  return { type: 'hear2', syl: { zh: '', py: target }, options, correct: options.indexOf(target) };
+}
+function spellTask([ask, right, wrong, why], rnd) {
+  const options = shuffle([right, ...wrong], rnd);
+  return { type: 'spell', ask, why: why || '', options, correct: options.indexOf(right) };
+}
+/* Ключи иероглифов: знакомство и «какой ключ у этого знака» */
+const radOf = ([zh, ru]) => ({ id: `r-${zh}`, kind: 'radical', zh, ru });
+function radTasks(rads, allRads, rnd) {
+  const out = [];
+  rads.forEach(r => out.push({ type: 'radIntro', rad: { zh: r[0], ru: r[1], how: r[2] || '', ex: r[3].map(([zh, py, ru]) => ({ zh, py, ru })) } }));
+  const pool = allRads.map(radOf);
+  const items = shuffle(rads.flatMap(r => r[3].map(e => [r, e])), rnd);
+  items.forEach(([r, [zh, py, ru]]) => {
+    const right = radOf(r);
+    const wrong = shuffle(pool.filter(x => x.zh !== right.zh), rnd).slice(0, 2);
+    const options = shuffle([right, ...wrong], rnd);
+    out.push({ type: 'radPick', ch: { zh, py, ru }, options, correct: options.findIndex(o => o.zh === right.zh) });
+  });
+  return out;
 }
 
 /* ---------- урок ---------- */
-const GRADED = new Set(['meaning', 'reverse', 'listen', 'tiles', 'pairs', 'reply', 'tone', 'toneRead', 'toneWord', 'toneWordRead', 'sound']);
+const GRADED = new Set(['meaning', 'reverse', 'listen', 'tiles', 'pairs', 'reply', 'tone', 'toneRead', 'toneWord', 'toneWordRead', 'sound',
+  'build', 'compose', 'hear2', 'spell', 'radPick']);
 /* Прописи (write) — упражнение без оценки: черты проверяет сам тренажёр письма, а ошибка в черте — не ошибка в языке */
 export const isGraded = t => GRADED.has(t.type);
 
@@ -122,6 +189,9 @@ export function buildLesson(ix, lessonId, { audio = false, rnd = Math.random } =
   if (!lesson) return [];
   const out = [];
   if (lesson.rule) out.push({ type: 'rule', rule: lesson.rule });
+  // звуки урока: сначала знакомство с каждым, потом «послушайте и повторите»
+  if (lesson.sounds) lesson.sounds.forEach(([py, how, ex]) => out.push({ type: 'soundIntro', s: { py, how, ex } }));
+  if (lesson.repeat && audio) out.push({ type: 'repeat', items: lesson.repeat });
 
   if (lesson.syl) {                                   // тоны: отдельные слоги
     const items = shuffle([...lesson.syl, ...lesson.syl], rnd);
@@ -131,6 +201,22 @@ export function buildLesson(ix, lessonId, { audio = false, rnd = Math.random } =
   if (lesson.sound) {
     if (audio) shuffle([...lesson.sound, ...lesson.sound], rnd).forEach(s => out.push(soundTask(s, rnd)));
     else lesson.sound.forEach(([zh, py]) => out.push(toneTask([zh, py], false, rnd)));
+  }
+  phoneticTasks(lesson, audio, rnd, out);
+  if (lesson.mixSounds) {                             // проверка фонетического мини-курса: всё вперемешку
+    const unit = ix.unitOf[lesson.id], L = unit.lessons;
+    const mixed = { pick: pickN(L.flatMap(l => l.pick || []), 5, rnd), minimal: pickN(L.flatMap(l => l.minimal || []), 3, rnd),
+      build: pickN(L.flatMap(l => l.build || []), 4, rnd), spell: pickN(L.flatMap(l => l.spell || []), 2, rnd), buildPool: L.flatMap(l => l.build || []) };
+    const syl = pickN(L.flatMap(l => l.syl || []), 3, rnd);
+    syl.forEach(x => out.push(toneTask(x, audio, rnd)));
+    phoneticTasks(mixed, audio, rnd, out);
+    pickN(L.flatMap(l => l.words || []), 3, rnd).forEach(w => out.push(toneWordTask(w, audio, rnd)));
+  }
+  if (lesson.rad) out.push(...radTasks(lesson.rad, ix.track.units.flatMap(u => u.lessons.flatMap(l => l.rad || [])), rnd));
+  if (lesson.radMix) {                                 // проверка ключей: знаки из всего мини-курса
+    const unit = ix.unitOf[lesson.id], all = unit.lessons.flatMap(l => l.rad || []);
+    const tasks = radTasks(all, all, rnd).filter(t => t.type === 'radPick');
+    out.push(...pickN(tasks, 10, rnd));
   }
   if (lesson.mix) {                                   // проверка слуха: всё из мини-курса вперемешку
     const unit = ix.unitOf[lesson.id];
@@ -198,6 +284,16 @@ export function buildLesson(ix, lessonId, { audio = false, rnd = Math.random } =
   return out;
 }
 
+/* Задания на звуки из полей урока: pick — услышать и выбрать слог, minimal — пара похожих слогов,
+   build — диктант слога, spell — правило записи. Без звука слух заменяется чтением */
+function phoneticTasks(src, audio, rnd, out) {
+  const pool = src.buildPool || src.build || [];
+  shuffle(src.pick || [], rnd).forEach(([py, others]) => out.push(audio ? soundTask(['', py, others], rnd) : toneTask(['', py], false, rnd)));
+  shuffle(src.minimal || [], rnd).forEach(pair => out.push(audio ? hear2Task(pair, rnd) : toneTask(['', pair[0]], false, rnd)));
+  shuffle(src.build || [], rnd).forEach(py => out.push(audio ? buildTask(py, pool, rnd) : composeTask(py, pool, rnd)));
+  shuffle(src.spell || [], rnd).forEach(x => out.push(spellTask(x, rnd)));
+}
+
 /* Сборка фразы из слов: верные плитки и одна-две лишние из других фраз */
 function tilesTask(ix, p, pools, rnd) {
   const extra = [];
@@ -248,7 +344,16 @@ export function buildReview(ix, mine, { audio = false, rnd = Math.random, now = 
    Человек проходит уровни снизу вверх, пока отвечает уверенно (см. PASS) */
 export const PLACEMENT = { size: 6, pass: 5 };
 export function buildPlacement(ix, level, { audio = false, rnd = Math.random, size = PLACEMENT.size } = {}) {
-  const ph = levelLessonsOf(ix, level).flatMap(l => l.ph || []).map(id => ix.phrases[id]).filter(Boolean);
+  const lessons = levelLessonsOf(ix, level);
+  const ph = lessons.flatMap(l => l.ph || []).map(id => ix.phrases[id]).filter(Boolean);
+  if (ph.length < size) {                              // уровень без фраз — вводный курс: звуки и тоны
+    const src = { pick: pickN(lessons.flatMap(l => l.pick || []), 2, rnd), minimal: pickN(lessons.flatMap(l => l.minimal || []), 1, rnd),
+      spell: pickN(lessons.flatMap(l => l.spell || []), 1, rnd) };
+    const out = [];
+    pickN(lessons.flatMap(l => l.syl || []), 2, rnd).forEach(x => out.push(toneTask(x, audio, rnd)));
+    phoneticTasks(src, audio, rnd, out);
+    return out.slice(0, size).map(x => ({ ...x, level }));
+  }
   const all = Object.values(ix.phrases);
   // вывески и фразы поровну не нужны: вывесок не больше двух
   const signs = shuffle(ph.filter(p => p.kind === 'sign'), rnd).slice(0, 2);
@@ -266,14 +371,16 @@ export function buildPlacement(ix, level, { audio = false, rnd = Math.random, si
    а вместо значения показываются фразы, где он встречается. from — откуда знак: id фраз и l:<урок> для прописей */
 export function charTable(ix) {
   const seen = {}, units = [];
+  const readings = ix.track.readings || {};               // словарные чтения знаков, которые в курсе встречаются только с лёгким тоном
   ix.track.units.forEach(u => {
     const list = [];
     const add = (zh, info) => {
       if (!/\p{Script=Han}/u.test(zh)) return;
-      if (!seen[zh]) { seen[zh] = { zh, py: info.py, ru: info.ru || '', words: [], unit: u.id, from: [] }; list.push(seen[zh]); }
+      if (!seen[zh]) { seen[zh] = { zh, py: readings[zh] || info.py, ru: info.ru || '', words: [], unit: u.id, from: [] }; list.push(seen[zh]); }
       const c = seen[zh];
       if (info.from && !c.from.includes(info.from)) c.from.push(info.from);
       if (info.own && !c.ru) { c.py = info.py; c.ru = info.ru; }
+      else if (!parseSyllable(c.py).tone && parseSyllable(info.py || '').tone) c.py = info.py;   // лёгкий тон из слова — на словарный
       if (info.word && c.words.length < 3 && !c.words.some(w => w.zh === info.word.zh)) c.words.push(info.word);
     };
     u.lessons.forEach(l => {

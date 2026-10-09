@@ -7,9 +7,10 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import zh from '../src/data/lang/zh.js';
 import { LETTERS, letterData } from '../src/data/lang/letters.js';
+import { audioNeeds } from './audio-list.mjs';
 import { LEVEL_BY, TRACK_BY, levelsOf } from '../src/data/lang/meta.js';
 import { buildLesson, buildPlacement, buildReview, charTable, indexTrack, isGraded, phrase } from '../src/lib/lang-engine.js';
-import { hanziCount, parseSyllable, syllables } from '../src/lib/pinyin.js';
+import { SYLLABLES, hanziCount, parseSyllable, splitSyllable, syllables } from '../src/lib/pinyin.js';
 
 let n = 0, problems = [];
 // данные о чертах иероглифов: пакет hanzi-writer-data (только для разработки, в сборку копируются нужные знаки)
@@ -61,7 +62,7 @@ function checkTrack(track) {
       ok(!lessonIds.has(l.id) && l.id.startsWith(`${u.id}-`), `урок ${l.id}: повтор или чужой префикс`); lessonIds.add(l.id);
       ok(l.title && l.goal, `${l.id}: нет названия или цели`);
       (l.ph || []).forEach(id => { ok(ix.phrases[id], `${l.id}: нет фразы ${id}`); ok(!used.has(id), `${l.id}: фраза ${id} уже вводилась в другом уроке`); used.add(id); });
-      (l.syl || []).forEach(([z, p]) => { const s = syllables(p); ok(hanziCount(z) === 1 && s && s.length === 1 && parseSyllable(p).tone > 0, `${l.id}: слог ${z} ${p}`); });
+      (l.syl || []).forEach(([z, p]) => { const s = syllables(p); ok((z === '' || hanziCount(z) === 1) && s && s.length === 1 && parseSyllable(p).tone > 0, `${l.id}: слог ${z} ${p}`); });
       (l.words || []).forEach(([z, p]) => checkWord(z, p.replace(/ /g, ''), `${l.id} слово`));
       (l.sound || []).forEach(([z, p, others]) => { ok(hanziCount(z) === 1 && syllables(p)?.length === 1, `${l.id}: звук ${z}`); others.forEach(o => ok(syllables(o)?.length === 1 && o !== p, `${l.id}: вариант ${o}`)); });
       (l.dialog || []).forEach((line, j) => {
@@ -78,6 +79,19 @@ function checkTrack(track) {
         ok(hasStrokes(z), `${l.id}: нет данных о чертах для ${z}`);
       });
       if (l.writeMix) ok(u.lessons.some(x => (x.write || []).length), `${l.id}: проверка прописей без знаков`);
+      // вводный фонетический курс: каждый слог — настоящий слог путунхуа с тоном
+      const syl1 = (py, where) => { const s = syllables(py); ok(s && s.length === 1 && !s[0].erhua && parseSyllable(py).tone > 0, `${where}: слог «${py}»`); };
+      (l.sounds || []).forEach(([py, how, ex]) => { ok(py && how && ex.length >= 2, `${l.id}: звук ${py}`); ex.forEach(x => syl1(x, `${l.id} звук ${py}`)); });
+      (l.repeat || []).forEach(x => syl1(x, `${l.id} повтор`));
+      (l.pick || []).forEach(([py, others]) => { syl1(py, `${l.id} выбор`); others.forEach(o => syl1(o, `${l.id} выбор ${py}`)); ok(new Set([py, ...others]).size === others.length + 1, `${l.id}: варианты к ${py} совпадают`); });
+      (l.minimal || []).forEach(([a, b]) => { syl1(a, `${l.id} пара`); syl1(b, `${l.id} пара`); ok(a !== b, `${l.id}: пара ${a}`); });
+      (l.build || []).forEach(py => { syl1(py, `${l.id} диктант`); ok(splitSyllable(parseSyllable(py).base).initial, `${l.id}: в диктанте нужен слог с согласным: ${py}`); });
+      (l.spell || []).forEach(([ask, right, wrong]) => ok(ask && right && wrong.length >= 2 && !wrong.includes(right) && new Set(wrong).size === wrong.length, `${l.id}: правило записи «${ask}»`));
+      (l.rad || []).forEach(([z, ru, how, ex]) => {
+        ok(hanziCount(z) === 1 && ru && ex.length >= 3, `${l.id}: ключ ${z}`);
+        ex.forEach(([c, py, m]) => { ok(hanziCount(c) === 1 && syllables(py) && syllables(py).length === 1 && m, `${l.id}: пример ${c} к ключу ${z}`); ok(hasStrokes(c), `${l.id}: нет черт для ${c}`); });
+      });
+      if (u.level === 'a0') ok(!(l.ph || []).length && !l.dialog, `${l.id}: на уровне «С нуля» нет фраз — только звуки и письмо`);
     });
   });
   track.before.forEach((c, k) => ok(c.t && c.x && c.src && /^https:\/\//.test(c.src.url) && c.checked, `перед поездкой ${k + 1}`));
@@ -88,6 +102,11 @@ function checkTrack(track) {
     ok(hasStrokes(c.zh), `прописи: нет данных о чертах для ${c.zh}`);
     ok(c.py && (c.ru || c.words.length), `прописи: у знака ${c.zh} нет чтения или примера`);
   }));
+  // звук: у всего, что звучит в уроках, есть файл (иначе пересоберите звук: scripts/audio/make_audio.py)
+  const root = join(dirname(new URL(import.meta.url).pathname), '..');
+  const needs = audioNeeds(track), man = track.audio || {};
+  const lost = needs.filter(x => !man[x.key] || !existsSync(join(root, 'public', 'audio', track.code, man[x.key])));
+  ok(!lost.length, `звук: нет файлов для ${lost.length} из ${needs.length}: ${lost.slice(0, 8).map(x => x.key).join(', ')}`);
   // проверка уровня: на каждый уровень хватает фраз
   levelsOf(track.code).forEach(lv => {
     for (const audio of [true, false]) {
@@ -133,6 +152,12 @@ function checkTask(t, where) {
     const bank = t.bank.map(b => b.zh);
     ok(t.answer.length >= 2 && t.answer.every(w => bank.includes(w)), `${where}: плитки`);
     ok(new Set(t.bank.map(b => b.k)).size === t.bank.length, `${where}: ключи плиток`);
+  } else if (['build'].includes(t.type)) {
+    ok(t.initials.includes(t.answer.initial) && t.finals.includes(t.answer.final) && new Set(t.initials).size === t.initials.length && new Set(t.finals).size === t.finals.length && t.initials.length >= 2 && t.finals.length >= 2, `${where}: диктант слога`);
+  } else if (['compose', 'hear2', 'spell'].includes(t.type)) {
+    ok(t.options.length >= 2 && t.correct >= 0 && new Set(t.options).size === t.options.length, `${where}: варианты`);
+  } else if (t.type === 'radPick') {
+    ok(t.options.length === 3 && t.correct >= 0 && new Set(t.options.map(o => o.zh)).size === 3, `${where}: ключи`);
   } else if (t.type === 'write') {
     ok(t.ch && [...t.ch.zh].length === 1 && ['trace', 'memory'].includes(t.mode), `${where}: прописи`);
   } else if (t.type === 'pairs') {
