@@ -20,6 +20,8 @@ export default defineConfig({
           if (id.includes('/src/data/')) return 'lessons';
           // библиотека Supabase нужна только тем, кто входит в учётную запись: отдельный файл, который скачивается по требованию
           if (id.includes('node_modules/@supabase/') || id.includes('node_modules/iceberg-js/')) return 'cloud';
+          // тренажёр письма нужен только в прописях: отдельный файл, который скачивается по требованию
+          if (id.includes('node_modules/hanzi-writer')) return undefined;
           if (id.includes('node_modules')) return 'vendor';
         },
       },

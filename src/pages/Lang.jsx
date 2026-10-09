@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { BLOCKS, TRACKS, TRACK_BY, loadTrack } from '../data/lang/meta.js';
-import { TONE_NAMES, buildLesson, buildReview, duePhrases, indexTrack, isGraded, lessonPhrases, shuffle } from '../lib/lang-engine.js';
-import { finishLesson, finishReview, langOf } from '../lib/lang-progress.js';
+import { LEVELS, LEVEL_BY, TRACKS, TRACK_BY, levelsOf, loadTrack } from '../data/lang/meta.js';
+import { LETTER_GROUPS } from '../data/lang/letters.js';
+import { PLACEMENT, TONE_NAMES, buildLesson, buildPlacement, buildReview, charTable, duePhrases, indexTrack, isGraded, lessonPhrases, levelLessonsOf, nextLessonOf, shuffle } from '../lib/lang-engine.js';
+import { finishLesson, finishReview, langOf, practiceWrite, setLevel } from '../lib/lang-progress.js';
 import { speak, stopSpeech, useVoice } from '../lib/speech.js';
 import { getState, plural, update, useStore } from '../lib/store.js';
 import { useTitle } from '../lib/ui.jsx';
@@ -12,17 +13,24 @@ import { Icon } from '../components/Icon.jsx';
 import { Mark } from '../components/Brand.jsx';
 import { Crumbs, EmptyState } from '../components/Cards.jsx';
 import { CountUp, XpBar } from '../components/GameUI.jsx';
+import Writer from '../components/Writer.jsx';
 import NotFound from './NotFound.jsx';
 import '../lang.css';
 
 /* ===== Языки для путешествий =====
    /lang — список языков; /lang/<код> — трек; /lang/<код>/l/<урок> — урок; /lang/<код>/review — повторение;
-   /lang/<код>/phrases — разговорник. Тексты трека скачиваются при открытии (data/lang/meta.js). */
+   /lang/<код>/phrases — разговорник; /lang/<код>/test — проверка уровня; /lang/<код>/write — прописи
+   (/lang/latin/write — прописи латиницы). Тексты трека скачиваются при открытии (data/lang/meta.js).
+   Уровни — LEVELS в meta.js: «С нуля», A1, A2, B1, B2. Уроки не запираются: можно открыть любой,
+   а «Продолжить» ведёт к первому непройденному с уровня, который показала проверка. */
 
 const LETTERS = 'АБВГД';
 const date = iso => new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
 const nLessons = n => `${n} ${plural(n, ['урок', 'урока', 'уроков'])}`;
 const nPhrases = n => `${n} ${plural(n, ['фраза', 'фразы', 'фраз'])}`;
+const nChars = n => `${n} ${plural(n, ['знак', 'знака', 'знаков'])}`;
+/* Подпись уровня: «С нуля» или «A1 · Первые разговоры» */
+const levelName = id => (LEVEL_BY[id] ? (LEVEL_BY[id].id === 'a0' ? LEVEL_BY[id].title : `${LEVEL_BY[id].code} · ${LEVEL_BY[id].title}`) : '');
 
 /* ---------- загрузка трека ---------- */
 const ready = {};
@@ -108,7 +116,7 @@ export function LangHub() {
       <div className="wrap">
         <header className="page-head">
           <h1 className="h1">Языки для путешествий</h1>
-          <p className="lead">Короткие уроки под ситуации поездки: аэропорт, такси, отель, кафе, покупки и помощь. Плюс местные правила, которые стоит знать до вылета. Учётная запись не нужна.</p>
+          <p className="lead">Короткие уроки под ситуации поездки, по уровням от нуля: звуки и письмо, аэропорт, такси, отель, кафе, покупки и помощь. Плюс местные правила, которые стоит знать до вылета. Учётная запись не нужна.</p>
         </header>
         <div className="lg-tracks">
           {TRACKS.map(t => {
@@ -119,7 +127,12 @@ export function LangHub() {
                 <h2 className="h3">{t.title}</h2>
                 <p>{t.hook}</p>
                 {t.ready
-                  ? <p className="lg-track-meta"><span>{nLessons(total)}</span>{done > 0 && <span className="badge"><Icon name="check" size={13} />пройдено {done}</span>}</p>
+                  ? (
+                    <>
+                      <p className="lg-track-levels" aria-label="Уровни">{levelsOf(t.code).map(l => <span key={l.id} className="lg-lv-chip">{l.code}</span>)}</p>
+                      <p className="lg-track-meta"><span>{nLessons(total)}</span>{done > 0 && <span className="badge"><Icon name="check" size={13} />пройдено {done}</span>}</p>
+                    </>
+                  )
                   : <p className="lg-track-meta"><span className="badge badge-play">Готовится</span></p>}
               </>
             );
@@ -128,13 +141,23 @@ export function LangHub() {
               : <div className="lg-track lg-soon" key={t.code} data-track={t.code}>{body}</div>;
           })}
         </div>
+        <div className="group" id="lg-write-hub">
+          <h2 className="h3" style={{ marginBottom: 6 }}>Прописи</h2>
+          <p className="muted" style={{ marginBottom: 18, maxWidth: '64ch' }}>Обводите знак пальцем или мышью по контуру, черта за чертой: тренажёр покажет порядок черт и подскажет, если черта пошла не туда.</p>
+          <div className="lg-write-links">
+            <Link className="lg-write-link" to="/lang/zh/write" id="lg-write-zh"><span className="lg-write-glyph" lang="zh-CN" aria-hidden="true">写</span><span><b>Иероглифы</b><span>Все знаки китайского курса</span></span><Icon name="arrow-right" size={18} /></Link>
+            <Link className="lg-write-link" to="/lang/latin/write" id="lg-write-latin"><span className="lg-write-glyph latin" aria-hidden="true">Aa</span><span><b>Латиница</b><span>Буквы для английского и испанского</span></span><Icon name="arrow-right" size={18} /></Link>
+          </div>
+        </div>
         <div className="group" style={{ maxWidth: 760 }}>
           <h2 className="h3" style={{ marginBottom: 14 }}>Как устроен курс</h2>
           <div className="stack" style={{ gap: 12 }}>
+            <p><b>Уровни.</b> {LEVELS.map(l => l.code).join(', ')} — по общеевропейской шкале CEFR, в объёме, который нужен путешественнику. Начать можно с нуля, а если вы уже что-то знаете, короткая проверка покажет, с какого уровня продолжить. Уроки не запираются: любой можно открыть сразу.</p>
             <p><b>Мини-курс — одна ситуация.</b> В нём 3–5 уроков по несколько минут и в конце сценарий: разговор, где вы выбираете свои реплики.</p>
             <p><b>Задания</b> — как в языковых приложениях: значение фразы, на слух, сборка из слов, пары, ответ собеседнику. Ошибка не наказывается: задание просто вернётся в конце урока.</p>
             <p><b>Повторение.</b> Каждая выученная фраза возвращается через день, три дня, неделю и дальше реже. Если ошиблись, она вернётся завтра.</p>
             <p><b>Разговорник.</b> Все выученные фразы собираются на одной странице, её можно распечатать и взять с собой.</p>
+            <p><b>Прописи.</b> Знаки обводят по контуру, а потом пишут по памяти. Ошибка в черте не влияет на результат урока: это тренировка руки и глаза.</p>
             <p><b>Звук.</b> Фразы читает голос вашего браузера или системы. Если голоса для языка нет, задания на слух заменяются заданиями на чтение.</p>
           </div>
         </div>
@@ -170,8 +193,14 @@ function TrackBody({ ix }) {
   const L = langOf(s, t.code);
   const voice = useSound(t.lang);
   const done = ix.lessons.filter(l => L.done[l.id]).length;
-  const next = ix.lessons.find(l => !L.done[l.id]);
+  const next = nextLessonOf(ix, L);
   const due = duePhrases(ix, L.ph).length, learned = Object.keys(L.ph).filter(id => ix.phrases[id]).length;
+  const now = next ? ix.unitOf[next.id].level : null;
+  const levels = LEVELS.map(lv => {
+    const units = t.units.filter(u => u.level === lv.id), lessons = units.flatMap(u => u.lessons);
+    return { lv, units, total: lessons.length, done: lessons.filter(l => L.done[l.id]).length };
+  });
+  const jump = id => { const el = document.getElementById(`lg-level-${id}`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
   return (
     <section className="page">
       <div className="wrap">
@@ -183,6 +212,7 @@ function TrackBody({ ix }) {
         </header>
         <div className="lg-top">
           <div className="panel lg-progress" id="lg-progress">
+            {now && <p className="label lg-now" id="lg-now">Сейчас: {levelName(now)}</p>}
             <div className="lg-progress-row">
               <div><b className="num">{done}</b><span>из {nLessons(ix.lessons.length)}</span></div>
               <div><b className="num">{learned}</b><span>{plural(learned, ['фраза выучена', 'фразы выучено', 'фраз выучено'])}</span></div>
@@ -192,25 +222,56 @@ function TrackBody({ ix }) {
               {next && <Link className="btn btn-primary" id="lg-continue" to={`/lang/${t.code}/l/${next.id}`}>{done ? 'Продолжить' : 'Начать'}: {next.title}<Icon name="arrow-right" size={17} /></Link>}
               {learned > 0 && <Link className="btn btn-secondary" id="lg-review" to={`/lang/${t.code}/review`}><Icon name="repeat" size={17} />{due ? `Повторить: ${nPhrases(due)}` : 'Повторить фразы'}</Link>}
               <Link className="btn btn-ghost" id="lg-phrases" to={`/lang/${t.code}/phrases`}><Icon name="book-open" size={17} />Разговорник</Link>
+              <Link className="btn btn-ghost" id="lg-write" to={`/lang/${t.code}/write`}><Icon name="brush" size={17} />Прописи</Link>
             </div>
           </div>
           <div className="stack lg-side">
+            <div className="panel lg-test" id="lg-test">
+              {L.lv && LEVEL_BY[L.lv.id]
+                ? <p><b>Проверка уровня: {levelName(L.lv.id)}.</b> С него начинается «Продолжить». Уроки других уровней открыты всегда.</p>
+                : <p><b>Уже знаете основы?</b> Короткая проверка покажет, с какого уровня начать. Это 2–4 минуты.</p>}
+              <div><Link className="btn btn-secondary btn-sm" id="lg-test-go" to={`/lang/${t.code}/test`}><Icon name="gauge" size={16} />{L.lv ? 'Пройти проверку ещё раз' : 'Проверить уровень'}</Link></div>
+            </div>
             <SoundSwitch v={voice} />
             <VoiceNote v={voice} lang={t.lang} />
           </div>
         </div>
 
-        {BLOCKS.map(([b, title, hint]) => {
-          const units = t.units.filter(u => u.block === b);
-          if (!units.length) return null;
-          return (
-            <div className="group" key={b} data-block={b}>
-              <h2 className="h3" style={{ marginBottom: 6 }}>{title}</h2>
-              <p className="muted" style={{ marginBottom: 18 }}>{hint}</p>
-              <div className="lg-units">{units.map(u => <Unit key={u.id} code={t.code} u={u} L={L} next={next} />)}</div>
+        <nav className="lg-levels" aria-label="Уровни курса" id="lg-levels">
+          {levels.map(({ lv, units, total, done: d }) => (
+            <button type="button" key={lv.id} className={`lg-level-chip ${now === lv.id ? 'now' : ''} ${!units.length ? 'is-soon' : ''} ${units.length && d === total ? 'full' : ''}`} data-level={lv.id} onClick={() => jump(lv.id)}>
+              <b>{lv.code}</b><span>{units.length ? `${d} из ${total}` : 'готовится'}</span>
+            </button>
+          ))}
+        </nav>
+
+        {levels.filter(x => x.units.length).map(({ lv, units, total, done: d }) => (
+          <section className="group lg-level" key={lv.id} id={`lg-level-${lv.id}`} data-level={lv.id} aria-labelledby={`lg-lh-${lv.id}`}>
+            <header className="lg-level-head">
+              <span className={`lg-level-code ${lv.id === 'a0' ? 'zero' : ''}`} aria-hidden="true">{lv.id === 'a0' ? '0' : lv.code}</span>
+              <div>
+                <h2 className="h3" id={`lg-lh-${lv.id}`}>{lv.id === 'a0' ? lv.title : `${lv.code}. ${lv.title}`}</h2>
+                <p>{lv.can}</p>
+              </div>
+              <span className="lg-level-prog"><span className="bar"><i style={{ width: `${Math.round(d / total * 100)}%` }} /></span><span className="num">{d} из {total}</span></span>
+            </header>
+            <div className="lg-units">{units.map(u => <Unit key={u.id} code={t.code} u={u} L={L} next={next} />)}</div>
+          </section>
+        ))}
+
+        {levels.some(x => !x.units.length) && (
+          <div className="group" id="lg-soon">
+            <h2 className="h3" style={{ marginBottom: 18 }}>Следующие уровни</h2>
+            <div className="lg-soon-levels">
+              {levels.filter(x => !x.units.length).map(({ lv }) => (
+                <div className="lg-soon-level" key={lv.id} id={`lg-level-${lv.id}`} data-level={lv.id}>
+                  <span className="lg-level-code" aria-hidden="true">{lv.code}</span>
+                  <div><b>{lv.code}. {lv.title}</b><p>{lv.can}</p><span className="badge badge-play">Готовится</span></div>
+                </div>
+              ))}
             </div>
-          );
-        })}
+          </div>
+        )}
 
         <div className="group" id="lg-before">
           <h2 className="h3" style={{ marginBottom: 6 }}>Перед поездкой</h2>
@@ -239,7 +300,7 @@ function Unit({ code, u, L, next }) {
           return (
             <li key={l.id}>
               <Link to={`/lang/${code}/l/${l.id}`} data-lesson={l.id} data-done={done ? '1' : undefined} className={next && next.id === l.id ? 'next' : ''}>
-                <span className="lg-n">{done ? <Icon name="check" size={14} /> : l.kind === 'scene' ? <Icon name="message-circle" size={14} /> : k + 1}</span>
+                <span className="lg-n">{done ? <Icon name="check" size={14} /> : l.writeMix ? <Icon name="brush" size={14} /> : l.kind === 'scene' ? <Icon name="message-circle" size={14} /> : k + 1}</span>
                 <span className="lg-l-t">{l.title}</span>
                 {next && next.id === l.id && <span className="lg-next">Дальше</span>}
               </Link>
@@ -280,7 +341,7 @@ function Player({ ix, lessonId, review = false }) {
   const [answer, setAnswer] = useState(null);         // ответ на текущее задание: { ok, ... }
   const [marks, setMarks] = useState([]);              // по одному на пройденное задание: true, false или 'seen'
   const [res, setRes] = useState(null);
-  const first = useRef({}), wrong = useRef(new Set()), ids = useRef([]);
+  const first = useRef({}), wrong = useRef(new Set()), ids = useRef([]), written = useRef(0);
   const nextBtn = useRef(null), headRef = useRef(null);
   const L = langOf(s, t.code);
   const reviewEmpty = review && !Object.keys(L.ph).some(id => ix.phrases[id]);
@@ -293,7 +354,7 @@ function Player({ ix, lessonId, review = false }) {
     let tasks;
     if (review) { const r = buildReview(ix, getState().lang?.[t.code]?.ph || {}, { audio }); tasks = r.tasks; ids.current = r.ids; }
     else tasks = buildLesson(ix, lessonId, { audio });
-    first.current = {}; wrong.current = new Set();
+    first.current = {}; wrong.current = new Set(); written.current = 0;
     setQueue(tasks.map((x, k) => ({ ...x, key: k }))); setI(0); setAnswer(null); setMarks([]); setRes(null); setPhase('play');
   };
   const task = phase === 'play' ? queue[i] : null;
@@ -305,13 +366,13 @@ function Player({ ix, lessonId, review = false }) {
     let out;
     if (review) out = finishReview(t.code, Object.fromEntries(ids.current.map(id => [id, !wrong.current.has(id)])));
     else out = finishLesson(t.code, lessonId, { right, total: graded.length }, lessonPhrases(ix, lessonId));
-    setRes({ ...out, right, total: graded.length });
+    setRes({ ...out, right, total: graded.length, written: written.current });
     setPhase('end');
     if (graded.length && right === graded.length) celebrate();
   };
   const next = () => {
     stopSpeech();
-    setMarks(m => { const c = [...m]; c[i] = answer ? answer.ok : 'seen'; return c; });
+    setMarks(m => { const c = [...m]; c[i] = answer && !answer.skipped ? answer.ok : 'seen'; return c; });
     if (i + 1 >= queue.length) finish();
     else { setI(i + 1); setAnswer(null); }
   };
@@ -324,6 +385,7 @@ function Player({ ix, lessonId, review = false }) {
       (info.wrongIds || (x.p ? [x.p.id] : [])).forEach(id => wrong.current.add(id));
       if (!x.retry && x.type !== 'pairs') setQueue(q => [...q, { ...x, retry: true }]);
     }
+    if (x.type === 'write' && !info.skipped) { written.current += 1; practiceWrite(t.code, x.ch.zh, info.mistakes || 0, { xp: false }); }
     setAnswer({ ok, ...info });
   };
 
@@ -368,12 +430,13 @@ function Player({ ix, lessonId, review = false }) {
         <div className="wrap">
           {phase === 'intro' && (
             <div className="pl-col lg-intro">
-              <p className="label pl-kicker">{review ? t.title : `${unit.title} · ${lesson.kind === 'scene' ? 'сценарий' : `урок ${unit.lessons.indexOf(lesson) + 1} из ${unit.lessons.length}`}`}</p>
+              <p className="label pl-kicker">{review ? t.title : `${LEVEL_BY[unit.level] ? `${LEVEL_BY[unit.level].code} · ` : ''}${unit.title} · ${lesson.kind === 'scene' ? (lesson.dialog ? 'сценарий' : 'проверка') : `урок ${unit.lessons.indexOf(lesson) + 1} из ${unit.lessons.length}`}`}</p>
               <h1 className="h2" id="pl-h" tabIndex={-1} ref={headRef}>{title}</h1>
               <p className="pl-intro">{review
                 ? (reviewEmpty ? 'Повторять пока нечего: фразы появятся здесь после первого урока.' : due ? `Пора повторить ${nPhrases(due)}. Раунд займёт пару минут.` : 'Сегодня повторять нечего, но можно освежить фразы, которые давно не встречались.')
                 : `Цель: ${lesson.goal[0].toLowerCase()}${lesson.goal.slice(1)}.`}</p>
               {!review && lesson.ph && <p className="muted">{nPhrases(lessonPhrases(ix, lessonId).length)} в этом уроке. Выученные попадут в разговорник.</p>}
+              {!review && (lesson.write || lesson.writeMix) && <p className="muted">В уроке есть прописи: знаки обводят пальцем или мышью. Если писать неудобно, такое задание можно пропустить.</p>}
               <VoiceNote v={voice} lang={t.lang} />
               <SoundSwitch v={voice} />
               <div className="row">
@@ -392,7 +455,7 @@ function Player({ ix, lessonId, review = false }) {
               <Task task={task} lang={t.lang} voice={voice.voice} answer={answer} onAnswer={onAnswer} onNext={next} />
               {answer && (
                 <div className={`lg-fb ${answer.ok ? 'ok' : 'bad'}`} id="lg-fb" aria-live="polite">
-                  <p><b>{answer.ok ? (answer.self === false ? 'Потренируйтесь ещё.' : 'Верно.') : 'Не совсем.'}</b> <Explain task={task} /></p>
+                  <p><b>{task.type === 'write' ? (answer.skipped ? 'Пропущено.' : answer.mistakes ? `Готово, ошибок в чертах: ${answer.mistakes}.` : 'Готово, без ошибок.') : answer.ok ? (answer.self === false ? 'Потренируйтесь ещё.' : 'Верно.') : 'Не совсем.'}</b> <Explain task={task} /></p>
                   <button type="button" className="btn btn-primary" id="lg-next" ref={nextBtn} onClick={next}>{i + 1 >= queue.length ? 'К итогу' : 'Дальше'}<Icon name="arrow-right" size={17} /></button>
                 </div>
               )}
@@ -401,12 +464,13 @@ function Player({ ix, lessonId, review = false }) {
 
           {phase === 'end' && res && (
             <div className="pl-col lg-end">
-              <p className="label pl-kicker">{review ? 'Повторение завершено' : lesson.kind === 'scene' ? 'Сценарий пройден' : 'Урок пройден'}</p>
+              <p className="label pl-kicker">{review ? 'Повторение завершено' : lesson.kind === 'scene' ? (lesson.dialog ? 'Сценарий пройден' : 'Проверка пройдена') : 'Урок пройден'}</p>
               <h1 className="h2" id="pl-h" tabIndex={-1} ref={headRef}>{!res.total || res.right === res.total ? 'Без единой ошибки' : res.right / res.total >= 0.75 ? 'Хороший результат' : 'Есть над чем поработать'}</h1>
               <div className="done-stats">
                 <div className="stat"><b>{res.right}</b><span>верно с первого раза из {res.total}</span></div>
                 <div className="stat stat-xp"><b>+<CountUp value={res.gain} ms={700} /></b><span>{res.gain ? 'к опыту' : review ? 'опыт за повторение — раз в день' : 'опыт — за первое прохождение'}</span></div>
                 {!review && lessonPhrases(ix, lessonId).length > 0 && <div className="stat"><b>{lessonPhrases(ix, lessonId).length}</b><span>{plural(lessonPhrases(ix, lessonId).length, ['фраза', 'фразы', 'фраз'])} в разговорнике</span></div>}
+                {res.written > 0 && <div className="stat" id="lg-written"><b>{res.written}</b><span>{plural(res.written, ['знак написан', 'знака написано', 'знаков написано'])} в прописях</span></div>}
               </div>
               {!review && lessonPhrases(ix, lessonId).length > 0 && (
                 <ul className="lg-list" id="lg-learned">
@@ -430,6 +494,7 @@ function Player({ ix, lessonId, review = false }) {
 /* Пояснение после ответа: верный вариант и перевод */
 function Explain({ task: x }) {
   if (x.p) return <span className="lg-ex"><span className="zh" lang="zh-CN">{x.p.zh}</span> <span className="py">{x.p.py}</span> — {x.p.ru}{x.p.note ? `. ${x.p.note}` : ''}</span>;
+  if (x.ch) return <span className="lg-ex"><span className="zh" lang="zh-CN">{x.ch.zh}</span> <span className="py">{x.ch.py}</span> — {x.ch.ru}</span>;
   if (x.syl) return <span className="lg-ex"><span className="zh" lang="zh-CN">{x.syl.zh}</span> <span className="py">{x.syl.py}</span>{x.syl.ru ? ` — ${x.syl.ru}` : ''}{x.type === 'toneRead' ? `: ${TONE_NAMES[x.correct]} тон` : ''}</span>;
   return null;
 }
@@ -444,6 +509,7 @@ function Task(props) {
     case 'say': return <Say {...props} />;
     case 'tiles': return <Tiles {...props} />;
     case 'pairs': return <Pairs {...props} />;
+    case 'write': return <WriteTask {...props} />;
     default: return <Choice {...props} />;
   }
 }
@@ -515,7 +581,7 @@ function Choice({ task: x, lang, voice, answer, onAnswer }) {
   return (
     <>
       {x.type === 'reply' && <Chat history={x.history} lang={lang} voice={voice} />}
-      <p className="tr-ask lg-ask">{x.type === 'reply' ? x.ask : PROMPT[x.type]}</p>
+      <p className="tr-ask lg-ask">{x.type === 'reply' ? x.ask : x.p && x.p.kind === 'char' ? (x.type === 'meaning' ? 'Что значит этот знак?' : 'Какой знак это значит?') : PROMPT[x.type]}</p>
       {x.type === 'meaning' && <Big p={x.p} lang={lang} voice={voice} />}
       {x.type === 'reverse' && <p className="lg-ru big" id="lg-ru">{x.p.ru}</p>}
       {x.type === 'listen' && <div className="lg-listen"><SpeakBtn text={x.p.zh} lang={lang} voice={voice} big id="lg-play" label="Послушать ещё раз" /><SpeakBtn text={x.p.zh} lang={lang} voice={voice} slow /></div>}
@@ -602,7 +668,7 @@ function Pairs({ task: x, lang, voice, answer, onAnswer }) {
       setTimeout(() => setMiss(null), 600);
     }
   };
-  const state = (side, id) => (done.includes(id) ? 'ok' : miss && ((miss.a.side === side && miss.a.id === id) || (miss.b.side === side && miss.b.id === id)) ? 'bad' : sel && sel.side === side && sel.id === id ? 'sel' : '');
+  const state = (side, id) => (done.includes(id) ? 'ok' : miss && ((miss.a.side === side && miss.a.id === id) || (miss.b.side === side && miss.b.id === id)) ? 'bad' : sel && sel.side === side && sel.id === id ? 'is-sel' : '');
   return (
     <>
       <p className="tr-ask lg-ask">Найдите пары</p>
@@ -635,6 +701,262 @@ function Say({ task: { p }, lang, voice, answer, onAnswer }) {
         </div>
       )}
     </>
+  );
+}
+
+/* Прописи в уроке: знак по контуру или по памяти. Ошибка в черте не считается ошибкой урока */
+function WriteTask({ task: x, lang, voice, answer, onAnswer }) {
+  const memory = x.mode === 'memory';
+  return (
+    <>
+      <p className="tr-ask lg-ask">{memory ? 'Напишите знак по памяти' : 'Обведите знак по контуру'}</p>
+      <div className="lg-write-head">
+        {!memory && <span className="zh lg-write-zh" lang="zh-CN">{x.ch.zh}</span>}
+        <div className="lg-write-meta"><span className="py">{x.ch.py}</span><span className="lg-write-ru">{x.ch.ru}</span></div>
+        <SpeakBtn text={x.ch.zh} lang={lang} voice={voice} />
+      </div>
+      <Writer ch={x.ch.zh} mode={memory ? 'memory' : 'trace'} onDone={({ mistakes }) => onAnswer(true, { mistakes })}
+        label={memory ? `Поле для письма: знак «${x.ch.ru}»` : `Поле для письма: знак ${x.ch.zh}, «${x.ch.ru}»`} />
+      {!answer && <div className="row"><button type="button" className="btn btn-ghost btn-sm" id="lg-skip" onClick={() => onAnswer(true, { skipped: true })}><Icon name="skip-forward" size={16} />Пропустить</button></div>}
+    </>
+  );
+}
+
+/* ---------- проверка уровня ---------- */
+export function LangTest() {
+  const { code } = useParams();
+  return <Gate code={code} player>{ix => <Placement ix={ix} />}</Gate>;
+}
+function Placement({ ix }) {
+  const t = ix.track;
+  useTitle(`Проверка уровня — ${t.title}`);
+  const s = useStore();
+  const voice = useSound(t.lang);
+  const audio = voice.status === 'ready';
+  const levels = levelsOf(t.code);
+  const [phase, setPhase] = useState('intro');        // intro | play | end
+  const [stage, setStage] = useState(0);
+  const [tasks, setTasks] = useState([]);
+  const [i, setI] = useState(0);
+  const [answer, setAnswer] = useState(null);
+  const [log, setLog] = useState([]);                   // по уровням: { id, right, total }
+  const [result, setResult] = useState(null);
+  const right = useRef(0), headRef = useRef(null), nextBtn = useRef(null);
+  const L = langOf(s, t.code);
+
+  useEffect(() => () => stopSpeech(), []);
+  useEffect(() => { window.scrollTo(0, 0); headRef.current?.focus({ preventScroll: true }); }, [phase, i, stage]);
+  useEffect(() => { if (answer) nextBtn.current?.focus({ preventScroll: true }); }, [answer]);
+
+  const begin = k => {
+    setStage(k); setTasks(buildPlacement(ix, levels[k].id, { audio }).map((x, n) => ({ ...x, key: n })));
+    setI(0); setAnswer(null); right.current = 0; setPhase('play');
+  };
+  const start = () => { setLog([]); setResult(null); begin(0); };
+  const onAnswer = (ok, info = {}) => { if (answer) return; if (ok) right.current += 1; setAnswer({ ok, ...info }); };
+  const next = () => {
+    stopSpeech();
+    if (i + 1 < tasks.length) { setI(i + 1); setAnswer(null); return; }
+    const lv = levels[stage], r = right.current, all = [...log, { id: lv.id, right: r, total: tasks.length }];
+    setLog(all);
+    if (r >= PLACEMENT.pass && stage + 1 < levels.length) { begin(stage + 1); return; }
+    setLevel(t.code, lv.id);
+    setResult({ id: lv.id, top: r >= PLACEMENT.pass });
+    setPhase('end');
+  };
+  useEffect(() => {
+    const onKey = e => {
+      if (phase !== 'play' || e.metaKey || e.ctrlKey || e.altKey || document.querySelector('dialog[open]')) return;
+      const tag = (e.target.tagName || '').toLowerCase();
+      if (/^[1-9]$/.test(e.key) && !answer) {
+        const b = document.querySelectorAll('.lg-body .lg-opts > button')[+e.key - 1];
+        if (b && !b.disabled) { e.preventDefault(); b.click(); }
+      } else if (e.key === 'Enter' && answer && tag !== 'button' && tag !== 'a') { e.preventDefault(); next(); }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  });
+
+  const back = `/lang/${t.code}`;
+  const task = phase === 'play' ? tasks[i] : null;
+  const first = result ? (levelLessonsOf(ix, result.id).find(l => !L.done[l.id]) || levelLessonsOf(ix, result.id)[0]) : null;
+  return (
+    <div className="player lg-player" data-phase={phase}>
+      <header className="pl-top">
+        <div className="wrap">
+          <div className="pl-top-row">
+            <Link className="icon-btn" to={back} aria-label="Выйти из проверки"><Icon name="x" /></Link>
+            <div className="pl-title"><Mark size={20} /><span>Проверка уровня</span></div>
+            <div className="pl-left">{phase === 'play' ? `${levels[stage].code} · ${i + 1} / ${tasks.length}` : ''}</div>
+          </div>
+          {phase === 'play' && (
+            <div className="play-steps lg-steps" aria-hidden="true">
+              {levels.map((lv, k) => <i key={lv.id} className={k < stage ? 'ok' : k === stage ? 'now' : ''} />)}
+            </div>
+          )}
+        </div>
+      </header>
+      <div className="pl-main">
+        <div className="wrap">
+          {phase === 'intro' && (
+            <div className="pl-col lg-intro">
+              <p className="label pl-kicker">{t.title}</p>
+              <h1 className="h2" id="pl-h" tabIndex={-1} ref={headRef}>Проверка уровня</h1>
+              <p className="pl-intro">По {PLACEMENT.size} заданий на каждый уровень, начиная с самого простого. Если ответите верно на {PLACEMENT.pass} из {PLACEMENT.size}, откроется следующий. На ошибках проверка останавливается и советует, с какого уровня начать.</p>
+              <p className="muted">Опыт за проверку не начисляется, уроки не отмечаются пройденными: она только выбирает, куда ведёт кнопка «Продолжить».</p>
+              <VoiceNote v={voice} lang={t.lang} />
+              <div className="row">
+                <button type="button" className="btn btn-primary btn-lg" id="lg-start" disabled={voice.status === 'checking'} onClick={start}><Icon name="gauge" size={18} />{voice.status === 'checking' ? 'Проверяем звук…' : 'Начать проверку'}</button>
+                <Link className="btn btn-ghost btn-lg" to={back}>К курсу</Link>
+              </div>
+            </div>
+          )}
+          {phase === 'play' && task && (
+            <div className="pl-col lg-body" key={`${stage}-${i}`} data-type={task.type} data-level={levels[stage].id} data-i={i}>
+              <p className="label lg-test-level">{levelName(levels[stage].id)}</p>
+              <h1 className="sr" tabIndex={-1} ref={headRef}>Проверка уровня {levels[stage].code}: задание {i + 1} из {tasks.length}</h1>
+              <Choice task={task} lang={t.lang} voice={voice.voice} answer={answer} onAnswer={onAnswer} />
+              {answer && (
+                <div className={`lg-fb ${answer.ok ? 'ok' : 'bad'}`} id="lg-fb" aria-live="polite">
+                  <p><b>{answer.ok ? 'Верно.' : 'Не совсем.'}</b> <Explain task={task} /></p>
+                  <button type="button" className="btn btn-primary" id="lg-next" ref={nextBtn} onClick={next}>Дальше<Icon name="arrow-right" size={17} /></button>
+                </div>
+              )}
+            </div>
+          )}
+          {phase === 'end' && result && (
+            <div className="pl-col lg-end" id="lg-test-end" data-result={result.id}>
+              <p className="label pl-kicker">Проверка завершена</p>
+              <h1 className="h2" id="pl-h" tabIndex={-1} ref={headRef}>{result.id === 'a0' ? 'Начните с нуля' : `Ваш уровень — ${LEVEL_BY[result.id].code}`}</h1>
+              <p className="pl-intro">{result.top
+                ? `Задания всех готовых уровней вы решили уверенно. Следующие уровни готовятся, а пока повторяйте фразы ${LEVEL_BY[result.id].code} и проходите сценарии.`
+                : result.id === 'a0' ? 'Курс начинается со звуков, вежливых слов и чисел — с них и стоит начать.' : `Материал ниже вы знаете. Начните с уровня ${LEVEL_BY[result.id].code}: ${LEVEL_BY[result.id].can[0].toLowerCase()}${LEVEL_BY[result.id].can.slice(1)}`}</p>
+              <ul className="lg-test-log" id="lg-test-log">
+                {log.map(x => <li key={x.id} className={x.right >= PLACEMENT.pass ? 'ok' : ''}><b>{levelName(x.id)}</b><span className="num">{x.right} из {x.total}</span></li>)}
+              </ul>
+              <div className="row">
+                {first && <Link className="btn btn-primary btn-lg" id="lg-test-start" to={`/lang/${t.code}/l/${first.id}`}>Начать: {first.title}<Icon name="arrow-right" size={18} /></Link>}
+                <Link className="btn btn-secondary btn-lg" to={back}>К курсу</Link>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- прописи ---------- */
+export function LangWrite() {
+  const { code } = useParams();
+  if (code === 'latin') return <LatinWrite />;
+  return <Gate code={code}>{ix => <HanziWrite ix={ix} />}</Gate>;
+}
+function HanziWrite({ ix }) {
+  const t = ix.track;
+  useTitle(`Прописи — ${t.title}`);
+  const s = useStore();
+  const L = langOf(s, t.code);
+  const [all, setAll] = useState(true);
+  const table = useMemo(() => charTable(ix), [ix]);
+  const learned = c => c.from.some(f => (f.startsWith('l:') ? L.done[f.slice(2)] : L.ph[f]));
+  const groups = table.map(g => ({ id: g.unit.id, title: g.unit.title, level: g.unit.level, items: g.chars.filter(c => all || learned(c)) })).filter(g => g.items.length);
+  return (
+    <WritePage code={t.code} script="hanzi" lang={t.lang} groups={groups} wr={L.wr}
+      title={`Прописи: ${t.title.toLowerCase()}`} crumbs={[['Языки', '/lang'], [t.title, `/lang/${t.code}`], ['Прописи']]}
+      lead="Все иероглифы курса по мини-курсам. Выберите знак, посмотрите порядок черт и обведите его по контуру, а потом напишите по памяти."
+      filter={(
+        <div className="seg-ctl" role="radiogroup" aria-label="Какие знаки показывать">
+          <button type="button" role="radio" aria-checked={all} onClick={() => setAll(true)}>Все знаки курса</button>
+          <button type="button" role="radio" aria-checked={!all} id="wr-learned" onClick={() => setAll(false)}>Из пройденных уроков</button>
+        </div>
+      )}
+      empty="Пройдите урок с фразами или с прописями — знаки из него появятся здесь."
+      credits={<>Порядок и форма черт — данные проекта <a href="https://github.com/skishore/makemeahanzi" target="_blank" rel="noopener noreferrer">Make Me a Hanzi</a> (© 1999 Arphic Technology Co., Ltd., © 2016 Shaunak Kishore) по <a href="strokes/zh/ARPHICPL.TXT" target="_blank" rel="noopener">лицензии Arphic Public License</a>. Тренажёр письма — <a href="https://github.com/chanind/hanzi-writer" target="_blank" rel="noopener noreferrer">Hanzi Writer</a> (© 2014 David Chanin, <a href="licenses/hanzi-writer.txt" target="_blank" rel="noopener">лицензия MIT</a>).</>} />
+  );
+}
+function LatinWrite() {
+  useTitle('Прописи — латиница');
+  const s = useStore();
+  const L = langOf(s, 'latin');
+  const groups = LETTER_GROUPS.map(g => ({ id: g.id, title: g.title, items: g.chars.map(ch => ({ zh: ch, py: '', ru: '', words: [], from: [] })) }));
+  return (
+    <WritePage code="latin" script="latin" groups={groups} wr={L.wr}
+      title="Прописи: латиница" crumbs={[['Языки', '/lang'], ['Прописи: латиница']]}
+      lead="Печатные буквы латинского алфавита — для английского и испанского. Буквы пишут между линейками: строчные — до средней линии, заглавные и высокие строчные — до верхней."
+      credits={<>Буквы нарисованы для NowNow. Тренажёр письма — <a href="https://github.com/chanind/hanzi-writer" target="_blank" rel="noopener noreferrer">Hanzi Writer</a> (© 2014 David Chanin, <a href="licenses/hanzi-writer.txt" target="_blank" rel="noopener">лицензия MIT</a>).</>} />
+  );
+}
+const MODES = [['show', 'Порядок'], ['trace', 'По контуру'], ['memory', 'По памяти']];
+function WritePage({ code, script, lang, groups, wr, title, crumbs, lead, filter, empty, credits }) {
+  const flat = groups.flatMap(g => g.items);
+  const [sel, setSel] = useState(() => (flat.find(c => !wr[c.zh]) || flat[0] || {}).zh);
+  const [mode, setMode] = useState('trace');
+  const [gain, setGain] = useState(null);
+  const voice = useSound(lang || 'zh-CN');
+  const panel = useRef(null);
+  const c = flat.find(x => x.zh === sel) || flat[0];
+  useEffect(() => { if (flat.length && !flat.some(x => x.zh === sel)) setSel(flat[0].zh); }, [flat.length]);  // eslint-disable-line react-hooks/exhaustive-deps
+  const pick = ch => {
+    setSel(ch); setGain(null);
+    if (window.innerWidth < 1024 && panel.current) panel.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  const nextChar = () => { const k = flat.findIndex(x => x.zh === c.zh); if (k >= 0 && flat.length) pick(flat[(k + 1) % flat.length].zh); };
+  const onDone = ({ mistakes }) => { const r = practiceWrite(code, c.zh, mistakes); setGain(r.gain); };
+  const count = Object.keys(wr).length;
+  return (
+    <section className="page wr-page">
+      <div className="wrap">
+        <header className="page-head">
+          <Crumbs items={crumbs} />
+          <h1 className="h1">{title}</h1>
+          <p className="lead">{lead}</p>
+          <div className="row">{filter}<span className="muted" id="wr-count">{count ? `Написано: ${nChars(count)}` : 'Пока ничего не написано'}</span></div>
+        </header>
+        {!c ? <EmptyState title="Пока пусто" text={empty || 'Знаков нет.'} /> : (
+          <div className="wr-layout">
+            <div className="panel wr-panel" ref={panel} id="wr-panel">
+              <div className="wr-info">
+                <span className={`wr-big ${script === 'hanzi' ? 'zh' : 'latin'}`} lang={script === 'hanzi' ? 'zh-CN' : undefined}>{c.zh}</span>
+                <div className="wr-meta">
+                  {c.py && <span className="py">{c.py}</span>}
+                  {c.ru && <span className="wr-ru">{c.ru}</span>}
+                  {wr[c.zh] && <span className="badge"><Icon name="check" size={13} />написан {wr[c.zh].n} {plural(wr[c.zh].n, ['раз', 'раза', 'раз'])}</span>}
+                </div>
+                {script === 'hanzi' && <SpeakBtn text={c.zh} lang={lang} voice={voice.voice} />}
+              </div>
+              <div className="seg-ctl wr-modes" role="radiogroup" aria-label="Режим прописи">
+                {MODES.map(([m, label]) => <button key={m} type="button" role="radio" aria-checked={mode === m} data-mode={m} onClick={() => { setMode(m); setGain(null); }}>{label}</button>)}
+              </div>
+              <Writer key={`${c.zh}-${mode}`} ch={c.zh} script={script} mode={mode} onDone={onDone} label={`Поле для письма: ${c.zh}`} />
+              {gain != null && <p className="wr-gain" id="wr-gain" aria-live="polite">{gain ? `+${gain} к опыту за новый знак` : 'Записано в прописи'}</p>}
+              {c.words && c.words.length > 0 && (
+                <ul className="wr-words" aria-label="Где встречается">
+                  {c.words.map(w => <li key={w.zh}><span className="zh" lang="zh-CN">{w.zh}</span> <span className="py">{w.py}</span> — {w.ru}</li>)}
+                </ul>
+              )}
+              <div className="row"><button type="button" className="btn btn-secondary btn-sm" id="wr-next" onClick={nextChar}>Следующий знак<Icon name="arrow-right" size={16} /></button></div>
+            </div>
+            <div className="wr-sets">
+              {groups.map(g => (
+                <div className="wr-set" key={g.id} data-set={g.id}>
+                  <h2 className="h4">{g.level && LEVEL_BY[g.level] ? <span className="lg-lv-tag">{LEVEL_BY[g.level].code}</span> : null}{g.title}</h2>
+                  <div className="wr-cells">
+                    {g.items.map(x => (
+                      <button key={x.zh} type="button" className={`wr-cell ${script === 'hanzi' ? 'zh' : 'latin'} ${wr[x.zh] ? 'done' : ''}`} aria-pressed={x.zh === c.zh} data-ch={x.zh}
+                        aria-label={`${x.zh}${x.py ? `, ${x.py}` : ''}${wr[x.zh] ? ', написан' : ''}`} onClick={() => pick(x.zh)}>
+                        <span lang={script === 'hanzi' ? 'zh-CN' : undefined}>{x.zh}</span>{wr[x.zh] && <i aria-hidden="true" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        <p className="wr-credits">{credits}</p>
+      </div>
+    </section>
   );
 }
 
@@ -683,7 +1005,7 @@ function Phrasebook({ ix }) {
         </header>
         {groups.length ? groups.map(g => (
           <div className="group lg-book-group" key={g.u.id} data-unit={g.u.id}>
-            <h2 className="h3">{g.u.title}</h2>
+            <h2 className="h3">{LEVEL_BY[g.u.level] && <span className="lg-lv-tag">{LEVEL_BY[g.u.level].code}</span>}{g.u.title}</h2>
             <ul className="lg-list">{g.items.map(p => <PhraseRow key={p.id} p={p} lang={t.lang} voice={voice.voice} locked={!L.ph[p.id]} />)}</ul>
           </div>
         )) : (

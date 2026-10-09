@@ -2,12 +2,19 @@
    Ищет опечатки в пиньине, расхождение числа иероглифов и слогов, ссылки на несуществующие фразы
    и собирает каждый урок по нескольку раз, проверяя, что у каждого задания есть верный ответ. */
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { dirname, join } from 'node:path';
 import zh from '../src/data/lang/zh.js';
-import { TRACK_BY } from '../src/data/lang/meta.js';
-import { buildLesson, buildReview, indexTrack, isGraded, phrase } from '../src/lib/lang-engine.js';
+import { LETTERS, letterData } from '../src/data/lang/letters.js';
+import { LEVEL_BY, TRACK_BY, levelsOf } from '../src/data/lang/meta.js';
+import { buildLesson, buildPlacement, buildReview, charTable, indexTrack, isGraded, phrase } from '../src/lib/lang-engine.js';
 import { hanziCount, parseSyllable, syllables } from '../src/lib/pinyin.js';
 
 let n = 0, problems = [];
+// данные о чертах иероглифов: пакет hanzi-writer-data (только для разработки, в сборку копируются нужные знаки)
+const STROKES = dirname(createRequire(import.meta.url).resolve('hanzi-writer-data/package.json'));
+const hasStrokes = ch => existsSync(join(STROKES, `${ch}.json`));
 const ok = (cond, msg) => { n++; if (!cond) problems.push(msg); };
 
 /* Слово: иероглифов столько же, сколько слогов (儿 после слога — эризация, отдельного слога нет) */
@@ -46,7 +53,9 @@ function checkTrack(track) {
   const lessonIds = new Set(), used = new Set();
   track.units.forEach((u, k) => {
     const m = meta.units[k] || [];
-    ok(m[0] === u.id && m[1] === u.block && m[2] === u.lessons.length, `${u.id}: в meta.js ${m.join(',')}, в треке ${u.id},${u.block},${u.lessons.length}`);
+    ok(m[0] === u.id && m[1] === u.level && m[2] === u.lessons.length, `${u.id}: в meta.js ${m.join(',')}, в треке ${u.id},${u.level},${u.lessons.length}`);
+    ok(LEVEL_BY[u.level], `${u.id}: неизвестный уровень ${u.level}`);
+    ok(k === 0 || Object.keys(LEVEL_BY).indexOf(track.units[k - 1].level) <= Object.keys(LEVEL_BY).indexOf(u.level), `${u.id}: уровни идут не по порядку`);
     ok(u.lessons.at(-1).kind === 'scene', `${u.id}: последний урок должен быть сценарием или проверкой`);
     u.lessons.forEach(l => {
       ok(!lessonIds.has(l.id) && l.id.startsWith(`${u.id}-`), `урок ${l.id}: повтор или чужой префикс`); lessonIds.add(l.id);
@@ -63,9 +72,30 @@ function checkTrack(track) {
         ok(new Set([line[1], ...line[2]].map(id => ix.phrases[id] && ix.phrases[id].zh)).size === 3, `${where}: варианты совпадают`);
       });
       if (l.card) ok(l.card.t && l.card.x && (!l.card.src || /^https:\/\//.test(l.card.src.url)), `${l.id}: карточка`);
+      (l.write || []).forEach(([z, p, ru]) => {
+        const s = syllables(p);
+        ok(hanziCount(z) === 1 && [...z].length === 1 && s && s.length === 1 && ru, `${l.id}: знак для прописей ${z} ${p}`);
+        ok(hasStrokes(z), `${l.id}: нет данных о чертах для ${z}`);
+      });
+      if (l.writeMix) ok(u.lessons.some(x => (x.write || []).length), `${l.id}: проверка прописей без знаков`);
     });
   });
   track.before.forEach((c, k) => ok(c.t && c.x && c.src && /^https:\/\//.test(c.src.url) && c.checked, `перед поездкой ${k + 1}`));
+  // знаки для страницы «Прописи»: у каждого есть данные о чертах
+  const table = charTable(ix), seenChars = new Set();
+  table.forEach(g => g.chars.forEach(c => {
+    ok(!seenChars.has(c.zh), `прописи: знак ${c.zh} дважды`); seenChars.add(c.zh);
+    ok(hasStrokes(c.zh), `прописи: нет данных о чертах для ${c.zh}`);
+    ok(c.py && (c.ru || c.words.length), `прописи: у знака ${c.zh} нет чтения или примера`);
+  }));
+  // проверка уровня: на каждый уровень хватает фраз
+  levelsOf(track.code).forEach(lv => {
+    for (const audio of [true, false]) {
+      const tasks = buildPlacement(ix, lv.id, { audio });
+      ok(tasks.length === 6, `проверка уровня ${lv.id}: ${tasks.length} заданий`);
+      tasks.forEach((t, k) => checkTask(t, `проверка уровня ${lv.id}#${k} ${t.type}`));
+    }
+  });
   // каждая фраза входит в какой-то урок, иначе её не встретить
   Object.keys(ix.phrases).forEach(id => ok(used.has(id), `фраза ${id} не входит ни в один урок`));
 
@@ -103,12 +133,24 @@ function checkTask(t, where) {
     const bank = t.bank.map(b => b.zh);
     ok(t.answer.length >= 2 && t.answer.every(w => bank.includes(w)), `${where}: плитки`);
     ok(new Set(t.bank.map(b => b.k)).size === t.bank.length, `${where}: ключи плиток`);
+  } else if (t.type === 'write') {
+    ok(t.ch && [...t.ch.zh].length === 1 && ['trace', 'memory'].includes(t.mode), `${where}: прописи`);
   } else if (t.type === 'pairs') {
     ok(t.items.length >= 2 && new Set(t.items.map(p => p.ru)).size === t.items.length && new Set(t.items.map(p => p.zh)).size === t.items.length, `${where}: пары`);
   }
 }
 
 checkTrack(zh);
+// латиница для прописей: у каждой буквы есть черты, средние линии внутри поля и контур
+LETTERS.forEach(ch => {
+  const d = letterData(ch);
+  ok(d && d.strokes.length && d.strokes.length === d.medians.length, `буква ${ch}: черты`);
+  if (!d) return;
+  d.medians.forEach((m, k) => {
+    ok(m.length >= 2 && m.every(([x, y]) => x >= 0 && x <= 1024 && y >= -124 && y <= 900), `буква ${ch}, черта ${k + 1}: точки вне поля`);
+    ok(/^M [\d.-]+ [\d.-]+( L [\d.-]+ [\d.-]+)+ Z$/.test(d.strokes[k]), `буква ${ch}, черта ${k + 1}: контур`);
+  });
+});
 // разбор строки: слова и плитки
 const p = phrase(['x', '我 要 这个。', 'wǒ yào zhège.', 'Мне вот это.']);
 assert.equal(p.zh, '我要这个。'); assert.equal(p.py, 'wǒ yào zhège.'); assert.deepEqual(p.tiles.map(t => t.zh), ['我', '要', '这个']);

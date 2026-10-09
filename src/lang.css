@@ -156,7 +156,7 @@ a.lg-track:hover{border-color:var(--accent-line);transform:translateY(-2px)}
 .lg-pair:hover:not(:disabled){border-color:var(--accent-line)}
 .lg-pair .zh{font-size:20px;line-height:1.25}
 .lg-pair .py{font-size:12.5px}
-.lg-pair.sel{border-color:var(--accent-text);box-shadow:inset 0 0 0 1px var(--accent-text)}
+.lg-pair.is-sel{border-color:var(--accent-text);box-shadow:inset 0 0 0 1px var(--accent-text)}
 .lg-pair.ok{border-color:var(--ok);background:var(--ok-bg);opacity:.6;cursor:default}
 .lg-pair.bad{border-color:var(--bad);background:var(--bad-bg);animation:shake .4s}
 
@@ -197,3 +197,96 @@ a.lg-track:hover{border-color:var(--accent-line);transform:translateY(-2px)}
 }
 /* заголовок получает фокус программно, чтобы экранный диктор прочитал новое задание: рамка фокуса ему не нужна */
 .lg-player [tabindex="-1"]:focus{outline:none}
+
+/* ---------- уровни ---------- */
+.lg-track-levels{display:flex;flex-wrap:wrap;gap:6px}
+.lg-lv-chip{display:inline-grid;place-items:center;min-width:34px;height:24px;padding:0 8px;border-radius:var(--r-pill);border:1px solid var(--border-2);font:600 12px/1 var(--font-display);color:var(--text-2)}
+.lg-now{color:var(--accent-text)}
+.lg-test p{font-size:14.5px;line-height:1.5;color:var(--text-2)}
+.lg-test p b{color:var(--text);font-weight:600}
+.lg-test{gap:12px;padding:16px 18px}
+.lg-levels{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);z-index:5;display:flex;gap:8px;margin-top:clamp(28px,4vw,44px);padding:10px 0;overflow-x:auto;scrollbar-width:none;background:var(--bg);border-bottom:1px solid var(--border)}
+.lg-levels::-webkit-scrollbar{display:none}
+@media (min-width:860px){.lg-levels{top:72px}}
+.lg-level-chip{display:flex;flex-direction:column;align-items:flex-start;gap:3px;flex:none;min-width:96px;padding:8px 14px;border-radius:var(--r-md);border:1px solid var(--border);background:var(--bg-1);color:var(--text);text-align:left;transition:border-color .15s}
+.lg-level-chip:hover{border-color:var(--accent-line)}
+.lg-level-chip b{font:700 16px/1 var(--font-display)}
+.lg-level-chip span{font-size:12.5px;line-height:1.2;color:var(--text-3)}
+.lg-level-chip.now{border-color:var(--accent-text);box-shadow:inset 0 0 0 1px var(--accent-text)}
+.lg-level-chip.full b::after{content:' ✓';color:var(--ok)}
+.lg-level-chip.is-soon{opacity:.6}
+.lg-level{scroll-margin-top:150px}
+.lg-level-head{display:grid;grid-template-columns:56px minmax(0,1fr);gap:8px 16px;align-items:start;margin-bottom:20px}
+.lg-level-head p{margin-top:6px;max-width:68ch;font-size:15px;line-height:1.5;color:var(--text-2)}
+.lg-level-code{display:grid;place-items:center;width:56px;height:56px;border-radius:14px;background:var(--lime);color:var(--ink);font:700 19px/1 var(--font-display);box-shadow:inset 0 0 0 1.5px var(--edge)}
+.lg-level-code.zero{background:var(--bg-2);color:var(--text);box-shadow:inset 0 0 0 1px var(--border-2)}
+.lg-level-prog{grid-column:2;display:flex;align-items:center;gap:10px;max-width:360px;font-size:13px;color:var(--text-2)}
+@media (min-width:860px){.lg-level-head{grid-template-columns:56px minmax(0,1fr) 220px;align-items:center}.lg-level-prog{grid-column:3}}
+.lg-soon-levels{display:grid;gap:14px}
+@media (min-width:768px){.lg-soon-levels{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.lg-soon-level{display:grid;grid-template-columns:48px minmax(0,1fr);gap:14px;padding:18px;border-radius:var(--r-lg);border:1px dashed var(--border-2);scroll-margin-top:150px}
+.lg-soon-level .lg-level-code{width:48px;height:48px;font-size:17px;background:var(--bg-2);color:var(--text-2);box-shadow:none}
+.lg-soon-level b{font:600 16px/1.35 var(--font-body)}
+.lg-soon-level p{margin:6px 0 10px;font-size:14.5px;line-height:1.5;color:var(--text-2)}
+.lg-lv-tag{display:inline-grid;place-items:center;min-width:32px;height:22px;margin-right:10px;padding:0 7px;border-radius:6px;background:var(--bg-2);font:600 12px/1 var(--font-display);color:var(--text-2);vertical-align:3px}
+.lg-test-level{color:var(--text-3)}
+.lg-test-log{display:flex;flex-direction:column;gap:8px;width:100%}
+.lg-test-log li{display:flex;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:var(--r-md);background:var(--bg-2);font-size:15px}
+.lg-test-log li.ok .num{color:var(--ok)}
+.lg-test-log li b{font-weight:600}
+
+/* ---------- прописи на странице языков ---------- */
+.lg-write-links{display:grid;gap:12px}
+@media (min-width:768px){.lg-write-links{grid-template-columns:repeat(2,minmax(0,1fr));max-width:860px}}
+.lg-write-link{display:grid;grid-template-columns:56px minmax(0,1fr) 20px;align-items:center;gap:16px;padding:16px 18px;border-radius:var(--r-lg);border:1px solid var(--border);background:var(--bg-1);color:var(--text);text-decoration:none;box-shadow:var(--shadow);transition:border-color .15s,transform .15s}
+.lg-write-link:hover{border-color:var(--accent-line);transform:translateY(-2px)}
+.lg-write-link b{display:block;font:600 16px/1.3 var(--font-body)}
+.lg-write-link span span{font-size:14px;color:var(--text-2)}
+.lg-write-glyph{display:grid;place-items:center;width:56px;height:56px;border-radius:12px;background:var(--bg-2);font:500 30px/1 var(--font-zh);color:var(--accent-text);background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:28px 28px;background-position:center}
+.lg-write-glyph.latin{font:600 24px/1 var(--font-display)}
+
+/* ---------- прописи в уроке ---------- */
+.lg-write-head{display:flex;align-items:center;gap:14px}
+.lg-write-zh{font-size:44px;line-height:1}
+.lg-write-meta{display:flex;flex-direction:column;gap:2px;min-width:0}
+.lg-write-meta .py{font-size:17px}
+.lg-write-ru{font:600 18px/1.3 var(--font-body)}
+
+/* ---------- тренажёр письма ---------- */
+.wr{--wr-ink:var(--text);--wr-outline:var(--border-2);--wr-pen:var(--accent-text);--wr-hint:var(--ok);display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
+.wr-pad{position:relative;flex:none;border-radius:var(--r-md);background:var(--bg-1);box-shadow:inset 0 0 0 1px var(--border);touch-action:none;user-select:none;-webkit-user-select:none;cursor:crosshair}
+.wr-grid{position:absolute;inset:0;stroke:var(--border-2);stroke-width:1;opacity:.75}
+.wr-grid rect{stroke:var(--border-2)}
+.wr-grid .wr-base{stroke:var(--text-3);stroke-width:1.5}
+.wr-host{position:absolute;inset:0}
+.wr-host svg{display:block}
+.wr[data-phase="loading"] .wr-pad{opacity:.6}
+.wr-status{font:500 14px/1.4 var(--font-body);color:var(--text-2);text-align:center;min-height:20px}
+.wr[data-phase="done"] .wr-status{color:var(--ok)}
+.wr-tools{justify-content:center;gap:4px}
+
+/* ---------- страница «Прописи» ---------- */
+.wr-layout{display:grid;gap:20px;align-items:start}
+@media (min-width:1024px){.wr-layout{grid-template-columns:380px minmax(0,1fr);gap:28px}.wr-panel{position:sticky;top:96px}}
+.wr-panel{gap:14px;scroll-margin-top:90px}
+.wr-info{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:14px}
+.wr-big{font-size:52px;line-height:1}
+.wr-big.latin{font:600 46px/1 var(--font-display)}
+.wr-meta{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
+.wr-meta .py{font-size:18px}
+.wr-ru{font:600 16px/1.3 var(--font-body)}
+.wr-modes{align-self:stretch;justify-content:stretch}
+.wr-modes button{flex:1;justify-content:center;padding:0 8px}
+.wr-gain{font:600 14px/1.3 var(--font-body);color:var(--accent-text);text-align:center}
+.wr-words{display:flex;flex-direction:column;gap:6px;padding-top:10px;border-top:1px solid var(--border);font-size:14px;line-height:1.45;color:var(--text-2)}
+.wr-words .zh{font-size:17px;color:var(--text)}
+.wr-sets{display:flex;flex-direction:column;gap:26px;min-width:0}
+.wr-set .h4{margin-bottom:12px}
+.wr-cells{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:8px}
+.wr-cell{position:relative;display:grid;place-items:center;aspect-ratio:1;border-radius:10px;border:1px solid var(--border);background:var(--bg-1);color:var(--text);font:500 26px/1 var(--font-zh);transition:border-color .15s,background-color .15s,transform .1s}
+.wr-cell.latin{font:600 22px/1 var(--font-display)}
+.wr-cell:hover{border-color:var(--accent-line)}
+.wr-cell[aria-pressed="true"]{border-color:var(--accent-text);box-shadow:inset 0 0 0 1px var(--accent-text);background:var(--bg-2)}
+.wr-cell.done i{position:absolute;right:5px;top:5px;width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.wr-credits{margin-top:clamp(32px,4vw,48px);max-width:80ch;font-size:13px;line-height:1.55;color:var(--text-3)}
+.wr-credits a{color:var(--text-2)}

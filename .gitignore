@@ -16,3 +16,6 @@ supabase/.branches
 *.sql.gz
 *.pem
 *.key
+
+# данные о чертах для прописей: копируются из hanzi-writer-data при сборке (scripts/strokes.mjs)
+public/strokes/

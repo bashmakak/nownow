@@ -6,9 +6,12 @@ import { dueAt } from './lang-engine.js';
    Хранится в state.lang[код языка] и синхронизируется вместе с остальным прогрессом:
      done — пройденные уроки: { at, right, total, n };
      ph   — выученные фразы: { b — ступень повторения, due — когда повторить, at — когда встречалась };
-     rv   — последний раунд повторения: { day, n } (опыт за повторение — раз в день). */
+     rv   — последний раунд повторения: { day, n } (опыт за повторение — раз в день);
+     wr   — знаки, написанные в прописях: { n — сколько раз, best — меньше всего ошибок, at };
+     lv   — итог проверки уровня: { id уровня, at }.
+   Прописи латиницы хранятся под кодом 'latin': у них нет уроков, только wr. */
 
-const blank = () => ({ done: {}, ph: {}, rv: null });
+const blank = () => ({ done: {}, ph: {}, rv: null, wr: {}, lv: null });
 export const langOf = (s, code) => ({ ...blank(), ...((s.lang || {})[code] || {}) });
 export const useLang = code => langOf(useStore(), code);
 
@@ -51,6 +54,29 @@ export function finishReview(code, results) {
     const t = today(d); t.games = (t.games || 0) + 1;
   });
   return { gain };
+}
+
+/* Знак написан в прописях. В уроке опыт даёт сам урок, на странице «Прописи» — 2 очка за каждый новый знак */
+export function practiceWrite(code, ch, mistakes, { xp = true } = {}) {
+  let gain = 0;
+  update(d => {
+    if (!d.lang) d.lang = {};
+    const L = d.lang[code] || (d.lang[code] = blank());
+    if (!L.wr) L.wr = {};
+    const was = L.wr[ch];
+    L.wr[ch] = { n: (was ? was.n || 0 : 0) + 1, best: Math.min(mistakes, was && was.best != null ? was.best : Infinity), at: Date.now() };
+    if (xp && !was) { gain = XP.langWrite; d.game.xp += gain; }
+    if (xp) { const t = today(d); t.games = (t.games || 0) + 1; }
+  });
+  return { gain };
+}
+/* Итог проверки уровня: с какого уровня советуем начать */
+export function setLevel(code, level) {
+  update(d => {
+    if (!d.lang) d.lang = {};
+    const L = d.lang[code] || (d.lang[code] = blank());
+    L.lv = { id: level, at: Date.now() };
+  });
 }
 
 /* Сколько фраз пора повторить */

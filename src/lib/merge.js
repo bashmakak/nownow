@@ -95,7 +95,8 @@ function mergeGame(l, r, b) {
   return { xp: grow(l.xp, r.xp, b.xp), best, days, dailies: Math.max(num(l.dailies), num(r.dailies)), seen, lvl: Math.max(num(l.lvl), num(r.lvl), 1) };
 }
 
-/* Языки: пройденные уроки объединяются, у фразы берётся запись, которую обновляли позже */
+/* Языки: пройденные уроки и прописи объединяются, у фразы берётся запись, которую обновляли позже,
+   у проверки уровня — более поздняя */
 function mergeLang(l, r, b) {
   const out = {};
   new Set([...Object.keys(l || {}), ...Object.keys(r || {})]).forEach(code => {
@@ -105,6 +106,8 @@ function mergeLang(l, r, b) {
       done: mergeMap(x.done || {}, y.done || {}, z.done || {}, (p, q) => ({ at: Math.max(num(p.at), num(q.at)), right: Math.max(num(p.right), num(q.right)), total: Math.max(num(p.total), num(q.total)), n: Math.max(num(p.n), num(q.n)) })),
       ph: mergeMap(x.ph || {}, y.ph || {}, z.ph || {}, (p, q) => (num(p.at) >= num(q.at) ? p : q)),
       rv,
+      wr: mergeMap(x.wr || {}, y.wr || {}, z.wr || {}, (p, q) => ({ n: Math.max(num(p.n), num(q.n)), best: Math.min(p.best ?? 99, q.best ?? 99), at: Math.max(num(p.at), num(q.at)) })),
+      lv: x.lv && y.lv ? (num(x.lv.at) >= num(y.lv.at) ? x.lv : y.lv) : x.lv || y.lv || null,
     };
   });
   return out;

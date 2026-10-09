@@ -11,7 +11,7 @@ import { TRAINERS } from '../data/trainers.js';
 import { GAMES } from '../data/brain.js';
 import { dailyDone, xpOf } from '../lib/game.js';
 import { CLOUD } from '../config.js';
-import { LANG_LESSONS, TRACKS } from '../data/lang/meta.js';
+import { LANG_LESSONS, LEVEL_BY, TRACKS } from '../data/lang/meta.js';
 import { useAuth } from '../lib/cloud.js';
 import { AccountPanel, downloadMyData } from '../components/Account.jsx';
 import { InterestsPanel } from '../components/Interests.jsx';
@@ -39,28 +39,32 @@ function LangPanel({ s }) {
   const rows = TRACKS.filter(t => t.ready).map(t => {
     const L = (s.lang || {})[t.code] || {}, ph = Object.values(L.ph || {});
     const total = LANG_LESSONS(t.code);
-    return { t, total, done: Math.min(Object.keys(L.done || {}).length, total), learned: ph.length, due: ph.filter(x => x.due <= now).length };
+    // уровень — тот, где следующий непройденный мини-курс (начиная с уровня по проверке)
+    const order = L.lv ? t.units.findIndex(u => u[1] === L.lv.id) : 0;
+    const open = [...t.units.slice(Math.max(0, order)), ...t.units].find(([id, , count]) => Object.keys(L.done || {}).filter(k => k.startsWith(`${id}-`)).length < count);
+    return { t, total, done: Math.min(Object.keys(L.done || {}).length, total), learned: ph.length, due: ph.filter(x => x.due <= now).length, level: open ? LEVEL_BY[open[1]] : null, written: Object.keys(L.wr || {}).length };
   });
-  const started = rows.filter(r => r.done || r.learned);
+  const started = rows.filter(r => r.done || r.learned || r.written);
   if (!started.length) {
     return (
       <div className="panel" style={{ maxWidth: 640 }}>
-        <p className="muted">Короткие уроки для поездки: фразы под ситуации, задания как в языковых приложениях и разговорник. Сейчас готов {rows.map(r => r.t.title.toLowerCase()).join(', ')}.</p>
+        <p className="muted">Короткие уроки для поездки по уровням от нуля: фразы под ситуации, задания как в языковых приложениях, прописи и разговорник. Сейчас готов {rows.map(r => r.t.title.toLowerCase()).join(', ')}.</p>
         <div><Link className="btn btn-secondary" to="/lang"><Icon name="message-circle" size={17} />Открыть языки</Link></div>
       </div>
     );
   }
   return (
     <div className="stack" style={{ gap: 16, maxWidth: 640 }}>
-      {started.map(({ t, total, done, learned, due }) => (
+      {started.map(({ t, total, done, learned, due, level, written }) => (
         <div className="panel" key={t.code} data-lang={t.code}>
-          <div className="panel-head"><h3 className="h4">{t.title}</h3><span className="muted num">{done} из {total}</span></div>
+          <div className="panel-head"><h3 className="h4">{t.title}{level && <span className="muted" id="me-lang-level"> · {level.id === 'a0' ? 'с нуля' : `уровень ${level.code}`}</span>}</h3><span className="muted num">{done} из {total}</span></div>
           <span className="bar" style={{ flex: 'none' }}><i style={{ width: `${Math.max(2, Math.round(done / total * 100))}%` }} /></span>
-          <p className="muted" style={{ fontSize: 14.5 }}>{learned} {plural(learned, ['фраза выучена', 'фразы выучено', 'фраз выучено'])}{due ? `, ${due} ${plural(due, ['пора повторить', 'пора повторить', 'пора повторить'])}` : ', повторять сегодня нечего'}.</p>
+          <p className="muted" style={{ fontSize: 14.5 }}>{learned} {plural(learned, ['фраза выучена', 'фразы выучено', 'фраз выучено'])}{due ? `, ${due} ${plural(due, ['пора повторить', 'пора повторить', 'пора повторить'])}` : ', повторять сегодня нечего'}{written ? `; в прописях написано ${written} ${plural(written, ['знак', 'знака', 'знаков'])}` : ''}.</p>
           <div className="row">
             <Link className="btn btn-primary" to={`/lang/${t.code}`}>{done < total ? 'Продолжить' : 'К курсу'}</Link>
             {due > 0 && <Link className="btn btn-secondary" id="me-lang-review" to={`/lang/${t.code}/review`}><Icon name="repeat" size={17} />Повторить</Link>}
             <Link className="btn btn-ghost" to={`/lang/${t.code}/phrases`}>Разговорник</Link>
+            <Link className="btn btn-ghost" to={`/lang/${t.code}/write`}>Прописи</Link>
           </div>
         </div>
       ))}

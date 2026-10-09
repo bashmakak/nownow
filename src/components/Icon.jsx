@@ -8,6 +8,7 @@ import {
   ShieldAlert, ShieldCheck, SlidersHorizontal, Sparkles, Sun, Tag, Target, TextCursorInput, Thermometer, Timer,
   Trash2, TrendingUp, Trophy, Undo2, User, Wallet, WandSparkles, X, Zap,
   AudioLines, BedDouble, CarTaxiFront, LifeBuoy, MapPin, MessageCircle, Plane, Printer, ShoppingBag, Signpost, Turtle, UtensilsCrossed, Volume2, VolumeX, Ear,
+  Brush, CalendarClock, Ticket, TriangleAlert, Stethoscope, Users, CloudSun, SkipForward, Signature,
 } from 'lucide-react';
 
 const MAP = {
@@ -33,6 +34,7 @@ const MAP = {
   'audio-lines': AudioLines, 'bed-double': BedDouble, 'car-taxi-front': CarTaxiFront, 'life-buoy': LifeBuoy, 'map-pin': MapPin,
   'message-circle': MessageCircle, plane: Plane, printer: Printer, 'shopping-bag': ShoppingBag, signpost: Signpost, turtle: Turtle,
   'utensils-crossed': UtensilsCrossed, 'volume-2': Volume2, 'volume-x': VolumeX, ear: Ear,
+  brush: Brush, 'calendar-clock': CalendarClock, ticket: Ticket, 'triangle-alert': TriangleAlert, stethoscope: Stethoscope, users: Users, 'cloud-sun': CloudSun, 'skip-forward': SkipForward, signature: Signature,
 };
 
 export function Icon({ name, size = 20, className = '' }) {

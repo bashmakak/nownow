@@ -5,12 +5,13 @@
   "type": "module",
   "scripts": {
     "meta": "node scripts/full-meta.mjs",
+    "strokes": "node scripts/strokes.mjs",
     "check": "node scripts/check-secrets.mjs",
     "check:history": "node scripts/check-secrets.mjs --history",
     "test": "node scripts/test-merge.mjs && node scripts/validate-lang.mjs",
-    "predev": "npm run meta",
+    "predev": "npm run meta && npm run strokes",
     "dev": "vite",
-    "prebuild": "npm run meta && npm run check",
+    "prebuild": "npm run meta && npm run strokes && npm run check",
     "build": "vite build",
     "postbuild": "node scripts/check-secrets.mjs --dist",
     "preview": "vite preview"
@@ -19,6 +20,7 @@
     "@fontsource/inter": "^5.0.0",
     "@fontsource/sora": "^5.0.0",
     "@supabase/supabase-js": "^2.117.2",
+    "hanzi-writer": "3.7.3",
     "lucide-react": "^1.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -26,6 +28,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
+    "hanzi-writer-data": "2.0.1",
     "vite": "^6.0.0"
   }
 }

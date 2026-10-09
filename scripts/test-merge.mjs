@@ -155,4 +155,14 @@ test('языки: уроки с двух устройств складывают
   assert.equal(m.voice, undefined);
 });
 
+test('языки: прописи складываются, у проверки уровня побеждает поздняя', () => {
+  const l = st({ lang: { zh: { done: {}, ph: {}, rv: null, wr: { 出: { n: 2, best: 1, at: 100 } }, lv: { id: 'a1', at: 50 } }, latin: { wr: { a: { n: 1, best: 0, at: 10 } } } } });
+  const r = st({ lang: { zh: { done: {}, ph: {}, rv: null, wr: { 出: { n: 1, best: 0, at: 200 }, 口: { n: 1, best: 2, at: 150 } }, lv: { id: 'a2', at: 90 } } } });
+  const m = merge(l, r, null).lang;
+  assert.deepEqual(m.zh.wr.出, { n: 2, best: 0, at: 200 });
+  assert.ok(m.zh.wr.口);
+  assert.equal(m.zh.lv.id, 'a2');
+  assert.ok(m.latin.wr.a, 'прописи латиницы не теряются');
+});
+
 console.log(`\nСлияние: ${n} проверок пройдено`);

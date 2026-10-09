@@ -1,4 +1,4 @@
-import { parseSyllable, retone, syllables, toneVariants } from './pinyin.js';
+import { mark, parseSyllable, retone, syllables, toneVariants } from './pinyin.js';
 
 /* ===== Языковые уроки: из данных трека — в задания =====
    Чистые функции без React и без хранилища: их проверяет scripts/validate-lang.mjs.
@@ -22,14 +22,28 @@ export function phrase(row, kind = 'phrase') {
   };
 }
 
-/* Индекс трека: фразы, уроки по порядку, мини-курс урока */
+/* Знак для прописей: [знак, пиньинь, значение]. Это не фраза: в разговорник и повторение он не попадает */
+export const charOf = ([zh, py, ru]) => ({ id: `w-${zh}`, kind: 'char', zh, py, ru, note: '', tiles: [] });
+
+/* Индекс трека: фразы, знаки для прописей, уроки по порядку, мини-курс урока */
 export function indexTrack(track) {
-  const phrases = {};
+  const phrases = {}, chars = {};
   (track.phrases || []).forEach(r => { const x = phrase(r); phrases[x.id] = x; });
   (track.signs || []).forEach(r => { const x = phrase(r, 'sign'); phrases[x.id] = x; });
   const lessons = [], lessonBy = {}, unitOf = {};
-  track.units.forEach(u => u.lessons.forEach(l => { lessons.push(l); lessonBy[l.id] = l; unitOf[l.id] = u; }));
-  return { track, phrases, lessons, lessonBy, unitOf };
+  track.units.forEach(u => u.lessons.forEach(l => {
+    lessons.push(l); lessonBy[l.id] = l; unitOf[l.id] = u;
+    (l.write || []).forEach(w => { if (!chars[`w-${w[0]}`]) chars[`w-${w[0]}`] = charOf(w); });
+  }));
+  return { track, phrases, chars, lessons, lessonBy, unitOf };
+}
+/* Уроки уровня по порядку */
+export const levelLessonsOf = (ix, level) => ix.lessons.filter(l => ix.unitOf[l.id].level === level);
+/* Следующий урок: первый непройденный начиная с уровня, который показала проверка; если там всё пройдено — любой */
+export function nextLessonOf(ix, mine) {
+  const done = (mine && mine.done) || {};
+  const from = mine && mine.lv ? ix.lessons.findIndex(l => ix.unitOf[l.id].level === mine.lv.id) : 0;
+  return ix.lessons.slice(Math.max(0, from)).find(l => !done[l.id]) || ix.lessons.find(l => !done[l.id]) || null;
 }
 
 /* ---------- случайность ---------- */
@@ -99,6 +113,7 @@ function soundTask([zh, py, others], rnd) {
 
 /* ---------- урок ---------- */
 const GRADED = new Set(['meaning', 'reverse', 'listen', 'tiles', 'pairs', 'reply', 'tone', 'toneRead', 'toneWord', 'toneWordRead', 'sound']);
+/* Прописи (write) — упражнение без оценки: черты проверяет сам тренажёр письма, а ошибка в черте — не ошибка в языке */
 export const isGraded = t => GRADED.has(t.type);
 
 /* Задания одного урока. audio — есть ли на устройстве голос нужного языка */
@@ -143,6 +158,25 @@ export function buildLesson(ix, lessonId, { audio = false, rnd = Math.random } =
     if (ph.length >= 3) out.push({ type: 'pairs', items: pickN(ph, Math.min(5, ph.length), rnd) });
     const sayable = order.find(p => p.kind !== 'sign') || order[0];
     out.push({ type: 'say', p: sayable });
+  }
+
+  if (lesson.write) {                                  // прописи: каждый знак по контуру, затем один-два по памяти
+    const chars = lesson.write.map(w => ix.chars[`w-${w[0]}`]);
+    const unitChars = ix.unitOf[lesson.id].lessons.flatMap(l => l.write || []).map(w => ix.chars[`w-${w[0]}`]);
+    const pools = [chars, unitChars, Object.values(ix.chars)];
+    chars.forEach(c => out.push({ type: 'write', ch: c, mode: 'trace' }));
+    if (!ph.length) {                                  // урок только из знаков: проверка, что их узнают
+      shuffle(chars, rnd).forEach(c => out.push(choice('meaning', c, distractors(ix, c, pools, 3, x => x.ru, rnd), rnd)));
+      shuffle(chars, rnd).slice(0, 2).forEach(c => out.push(choice('reverse', c, distractors(ix, c, pools, 3, x => x.zh, rnd), rnd)));
+    }
+    shuffle(chars, rnd).slice(0, ph.length ? 1 : 2).forEach(c => out.push({ type: 'write', ch: c, mode: 'memory' }));
+  }
+  if (lesson.writeMix) {                               // проверка мини-курса прописей: узнать и написать по памяти
+    const all = ix.unitOf[lesson.id].lessons.flatMap(l => l.write || []).map(w => ix.chars[`w-${w[0]}`]);
+    const pools = [all, Object.values(ix.chars)];
+    pickN(all, 8, rnd).forEach(c => out.push(choice('meaning', c, distractors(ix, c, pools, 3, x => x.ru, rnd), rnd)));
+    pickN(all, 4, rnd).forEach(c => out.push(choice('reverse', c, distractors(ix, c, pools, 3, x => x.zh, rnd), rnd)));
+    pickN(all, 3, rnd).forEach(c => out.push({ type: 'write', ch: c, mode: 'memory' }));
   }
 
   if (lesson.dialog) {                                 // сценарий: разговор по репликам
@@ -207,6 +241,57 @@ export function buildReview(ix, mine, { audio = false, rnd = Math.random, now = 
   });
   if (mineAll.length >= 4) tasks.splice(Math.floor(tasks.length / 2), 0, { type: 'pairs', items: pickN(mineAll, 4, rnd) });
   return { ids, tasks };
+}
+
+/* ---------- проверка уровня ---------- */
+/* Задания на один уровень: фразы из его уроков, на значение, обратный перевод и на слух.
+   Человек проходит уровни снизу вверх, пока отвечает уверенно (см. PASS) */
+export const PLACEMENT = { size: 6, pass: 5 };
+export function buildPlacement(ix, level, { audio = false, rnd = Math.random, size = PLACEMENT.size } = {}) {
+  const ph = levelLessonsOf(ix, level).flatMap(l => l.ph || []).map(id => ix.phrases[id]).filter(Boolean);
+  const all = Object.values(ix.phrases);
+  // вывески и фразы поровну не нужны: вывесок не больше двух
+  const signs = shuffle(ph.filter(p => p.kind === 'sign'), rnd).slice(0, 2);
+  const picked = shuffle([...signs, ...shuffle(ph.filter(p => p.kind !== 'sign'), rnd)], rnd).slice(0, size);
+  return picked.map((p, k) => {
+    const kinds = p.kind === 'sign' ? ['meaning'] : ['meaning', 'reverse', ...(audio ? ['listen'] : [])];
+    const kind = kinds[k % kinds.length];
+    const key = kind === 'meaning' ? x => x.ru : x => x.zh;
+    return { ...choice(kind, p, distractors(ix, p, [ph, all], 3, key, rnd), rnd), level };
+  });
+}
+
+/* ---------- знаки для прописей ---------- */
+/* Все знаки трека по мини-курсам: из прописей и из фраз. Для знака из фраз пиньинь берётся из слова,
+   а вместо значения показываются фразы, где он встречается. from — откуда знак: id фраз и l:<урок> для прописей */
+export function charTable(ix) {
+  const seen = {}, units = [];
+  ix.track.units.forEach(u => {
+    const list = [];
+    const add = (zh, info) => {
+      if (!/\p{Script=Han}/u.test(zh)) return;
+      if (!seen[zh]) { seen[zh] = { zh, py: info.py, ru: info.ru || '', words: [], unit: u.id, from: [] }; list.push(seen[zh]); }
+      const c = seen[zh];
+      if (info.from && !c.from.includes(info.from)) c.from.push(info.from);
+      if (info.own && !c.ru) { c.py = info.py; c.ru = info.ru; }
+      if (info.word && c.words.length < 3 && !c.words.some(w => w.zh === info.word.zh)) c.words.push(info.word);
+    };
+    u.lessons.forEach(l => {
+      (l.write || []).forEach(([zh, py, ru]) => add(zh, { py, ru, own: true, from: `l:${l.id}` }));
+      (l.ph || []).map(id => ix.phrases[id]).filter(Boolean).forEach(p => {
+        p.tiles.forEach(t => {
+          const hz = [...t.zh].filter(ch => /\p{Script=Han}/u.test(ch));
+          const syl = (syllables(t.py) || []).filter(x => !x.erhua);
+          hz.forEach((ch, k) => {
+            if (ch === '儿' && hz.length > syl.length) return;     // 儿 после слога — эризация
+            add(ch, { py: syl[k] ? mark(syl[k].base, syl[k].tone) : '', word: { zh: p.zh, py: p.py, ru: p.ru }, from: p.id });
+          });
+        });
+      });
+    });
+    if (list.length) units.push({ unit: u, chars: list });
+  });
+  return units;
 }
 
 /* Фразы, которые урок добавляет в разговорник: сценарии и уроки на тоны их не добавляют */
