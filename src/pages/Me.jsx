@@ -11,6 +11,7 @@ import { TRAINERS } from '../data/trainers.js';
 import { GAMES } from '../data/brain.js';
 import { dailyDone, xpOf } from '../lib/game.js';
 import { CLOUD } from '../config.js';
+import { LANG_LESSONS, TRACKS } from '../data/lang/meta.js';
 import { useAuth } from '../lib/cloud.js';
 import { AccountPanel, downloadMyData } from '../components/Account.jsx';
 import { InterestsPanel } from '../components/Interests.jsx';
@@ -28,6 +29,41 @@ function Calendar({ activity }) {
     <div className="cal" role="img" aria-label="Календарь занятий за четыре недели">
       {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(d => <span className="wd" key={d}>{d}</span>)}
       {cells.map(c => <span key={c.k} className={`${c.on ? 'on ' : ''}${c.isToday ? 'today ' : ''}${c.fut ? 'fut' : ''}`} title={c.title}>{c.n}</span>)}
+    </div>
+  );
+}
+
+/* Языки: прогресс по трекам. Тексты треков здесь не нужны — хватает сводки из meta.js */
+function LangPanel({ s }) {
+  const now = Date.now();
+  const rows = TRACKS.filter(t => t.ready).map(t => {
+    const L = (s.lang || {})[t.code] || {}, ph = Object.values(L.ph || {});
+    const total = LANG_LESSONS(t.code);
+    return { t, total, done: Math.min(Object.keys(L.done || {}).length, total), learned: ph.length, due: ph.filter(x => x.due <= now).length };
+  });
+  const started = rows.filter(r => r.done || r.learned);
+  if (!started.length) {
+    return (
+      <div className="panel" style={{ maxWidth: 640 }}>
+        <p className="muted">Короткие уроки для поездки: фразы под ситуации, задания как в языковых приложениях и разговорник. Сейчас готов {rows.map(r => r.t.title.toLowerCase()).join(', ')}.</p>
+        <div><Link className="btn btn-secondary" to="/lang"><Icon name="message-circle" size={17} />Открыть языки</Link></div>
+      </div>
+    );
+  }
+  return (
+    <div className="stack" style={{ gap: 16, maxWidth: 640 }}>
+      {started.map(({ t, total, done, learned, due }) => (
+        <div className="panel" key={t.code} data-lang={t.code}>
+          <div className="panel-head"><h3 className="h4">{t.title}</h3><span className="muted num">{done} из {total}</span></div>
+          <span className="bar" style={{ flex: 'none' }}><i style={{ width: `${Math.max(2, Math.round(done / total * 100))}%` }} /></span>
+          <p className="muted" style={{ fontSize: 14.5 }}>{learned} {plural(learned, ['фраза выучена', 'фразы выучено', 'фраз выучено'])}{due ? `, ${due} ${plural(due, ['пора повторить', 'пора повторить', 'пора повторить'])}` : ', повторять сегодня нечего'}.</p>
+          <div className="row">
+            <Link className="btn btn-primary" to={`/lang/${t.code}`}>{done < total ? 'Продолжить' : 'К курсу'}</Link>
+            {due > 0 && <Link className="btn btn-secondary" id="me-lang-review" to={`/lang/${t.code}/review`}><Icon name="repeat" size={17} />Повторить</Link>}
+            <Link className="btn btn-ghost" to={`/lang/${t.code}/phrases`}>Разговорник</Link>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -199,6 +235,11 @@ export default function Me() {
             </div>
           </div>
         )}
+
+        <div className="group" id="me-lang">
+          <h2 className="h3" style={{ marginBottom: 18 }}>Языки</h2>
+          <LangPanel s={s} />
+        </div>
 
         <div className="group" id="me-interests">
           <h2 className="h3" style={{ marginBottom: 18 }}>Интересы</h2>

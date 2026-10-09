@@ -4,13 +4,15 @@
 .head-login{display:none}
 @media (min-width:860px){.head-login{display:inline-flex}}
 .head-nav a,.head-nav button{white-space:nowrap}
-/* гостю на узком настольном экране шапке не хватает места: у «Кабинета» остаётся значок, а «Начать» уступает кнопке входа */
+/* на узком настольном экране шапке не хватает места: у гостя от «Кабинета» остаётся значок, а «Начать» до 1000 px скрыта — она ведёт туда же, куда «Каталог» */
 @media (min-width:860px) and (max-width:1139px){
   .guest .head-me{padding:0;width:38px}
   .guest .head-me span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
 }
+/* пять пунктов меню помещаются целиком от 1200 px; уже — «О платформе» остаётся в подвале */
+@media (min-width:860px) and (max-width:1199px){.head-about{display:none!important}}
 @media (min-width:860px) and (max-width:999px){
-  .guest .head-cta{display:none}
+  .head-cta{display:none!important}
   .head-nav{gap:0;margin-right:auto}
   .head-nav a,.head-nav button{padding:0 9px;font-size:14.5px}
   .guest.head-actions{gap:2px}

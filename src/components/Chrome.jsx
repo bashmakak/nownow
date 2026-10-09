@@ -13,7 +13,7 @@ import { AccountLink, AuthNotice, ConsentBar } from './Account.jsx';
 import { useAuth } from '../lib/cloud.js';
 
 function MobileMenu() {
-  const links = [['/courses', 'Каталог'], ['/topics', 'Темы'], ['/train', 'Тренажёры'], ['/me', 'Кабинет'], ...(CLOUD ? [['/studio', 'Мастерская автора']] : []), ['/about', 'О платформе']];
+  const links = [['/courses', 'Каталог'], ['/topics', 'Темы'], ['/lang', 'Языки'], ['/train', 'Тренажёры'], ['/me', 'Кабинет'], ...(CLOUD ? [['/studio', 'Мастерская автора']] : []), ['/about', 'О платформе']];
   return (
     <div className="dlg">
       <DialogHead title="Меню" />
@@ -47,8 +47,9 @@ function Header() {
           <NavLink to="/courses">Каталог</NavLink>
           <button type="button" aria-haspopup="dialog" aria-current={pathname.startsWith('/topics') ? 'page' : undefined}
             onClick={() => ui.open(<TopicsPanel />)}>Темы <Icon name="chevron-down" size={15} /></button>
+          <NavLink to="/lang">Языки</NavLink>
           <NavLink to="/train">Тренажёры</NavLink>
-          <NavLink to="/about">О платформе</NavLink>
+          <NavLink className="head-about" to="/about">О платформе</NavLink>
         </nav>
         <div className={`head-actions${guest ? ' guest' : ''}`}>
           <button type="button" className="icon-btn" aria-label="Поиск курсов"
@@ -79,7 +80,7 @@ function Footer() {
           </div>
           <nav className="foot-col" aria-label="Платформа">
             <span className="label">Платформа</span>
-            <Link to="/courses">Каталог</Link><Link to="/topics">Темы</Link><Link to="/train">Тренажёры</Link><Link to="/me">Кабинет</Link>{CLOUD && <Link to="/studio">Мастерская автора</Link>}<Link to="/about">О платформе</Link>
+            <Link to="/courses">Каталог</Link><Link to="/topics">Темы</Link><Link to="/lang">Языки</Link><Link to="/train">Тренажёры</Link><Link to="/me">Кабинет</Link>{CLOUD && <Link to="/studio">Мастерская автора</Link>}<Link to="/about">О платформе</Link>
           </nav>
           <nav className="foot-col" aria-label="Темы">
             <span className="label">Темы</span>
@@ -99,27 +100,29 @@ function Footer() {
   );
 }
 
+/* урок, языковой урок и раунд тренажёра занимают весь экран: шапки и подвала у них нет */
+const isPlayer = p => p.startsWith('/learn/') || /^\/train\/./.test(p) || /^\/lang\/[^/]+\/(l\/|review)/.test(p);
+
 /* Каркас страниц: шапка, содержимое, подвал. В плеере урока шапки и подвала нет. */
 export function Layout() {
   const { pathname } = useLocation();
   const nav = useNavigate();
   const main = useRef(null);
-  // урок и раунд тренажёра занимают весь экран: шапки и подвала у них нет
-  const inPlayer = pathname.startsWith('/learn/') || /^\/train\/./.test(pathname);
+  const inPlayer = isPlayer(pathname);
   useReveal('view');
   usePointerLight();
 
   useEffect(() => {
     window.scrollTo(0, 0);
     // в плеере фокус ставит сам урок: на заголовок блока
-    if (!pathname.startsWith('/learn/') && !/^\/train\/./.test(pathname)) main.current?.focus({ preventScroll: true });
+    if (!isPlayer(pathname)) main.current?.focus({ preventScroll: true });
   }, [pathname]);
 
   useEffect(() => {
     const onKey = e => {
       const tag = (e.target.tagName || '').toLowerCase();
       if (e.key !== '/' || tag === 'input' || tag === 'textarea' || tag === 'select' || document.querySelector('dialog[open]')) return;
-      if (window.location.hash.startsWith('#/learn/') || window.location.hash.startsWith('#/train/')) return;
+      if (isPlayer(window.location.hash.slice(1))) return;
       e.preventDefault();
       nav('/courses', { state: { focusSearch: Date.now() } });
     };

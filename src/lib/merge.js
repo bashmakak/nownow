@@ -11,8 +11,8 @@
      счётчики (опыт, число раундов) складываем, отметки и списки объединяем;
    - если прогресс сбросили, побеждает сторона с более поздним сбросом. */
 
-export const SYNC_KEYS = ['name', 'version', 'bookmarks', 'courses', 'notes', 'activity', 'game', 'interests', 'interestsAt', 'resetAt'];
-const EMPTY = { name: '', version: 'short', bookmarks: [], courses: {}, notes: {}, activity: {}, game: { xp: 0, best: {}, days: {}, dailies: 0, seen: null, lvl: 1 }, interests: [], interestsAt: 0, resetAt: 0 };
+export const SYNC_KEYS = ['name', 'version', 'bookmarks', 'courses', 'notes', 'activity', 'game', 'interests', 'interestsAt', 'lang', 'resetAt'];
+const EMPTY = { name: '', version: 'short', bookmarks: [], courses: {}, notes: {}, activity: {}, game: { xp: 0, best: {}, days: {}, dailies: 0, seen: null, lvl: 1 }, interests: [], interestsAt: 0, lang: {}, resetAt: 0 };
 
 /* Равенство по содержимому: порядок ключей не важен (база данных хранит их в своём порядке) */
 export function same(a, b) {
@@ -95,6 +95,21 @@ function mergeGame(l, r, b) {
   return { xp: grow(l.xp, r.xp, b.xp), best, days, dailies: Math.max(num(l.dailies), num(r.dailies)), seen, lvl: Math.max(num(l.lvl), num(r.lvl), 1) };
 }
 
+/* Языки: пройденные уроки объединяются, у фразы берётся запись, которую обновляли позже */
+function mergeLang(l, r, b) {
+  const out = {};
+  new Set([...Object.keys(l || {}), ...Object.keys(r || {})]).forEach(code => {
+    const x = (l || {})[code] || {}, y = (r || {})[code] || {}, z = (b || {})[code] || {};
+    const rv = x.rv && y.rv ? (String(x.rv.day) >= String(y.rv.day) ? x.rv : y.rv) : x.rv || y.rv || null;
+    out[code] = {
+      done: mergeMap(x.done || {}, y.done || {}, z.done || {}, (p, q) => ({ at: Math.max(num(p.at), num(q.at)), right: Math.max(num(p.right), num(q.right)), total: Math.max(num(p.total), num(q.total)), n: Math.max(num(p.n), num(q.n)) })),
+      ph: mergeMap(x.ph || {}, y.ph || {}, z.ph || {}, (p, q) => (num(p.at) >= num(q.at) ? p : q)),
+      rv,
+    };
+  });
+  return out;
+}
+
 /* База потерялась (например, браузер не смог её сохранить), а устройство уже синхронизировалось.
    Списки и уроки тогда просто объединяются, но счётчики складывать нельзя: опыт посчитался бы дважды.
    Поэтому за базу для счётчиков берём меньшее из двух значений. */
@@ -123,6 +138,7 @@ export function merge(localState, remoteState, baseState) {
     game: mergeGame(l.game, r.game, b.game),
     interests: mergeList(l.interests, r.interests, b.interests),
     interestsAt: Math.max(num(l.interestsAt), num(r.interestsAt)),
+    lang: mergeLang(l.lang, r.lang, b.lang),
     resetAt: num(l.resetAt),
   };
 }

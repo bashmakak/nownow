@@ -30,7 +30,7 @@ function looksSecret(key) {
 export const CLOUD = Boolean(/^https:\/\/[^/]+$/.test(SUPABASE_URL) && SUPABASE_KEY && !looksSecret(SUPABASE_KEY));
 
 /* Редакции документов: дата попадает в запись о согласии при регистрации. Меняете текст документа — меняйте дату */
-export const DOCS = { terms: '2026-10-07', privacy: '2026-10-07' };
+export const DOCS = { terms: '2026-10-07', privacy: '2026-10-09' };
 
 /* Ключи в хранилище браузера. Полный список с назначением показан в политике конфиденциальности */
 export const KEYS = { state: 'nownow.v1', auth: 'nownow.auth', base: 'nownow.base', flow: 'nownow.flow', consent: 'nownow.consent' };

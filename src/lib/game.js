@@ -2,11 +2,12 @@ import { COURSES, COURSE_BY, TOPIC_BY, coursesOf, isCommunity, isPublic } from '
 import { TRAINERS, TRAINER_BY, REVIEW, ROUND } from '../data/trainers.js';
 import { GAMES, GAME_BY, SKILLS, isGame, skillKey } from '../data/brain.js';
 import { update, splitKey, streak, dayKey, today, ensureProgress, status } from './store.js';
+import { TRACKS } from '../data/lang/meta.js';
 
 /* ===== Опыт, уровни, достижения и тренажёры =====
    Опыт за уроки не хранится, а считается по прогрессу: так его получают и те, кто занимался до появления
    наград. Опыт за тренажёры накапливается в state.game.xp. */
-export const XP = { short: 40, full: 100, answer: 5, play: 5, round: 10, bolt: 10, daily: 30, game: 5, gameBolt: 5 };
+export const XP = { short: 40, full: 100, answer: 5, play: 5, round: 10, bolt: 10, daily: 30, game: 5, gameBolt: 5, lang: 20, langReview: 10 };
 export const AI_TOPIC = 'iskusstvennyj-intellekt';
 
 /* Верных ответов в проверке. Число сохраняется при завершении урока; для старого прогресса короткой версии считаем по ответам */
@@ -64,7 +65,22 @@ export function stats(s) {
     brain: GAMES.filter(g => best[g.id]).length,
     brainTotal: GAMES.length,
     brainTop: GAMES.filter(g => best[g.id] && best[g.id].bolts === 3).length,
+    ...langStats(s),
   };
+}
+
+/* Языки: сколько уроков пройдено, сколько мини-курсов закрыто целиком, готов ли хоть один язык к поездке */
+function langStats(s) {
+  let lessons = 0, units = 0, trip = 0;
+  TRACKS.forEach(t => {
+    const done = Object.keys(((s.lang || {})[t.code] || {}).done || {});
+    lessons += done.length;
+    const full = t.units.filter(([id, , count]) => done.filter(k => k.startsWith(`${id}-`)).length >= count);
+    units += full.length;
+    const need = t.units.filter(u => u[1] === 'base' || u[1] === 'road');
+    if (need.length && need.every(u => full.includes(u))) trip = 1;
+  });
+  return { langLessons: lessons, langUnits: units, langTrip: trip };
 }
 
 /* Достижения. of(st) возвращает [сколько сделано, сколько нужно] */
@@ -88,6 +104,9 @@ export const ACHIEVEMENTS = [
   { id: 'brain', icon: 'brain', title: 'Разминка для ума', text: 'Сыграть в любую мини-игру', of: st => [st.brain, 1] },
   { id: 'brain-all', icon: 'layout-grid', title: 'Полный круг', text: 'Сыграть во все мини-игры', of: st => [st.brain, st.brainTotal] },
   { id: 'brain-top', icon: 'gauge', title: 'В отличной форме', text: 'Получить три молнии в трёх мини-играх', of: st => [st.brainTop, 3] },
+  { id: 'lang-first', icon: 'languages', title: 'Первые фразы', text: 'Пройти первый урок в разделе «Языки»', of: st => [st.langLessons, 1] },
+  { id: 'lang-unit', icon: 'message-circle', title: 'Ситуация освоена', text: 'Пройти мини-курс по языку целиком', of: st => [st.langUnits, 1] },
+  { id: 'lang-trip', icon: 'plane', title: 'Готов к поездке', text: 'Пройти блоки «Основа» и «В дороге» в одном языке', of: st => [st.langTrip, 1] },
 ];
 export const ACH_BY = Object.fromEntries(ACHIEVEMENTS.map(a => [a.id, a]));
 /* Достижения, условия которых выполнены сейчас */

@@ -7,7 +7,7 @@
     "meta": "node scripts/full-meta.mjs",
     "check": "node scripts/check-secrets.mjs",
     "check:history": "node scripts/check-secrets.mjs --history",
-    "test": "node scripts/test-merge.mjs",
+    "test": "node scripts/test-merge.mjs && node scripts/validate-lang.mjs",
     "predev": "npm run meta",
     "dev": "vite",
     "prebuild": "npm run meta && npm run check",

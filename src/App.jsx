@@ -21,6 +21,9 @@ const Terms = legal('Terms'), Privacy = legal('Privacy');
 // мастерская автора и модерация: нужны немногим, поэтому тоже скачиваются по требованию
 const studio = name => lazy(() => import('./pages/Studio.jsx').then(m => ({ default: m[name] })));
 const Studio = studio('Studio'), LessonEditor = studio('LessonEditor'), Moderation = studio('Moderation');
+// языки для путешествий: страницы и тексты треков скачиваются, когда человек открывает раздел
+const lang = name => lazy(() => import('./pages/Lang.jsx').then(m => ({ default: m[name] })));
+const LangHub = lang('LangHub'), LangTrack = lang('LangTrack'), LangLesson = lang('LangLesson'), LangReview = lang('LangReview'), LangPhrases = lang('LangPhrases');
 
 export default function App() {
   return (
@@ -36,6 +39,11 @@ export default function App() {
           <Route path="learn/:slug/:version?" element={<Player />} />
           <Route path="train" element={<Train />} />
           <Route path="train/:id" element={<Trainer />} />
+          <Route path="lang" element={<LangHub />} />
+          <Route path="lang/:code" element={<LangTrack />} />
+          <Route path="lang/:code/l/:lessonId" element={<LangLesson />} />
+          <Route path="lang/:code/review" element={<LangReview />} />
+          <Route path="lang/:code/phrases" element={<LangPhrases />} />
           <Route path="me" element={<Me />} />
           <Route path="about" element={<About />} />
           <Route path="login" element={<Login />} />

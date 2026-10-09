@@ -11,7 +11,8 @@ const freshGame = () => ({ xp: 0, best: {}, days: {}, dailies: 0, seen: null, lv
    resetAt — когда прогресс сбросили: по нему другие устройства понимают, что данные надо убрать, а не вернуть. */
 /* interests — что человеку интересно: slug тем каталога и навыки мини-игр («brain-attention»).
    interestsAt — когда он выбирал в последний раз; 0 значит, что его ещё не спрашивали. */
-const fresh = () => ({ theme: 'dark', name: '', version: 'short', bookmarks: [], courses: {}, notes: {}, activity: {}, game: freshGame(), interests: [], interestsAt: 0, owner: null, resetAt: 0 });
+/* lang — языки для путешествий: { zh: { done: {урок: {...}}, ph: {фраза: {ступень, когда повторить}}, rv } } (см. lib/lang-progress.js) */
+const fresh = () => ({ theme: 'dark', name: '', version: 'short', bookmarks: [], courses: {}, notes: {}, activity: {}, game: freshGame(), interests: [], interestsAt: 0, lang: {}, voice: true, owner: null, resetAt: 0 });
 
 /* Прогресс короткой версии хранится под slug урока, полной — под «slug@full».
    Заметки к блокам: «ключ:номер блока». */
@@ -64,9 +65,9 @@ export function update(fn) {
   subs.forEach(f => f());
 }
 export const useStore = () => useSyncExternalStore(subscribe, getState);
-/* Подставить состояние целиком: так приходят данные из облака. Тема оформления остаётся своей на каждом устройстве. */
+/* Подставить состояние целиком: так приходят данные из облака. Тема оформления и озвучка остаются своими на каждом устройстве. */
 export function replaceState(next, owner) {
-  state = shape({ ...next, theme: state.theme, owner });
+  state = shape({ ...next, theme: state.theme, voice: state.voice, owner });
   persist();
   subs.forEach(f => f());
 }
@@ -155,8 +156,8 @@ export function setTheme(theme) { update(d => { d.theme = theme; }); applyTheme(
    Без входа отметка не нужна, иначе при первом входе пустая копия стёрла бы прогресс в учётной записи. */
 export function resetAll() {
   // интересы — это настройка, а не прогресс: при сбросе они остаются
-  const { theme, owner, interests, interestsAt } = state;
-  update(d => { Object.assign(d, fresh(), { theme, owner, interests, interestsAt, resetAt: owner ? Date.now() : 0 }); });
+  const { theme, voice, owner, interests, interestsAt } = state;
+  update(d => { Object.assign(d, fresh(), { theme, voice, owner, interests, interestsAt, resetAt: owner ? Date.now() : 0 }); });
 }
 
 export const plural = (n, f) => {

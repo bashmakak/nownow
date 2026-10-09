@@ -7,6 +7,7 @@ import {
   Orbit, PenLine, PenTool, Play, Plus, Repeat, Rocket, RotateCcw, Route, Scale, ScanSearch, Search, Send,
   ShieldAlert, ShieldCheck, SlidersHorizontal, Sparkles, Sun, Tag, Target, TextCursorInput, Thermometer, Timer,
   Trash2, TrendingUp, Trophy, Undo2, User, Wallet, WandSparkles, X, Zap,
+  AudioLines, BedDouble, CarTaxiFront, LifeBuoy, MapPin, MessageCircle, Plane, Printer, ShoppingBag, Signpost, Turtle, UtensilsCrossed, Volume2, VolumeX, Ear,
 } from 'lucide-react';
 
 const MAP = {
@@ -29,6 +30,9 @@ const MAP = {
   target: Target, 'text-cursor-input': TextCursorInput, thermometer: Thermometer, timer: Timer, 'trash-2': Trash2,
   'trending-up': TrendingUp, trophy: Trophy, 'undo-2': Undo2, user: User, wallet: Wallet,
   'wand-sparkles': WandSparkles, x: X, zap: Zap,
+  'audio-lines': AudioLines, 'bed-double': BedDouble, 'car-taxi-front': CarTaxiFront, 'life-buoy': LifeBuoy, 'map-pin': MapPin,
+  'message-circle': MessageCircle, plane: Plane, printer: Printer, 'shopping-bag': ShoppingBag, signpost: Signpost, turtle: Turtle,
+  'utensils-crossed': UtensilsCrossed, 'volume-2': Volume2, 'volume-x': VolumeX, ear: Ear,
 };
 
 export function Icon({ name, size = 20, className = '' }) {

@@ -139,4 +139,20 @@ test('неполные данные из облака не ломают слия
   assert.equal(m.game.lvl, 1);
 });
 
+test('языки: уроки с двух устройств складываются, у фразы побеждает поздняя запись', () => {
+  const l = st({ lang: { zh: { done: { 'zh-u1-l1': { at: 100, right: 5, total: 8, n: 1 } }, ph: { a: { b: 2, due: 900, at: 300 }, b: { b: 0, due: 200, at: 100 } }, rv: { day: '2026-10-08', n: 1 } } } });
+  const r = st({ lang: { zh: { done: { 'zh-u1-l1': { at: 200, right: 7, total: 8, n: 1 }, 'zh-u2-l1': { at: 210, right: 6, total: 9, n: 1 } }, ph: { a: { b: 0, due: 400, at: 250 }, c: { b: 0, due: 500, at: 210 } }, rv: { day: '2026-10-09', n: 2 } } } });
+  const z = merge(l, r, null).lang.zh;
+  assert.deepEqual(Object.keys(z.done).sort(), ['zh-u1-l1', 'zh-u2-l1']);
+  assert.equal(z.done['zh-u1-l1'].right, 7);                 // лучший результат
+  assert.equal(z.done['zh-u1-l1'].at, 200);
+  assert.deepEqual(Object.keys(z.ph).sort(), ['a', 'b', 'c']);
+  assert.equal(z.ph.a.b, 2);                                 // повторение на этом устройстве было позже
+  assert.equal(z.rv.day, '2026-10-09');
+  // язык, которого нет на одной из сторон, не теряется; настройка озвучки в облако не уходит
+  const m = merge(st({ voice: false }), st({ lang: { zh: { done: {}, ph: { a: { b: 1, due: 1, at: 1 } }, rv: null } } }), null);
+  assert.ok(m.lang.zh.ph.a);
+  assert.equal(m.voice, undefined);
+});
+
 console.log(`\nСлияние: ${n} проверок пройдено`);

@@ -6,6 +6,7 @@ import { Icon } from '../components/Icon.jsx';
 import { ROUND, TRAINERS } from '../data/trainers.js';
 import { CLOUD } from '../config.js';
 import { GAMES } from '../data/brain.js';
+import { LANG_LESSONS, TRACKS } from '../data/lang/meta.js';
 
 export default function About() {
   useTitle('О платформе');
@@ -48,6 +49,13 @@ export default function About() {
             <p>За уроки, верные ответы, задания и раунды начисляется <b>опыт</b>. Он складывается в уровни, а за заметные шаги даются достижения. Сравнения с другими людьми нет: свои результаты видите только вы.</p>
           </div>
           <div style={{ marginTop: 16 }}><Link className="btn btn-secondary" to="/train">Открыть тренажёры</Link></div>
+        </div>
+        <div className="group" style={{ maxWidth: 720 }} id="about-lang">
+          <h2 className="h3" style={{ marginBottom: 14 }}>Языки для путешествий</h2>
+          <div className="stack" style={{ gap: 12 }}>
+            <p>Отдельный раздел — <Link to="/lang">короткие языковые курсы для поездки</Link>. Каждый мини-курс посвящён одной ситуации: аэропорт, такси, отель, кафе, покупки, помощь. Задания — как в языковых приложениях: значение фразы, на слух, сборка из слов, пары и диалог, где вы выбираете свои реплики. Выученные фразы возвращаются на повторение через день, три дня, неделю и дальше реже, а разговорник из них можно распечатать.</p>
+            <p>Сейчас готов {TRACKS.filter(t => t.ready).map(t => `${t.title.toLowerCase()} — ${LANG_LESSONS(t.code)} ${plural(LANG_LESSONS(t.code), ['урок', 'урока', 'уроков'])}`).join(', ')}; {TRACKS.filter(t => !t.ready).map(t => t.title.toLowerCase()).join(' и ')} готовятся. Это пробная версия: тексты ещё не проверил носитель языка. Фразы читает голос вашего браузера или системы, записей носителей пока нет. Правила страны — оплата, интернет, регистрация — даны со ссылкой на источник и датой проверки.</p>
+          </div>
         </div>
         {CLOUD && (
           <div className="group" style={{ maxWidth: 720 }} id="about-authors">
