@@ -17,6 +17,8 @@ export function audioUrl(lang, item) {
 }
 
 let current = null;
+/* Звук, который играет сейчас: по нему анимации подстраиваются под длительность */
+export const currentAudio = () => current;
 export function stopAudio() {
   if (current) { try { current.pause(); } catch { /* уже остановлен */ } current = null; }
 }

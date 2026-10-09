@@ -81,6 +81,13 @@ function checkTrack(track) {
       if (l.writeMix) ok(u.lessons.some(x => (x.write || []).length), `${l.id}: проверка прописей без знаков`);
       // вводный фонетический курс: каждый слог — настоящий слог путунхуа с тоном
       const syl1 = (py, where) => { const s = syllables(py); ok(s && s.length === 1 && !s[0].erhua && parseSyllable(py).tone > 0, `${where}: слог «${py}»`); };
+      const DEMOS = [undefined, 'tones', 'pinyin', 'syllable'];
+      [...(l.intro || []), ...(l.rule ? [l.rule] : [])].forEach((r, k) => ok(r.t && r.x && DEMOS.includes(r.demo), `${l.id}: карточка ${k + 1} (схема «${r.demo}»)`));
+      (l.tones || []).forEach(([tone, how, ex], k) => {
+        ok(tone === k + 1 && how && ex.length >= 1, `${l.id}: тоны идут по порядку, ${tone}-й`);
+        ex.forEach(x => { syl1(x, `${l.id} тон ${tone}`); ok(parseSyllable(x).tone === tone, `${l.id}: пример ${x} не ${tone}-го тона`); });
+      });
+      (l.marks || []).forEach(x => syl1(x, `${l.id} знак тона`));
       (l.sounds || []).forEach(([py, how, ex]) => { ok(py && how && ex.length >= 2, `${l.id}: звук ${py}`); ex.forEach(x => syl1(x, `${l.id} звук ${py}`)); });
       (l.repeat || []).forEach(x => syl1(x, `${l.id} повтор`));
       (l.pick || []).forEach(([py, others]) => { syl1(py, `${l.id} выбор`); others.forEach(o => syl1(o, `${l.id} выбор ${py}`)); ok(new Set([py, ...others]).size === others.length + 1, `${l.id}: варианты к ${py} совпадают`); });
@@ -128,6 +135,9 @@ function checkTrack(track) {
         const graded = tasks.filter(isGraded);
         ok(graded.length >= 4, `${l.id}: всего ${graded.length} заданий с ответом`);
         tasks.forEach((t, k) => checkTask(t, `${l.id}#${k} ${t.type}${audio ? '' : ' без голоса'}`));
+        // сначала объяснение, потом задания: ни одно знакомство со звуком или тоном не идёт после вопроса
+        const firstQ = tasks.findIndex(isGraded), lastIntro = tasks.map(t => ['rule', 'toneIntro', 'soundIntro', 'repeat'].includes(t.type)).lastIndexOf(true);
+        if (round === 0 && firstQ >= 0) ok(lastIntro < firstQ, `${l.id}: объяснение после задания (${tasks[lastIntro]?.type} после ${tasks[firstQ].type})`);
       }
     }
   }
@@ -158,6 +168,8 @@ function checkTask(t, where) {
     ok(t.options.length >= 2 && t.correct >= 0 && new Set(t.options).size === t.options.length, `${where}: варианты`);
   } else if (t.type === 'radPick') {
     ok(t.options.length === 3 && t.correct >= 0 && new Set(t.options.map(o => o.zh)).size === 3, `${where}: ключи`);
+  } else if (t.type === 'toneIntro') {
+    ok(t.tone >= 1 && t.tone <= 4 && t.how && t.ex.length >= 1, `${where}: знакомство с тоном`);
   } else if (t.type === 'write') {
     ok(t.ch && [...t.ch.zh].length === 1 && ['trace', 'memory'].includes(t.mode), `${where}: прописи`);
   } else if (t.type === 'pairs') {

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { LEVELS, LEVEL_BY, TRACKS, TRACK_BY, levelsOf, loadTrack } from '../data/lang/meta.js';
 import { LETTER_GROUPS } from '../data/lang/letters.js';
-import { PLACEMENT, TONE_NAMES, buildLesson, buildPlacement, buildReview, charTable, duePhrases, indexTrack, isGraded, lessonPhrases, levelLessonsOf, nextLessonOf, shuffle } from '../lib/lang-engine.js';
+import { PLACEMENT, TONE_EXAMPLES, TONE_NAMES, buildLesson, buildPlacement, buildReview, charTable, duePhrases, indexTrack, isGraded, lessonPhrases, levelLessonsOf, nextLessonOf, shuffle } from '../lib/lang-engine.js';
 import { finishLesson, finishReview, langOf, practiceWrite, setLevel } from '../lib/lang-progress.js';
 import { speak, stopSpeech, useVoice } from '../lib/speech.js';
 import { audioUrl, preload, registerAudio } from '../lib/audio.js';
@@ -16,6 +16,9 @@ import { Mark } from '../components/Brand.jsx';
 import { Crumbs, EmptyState } from '../components/Cards.jsx';
 import { CountUp, XpBar } from '../components/GameUI.jsx';
 import Writer from '../components/Writer.jsx';
+import ToneChart, { ToneIcon } from '../components/ToneChart.jsx';
+import { BreathDemo, MouthDemo, PinyinDemo, SyllableBuilder, TonesDemo, demoFor } from '../components/LangDemos.jsx';
+import { VOWEL_EX } from '../lib/demo-data.js';
 import NotFound from './NotFound.jsx';
 import '../lang.css';
 
@@ -331,6 +334,8 @@ export function LangReview() {
   return <Gate code={code} player>{ix => <Player ix={ix} review key="review" />}</Gate>;
 }
 
+/* Объяснения со схемами занимают больше места на экране */
+const isWide = t => t.type === 'toneIntro' || t.type === 'soundIntro' || (t.type === 'rule' && Boolean(t.rule.demo));
 const PROMPT = {
   meaning: 'Что это значит?', reverse: 'Как сказать по-китайски?', listen: 'Что прозвучало?',
   tone: 'Каким тоном произнесён слог?', toneRead: 'Какой это тон?', toneWord: 'Где тоны записаны верно?', toneWordRead: 'Где тоны записаны верно?', sound: 'Какой слог прозвучал?',
@@ -460,7 +465,7 @@ function Player({ ix, lessonId, review = false }) {
           )}
 
           {phase === 'play' && task && (
-            <div className="pl-col lg-body" key={`${i}-${task.key}`} data-type={task.type} data-i={i}>
+            <div className={`pl-col lg-body ${isWide(task) ? 'wide' : ''}`} key={`${i}-${task.key}`} data-type={task.type} data-i={i}>
               {task.retry && <p className="label lg-retry">Ещё раз</p>}
               <h1 className="sr" tabIndex={-1} ref={headRef}>{title}: задание {i + 1} из {total}</h1>
               <Task task={task} lang={t.lang} voice={voice.voice} answer={answer} onAnswer={onAnswer} onNext={next} />
@@ -518,7 +523,8 @@ function Task(props) {
   const { task } = props;
   switch (task.type) {
     case 'intro': return <Intro {...props} />;
-    case 'rule': return <Note kicker="Правило" title={task.rule.t} text={task.rule.x} onNext={props.onNext} id="lg-rule" />;
+    case 'rule': return <Note kicker={task.rule.k || 'Правило'} title={task.rule.t} text={task.rule.x} onNext={props.onNext} id="lg-rule" demo={ruleDemo(task.rule.demo, props)} />;
+    case 'toneIntro': return <ToneIntro {...props} />;
     case 'card': return <CountryCard card={task.card} onNext={props.onNext} />;
     case 'say': return <Say {...props} />;
     case 'tiles': return <Tiles {...props} />;
@@ -556,12 +562,20 @@ function Intro({ task: { p }, lang, voice, onNext }) {
     </>
   );
 }
-function Note({ kicker, title, text, onNext, id }) {
+/* Наглядная схема к правилу: demo в данных урока */
+function ruleDemo(kind, { lang, voice }) {
+  if (kind === 'tones') return <TonesDemo lang={lang} voice={voice} labels={TONE_EXAMPLES} />;
+  if (kind === 'pinyin') return <PinyinDemo lang={lang} voice={voice} />;
+  if (kind === 'syllable') return <SyllableBuilder lang={lang} voice={voice} />;
+  return null;
+}
+function Note({ kicker, title, text, onNext, id, demo = null }) {
   return (
-    <div className="lg-rule" id={id}>
+    <div className={`lg-rule ${demo ? 'has-demo' : ''}`} id={id}>
       <p className="label pl-kicker">{kicker}</p>
       <h2 className="h3">{title}</h2>
       <p>{text}</p>
+      {demo}
       <div className="row"><button type="button" className="btn btn-primary" id="lg-next" onClick={onNext}>Понятно<Icon name="arrow-right" size={17} /></button></div>
     </div>
   );
@@ -594,8 +608,9 @@ function Choice({ task: x, lang, voice, answer, onAnswer }) {
     if (last) speak(last.zh, lang, { voice, py: last.py });
   }, []);  // eslint-disable-line react-hooks/exhaustive-deps
   const cls = k => (!answer ? '' : k === x.correct ? 'ok' : k === picked ? 'bad' : 'dim');
-  const optText = o => (typeof o === 'string'
-    ? <span className={x.type === 'toneRead' || x.type === 'radPick' ? '' : 'py py-opt'}>{o}</span>
+  const icon = k => (x.type === 'tone' || x.type === 'toneRead' ? <ToneIcon tone={k + 1} /> : null);
+  const optText = (o, k) => (typeof o === 'string'
+    ? <span className="lg-opt-t">{icon(k)}<span className={x.type === 'toneRead' || x.type === 'radPick' ? '' : 'py py-opt'}>{o}</span></span>
     : x.type === 'meaning' ? <span>{o.ru}</span> : <span className="lg-opt-zh"><span className="zh" lang="zh-CN">{o.zh}</span><span className="py">{o.py}</span></span>);
   return (
     <>
@@ -613,7 +628,7 @@ function Choice({ task: x, lang, voice, answer, onAnswer }) {
         {x.options.map((o, k) => (
           <button key={typeof o === 'string' ? o : o.id || o.zh} type="button" className={`ch-opt ${cls(k)}`} disabled={Boolean(answer)} aria-pressed={picked === k} data-ok={k === x.correct ? '1' : undefined} onClick={e => pick(k, e.currentTarget)}>
             <span className="ch-key" aria-hidden="true">{answer && k === x.correct ? <Icon name="check" size={16} /> : answer && k === picked ? <Icon name="x" size={16} /> : LETTERS[k]}</span>
-            {x.type === 'radPick' ? <span className="lg-rad-opt"><span className="zh" lang="zh-CN">{o.zh}</span><span>{o.ru}</span></span> : optText(o)}
+            {x.type === 'radPick' ? <span className="lg-rad-opt"><span className="zh" lang="zh-CN">{o.zh}</span><span>{o.ru}</span></span> : optText(o, k)}
             {answer && k === x.correct && <span className="sr"> (верный ответ)</span>}
           </button>
         ))}
@@ -727,22 +742,48 @@ function Say({ task: { p }, lang, voice, answer, onAnswer }) {
 
 /* ---------- вводный фонетический курс ---------- */
 /* Слог-кнопка: нажать — услышать */
-function SylBtn({ py, lang, voice, id }) {
+function SylBtn({ py, lang, voice, id, onPlay }) {
   return (
-    <button type="button" className="lg-syl" id={id} data-py={py} onClick={() => voice && speak('', lang, { voice, py })} aria-label={`Послушать ${py}`}>
+    <button type="button" className="lg-syl" id={id} data-py={py} onClick={() => (onPlay ? onPlay() : voice && speak('', lang, { voice, py }))} aria-label={`Послушать ${py}`}>
       <span className="lg-syl-py">{py}</span>{voice && <Icon name="volume-2" size={15} />}
     </button>
   );
 }
-/* Знакомство со звуком: как произносить и примеры */
+/* Знакомство со звуком: как произносить, наглядная схема (губы или свеча) и примеры */
 function SoundIntro({ task: { s }, lang, voice, onNext }) {
-  useEffect(() => { if (voice && s.ex[0]) speak('', lang, { voice, py: s.ex[0] }); }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+  const [pulse, setPulse] = useState(0);
+  const play = py => { if (voice) speak('', lang, { voice, py }); setPulse(x => x + 1); };
+  useEffect(() => { if (s.ex[0]) { const t = setTimeout(() => play(s.ex[0]), 250); return () => clearTimeout(t); } return undefined; }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+  const demo = demoFor(s.py, s.ex[0]);
   return (
-    <div className="lg-rule lg-sound" id="lg-sound-intro">
+    <div className={`lg-rule lg-sound ${demo ? 'has-demo' : ''}`} id="lg-sound-intro">
       <p className="label pl-kicker">Новый звук</p>
       <div className="lg-sound-head"><span className="lg-pyb" id="lg-sound-py">{s.py}</span><p>{s.how}</p></div>
-      <div className="lg-syls" aria-label="Примеры">{s.ex.map((py, k) => <SylBtn key={py} py={py} lang={lang} voice={voice} id={k === 0 ? 'lg-ex0' : undefined} />)}</div>
+      {demo === 'mouth' && <MouthDemo v={s.py} pulse={pulse} lang={lang} voice={voice} examples={VOWEL_EX} />}
+      {demo === 'breath' && <BreathDemo ini={s.py} ex={s.ex[0]} pulse={pulse} lang={lang} voice={voice} />}
+      <div className="lg-syls" aria-label="Примеры">{s.ex.map((py, k) => <SylBtn key={py} py={py} lang={lang} voice={voice} id={k === 0 ? 'lg-ex0' : undefined} onPlay={() => play(py)} />)}</div>
       {!voice && <p className="muted">Озвучка выключена: включите её, чтобы услышать примеры.</p>}
+      <div className="row"><button type="button" className="btn btn-primary" id="lg-next" onClick={onNext}>Дальше<Icon name="arrow-right" size={17} /></button></div>
+    </div>
+  );
+}
+/* Знакомство с тоном: знак, схема высоты голоса, как звучит и примеры */
+const TONE_TITLE = { 1: 'Первый тон', 2: 'Второй тон', 3: 'Третий тон', 4: 'Четвёртый тон' };
+function ToneIntro({ task: { tone, how, ex }, lang, voice, onNext }) {
+  const [pulse, setPulse] = useState(0);
+  const play = py => { if (voice) speak('', lang, { voice, py }); setPulse(x => x + 1); };
+  return (
+    <div className="lg-rule lg-tone" id="lg-tone-intro" data-tone={tone}>
+      <p className="label pl-kicker">Тон {tone} из 4</p>
+      <h2 className="h3">{TONE_TITLE[tone]} <span className="lg-tone-mark">{ex[0]}</span></h2>
+      <div className="lg-tone-body">
+        <ToneChart only={tone} labels={[ex[0], ex[0], ex[0], ex[0]]} autoplay pulse={pulse} onPlay={voice ? () => speak('', lang, { voice, py: ex[0] }) : null} />
+        <div className="lg-tone-text">
+          <p>{how}</p>
+          <div className="lg-syls" aria-label="Примеры">{ex.map((py, k) => <SylBtn key={py} py={py} lang={lang} voice={voice} id={k === 0 ? 'lg-ex0' : undefined} onPlay={() => play(py)} />)}</div>
+        </div>
+      </div>
+      {!voice && <p className="muted">Озвучка выключена: включите её, чтобы услышать тон.</p>}
       <div className="row"><button type="button" className="btn btn-primary" id="lg-next" onClick={onNext}>Дальше<Icon name="arrow-right" size={17} /></button></div>
     </div>
   );

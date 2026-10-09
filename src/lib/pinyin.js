@@ -58,6 +58,14 @@ export function splitSyllable(base) {
   const ini = INITIALS.find(x => base.startsWith(x) && base.length > x.length) || '';
   return { initial: ini, final: base.slice(ini.length) };
 }
+/* Пары «без выдоха — с выдохом»: b — p, d — t, g — k, j — q, z — c, zh — ch */
+export const AIR_PAIRS = [['b', 'p'], ['d', 't'], ['g', 'k'], ['j', 'q'], ['z', 'c'], ['zh', 'ch']];
+export const airPair = ini => AIR_PAIRS.find(pr => pr.includes(ini)) || null;
+/* Тот же слог с другим согласным: «bā» + p → «pā» */
+export function withInitial(py, ini) {
+  const { base, tone } = parseSyllable(py);
+  return mark(ini + splitSyllable(base).final, tone);
+}
 /* Запись с цифрой тона для имён звуковых файлов: «lǜ» → «lv4», «mā» → «ma1». Без тона — null */
 export function numbered(py) {
   const { base, tone } = parseSyllable(py);

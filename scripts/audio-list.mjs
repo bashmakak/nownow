@@ -3,8 +3,10 @@
    Поля: key — ключ (lib/audio-keys.js), zh — текст для синтеза, py — пиньинь, role — чья реплика
    (me — фраза ученика, them — собеседник в сценарии, word — слово, syl — слог). */
 import zh from '../src/data/lang/zh.js';
-import { charTable, indexTrack } from '../src/lib/lang-engine.js';
+import { TONE_EXAMPLES, charTable, indexTrack } from '../src/lib/lang-engine.js';
 import { keysFor, sylKey, textKey } from '../src/lib/audio-keys.js';
+import { airPair, parseSyllable, splitSyllable, withInitial } from '../src/lib/pinyin.js';
+import { VOWEL_EX, builderSyllables, pinyinDemoSyllables } from '../src/lib/demo-data.js';
 
 export function audioNeeds(track) {
   const ix = indexTrack(track), need = new Map();
@@ -20,7 +22,18 @@ export function audioNeeds(track) {
     (l.syl || []).forEach(([z, py]) => syl(py));
     (l.words || []).forEach(([z, py]) => add(z, py.replace(/ /g, '') === py ? py : py, 'word'));
     (l.sound || []).forEach(([z, py, others]) => { syl(py); others.forEach(syl); });
-    (l.sounds || []).forEach(([, , ex]) => ex.forEach(syl));
+    (l.tones || []).forEach(([, , ex]) => ex.forEach(syl));
+    // наглядные схемы (components/LangDemos.jsx): у каждой кнопки свой слог
+    const demos = [...(l.intro || []), l.rule || {}].map(r => r.demo);
+    if (demos.includes('tones')) TONE_EXAMPLES.forEach(syl);
+    if (demos.includes('pinyin')) pinyinDemoSyllables().forEach(syl);
+    if (demos.includes('syllable')) builderSyllables().forEach(syl);
+    (l.sounds || []).forEach(([py, , ex]) => {
+      ex.forEach(syl);
+      if (VOWEL_EX[py]) Object.values(VOWEL_EX).forEach(syl);                       // губы: все шесть гласных
+      const pair = airPair(py);                                                    // свеча: пара без выдоха и с выдохом
+      if (pair && splitSyllable(parseSyllable(ex[0]).base).initial === py) pair.forEach(i => syl(withInitial(ex[0], i)));
+    });
     (l.repeat || []).forEach(syl);
     (l.pick || []).forEach(([py, others]) => { syl(py); others.forEach(syl); });
     (l.minimal || []).forEach(pair => pair.forEach(syl));

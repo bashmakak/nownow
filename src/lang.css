@@ -328,3 +328,127 @@ a.lg-track:hover{border-color:var(--accent-line);transform:translateY(-2px)}
 .lg-rad-ex li{display:grid;grid-template-columns:auto auto minmax(0,1fr) 44px;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-md);background:var(--bg-2);font-size:14.5px}
 .lg-rad-ex .zh{font-size:24px}
 .lg-build{display:flex;flex-direction:column;gap:18px}
+
+/* ---------- схема тонов ---------- */
+.lg-tchart{margin:0;width:100%}
+.lg-tchart svg{display:block;width:100%;max-width:440px;height:auto;margin-inline:auto;overflow:visible}
+.lg-tchart.one svg{max-width:200px}
+.lg-tchart .grid line{stroke:var(--border);stroke-width:1;stroke-dasharray:3 5}
+.lg-tchart .lv{fill:var(--text-3);font:500 11px var(--font-body)}
+.lg-tchart .hit{fill:transparent;stroke:none}
+.lg-tchart path.c{fill:none;stroke:var(--accent-line);stroke-width:5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;animation:lg-tdraw .7s var(--ease) both}
+.lg-tchart.all .t2 path.c{animation-delay:.12s}.lg-tchart.all .t3 path.c{animation-delay:.24s}.lg-tchart.all .t4 path.c{animation-delay:.36s}
+.lg-tchart .lab{fill:var(--text);font:600 16px var(--font-display)}
+.lg-tchart .num{fill:var(--text-3);font:500 11px var(--font-body)}
+.lg-tchart g[role="button"]{cursor:pointer;outline:none}
+.lg-tchart g[role="button"]:hover .hit{fill:var(--bg-2)}
+.lg-tchart g[role="button"]:focus-visible .hit{stroke:var(--focus);stroke-width:2}
+.lg-tchart g[role="button"]:active path.c{stroke-width:6}
+@keyframes lg-tdraw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion: reduce){.lg-tchart path.c{animation:none}}
+.lg-tone .h3{display:flex;align-items:baseline;gap:10px}
+.lg-tone-mark{font:700 30px/1 var(--font-display);color:var(--accent-text)}
+.lg-tone-body{display:grid;grid-template-columns:minmax(120px,200px) minmax(0,1fr);gap:12px 22px;align-items:center}
+.lg-tone-body p{font-size:16.5px;line-height:1.6;color:var(--text-2)}
+@media (max-width:520px){.lg-tone-body{grid-template-columns:minmax(0,1fr)}.lg-tone-body .lg-tchart.one svg{max-width:170px}}
+.lg-opt-t{display:inline-flex;align-items:center;gap:10px;min-width:0}
+.lg-ticon{flex:none;width:26px;height:18px}
+.lg-ticon path{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;opacity:.7}
+
+/* ---------- наглядные схемы вводного курса (components/LangDemos.jsx) ---------- */
+.pl-col.lg-body.wide{width:min(960px,100%)}
+.lg-demo{width:100%;display:flex;flex-direction:column;align-items:center;gap:14px;padding:clamp(14px,3vw,24px);border-radius:var(--r-lg);background:var(--bg-2)}
+.lg-tchart .dot{fill:var(--lime);stroke:var(--ink);stroke-width:2.5;opacity:0;transition:opacity .2s}
+.lg-tchart g.on path.c{stroke-width:7}
+.lg-tonesdemo .lg-tchart svg{max-width:560px}
+@keyframes lg-in{from{opacity:0;transform:translateY(10px)}}
+@keyframes lg-pop{0%{opacity:0;transform:scale(.6)}70%{opacity:1;transform:scale(1.08)}100%{opacity:1;transform:none}}
+@keyframes lg-drop{from{opacity:0;transform:translate(-50%,-16px)}}
+
+/* иероглиф → пиньинь */
+.lg-pyd-row{display:grid;grid-template-columns:repeat(2,minmax(0,200px));justify-content:center;gap:clamp(12px,4vw,48px);width:100%}
+.lg-pyd{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;padding:16px 10px;border-radius:var(--r-lg);border:1px solid var(--border);background:var(--bg-1);color:var(--text);cursor:pointer;transition:border-color .15s,transform .15s}
+.lg-pyd:hover{border-color:var(--accent-line);transform:translateY(-2px)}
+.lg-pyd .zh{font-size:clamp(60px,11vw,92px);line-height:1;animation:lg-in .5s var(--ease) both;animation-delay:var(--d)}
+.lg-pyd-arrow{font-size:22px;color:var(--text-3);animation:lg-in .4s var(--ease) both;animation-delay:calc(var(--d) + .5s)}
+.lg-pyd-py{display:flex;font:600 clamp(38px,7vw,54px)/1.25 var(--font-display);padding-top:.25em}
+.lg-pyd-py .l1{animation:lg-in .35s var(--ease) both;animation-delay:calc(var(--d) + .8s)}
+.lg-pyd-py .l2{position:relative;animation:lg-in .35s var(--ease) both;animation-delay:calc(var(--d) + 1.05s)}
+.lg-pyd-py .tm{position:absolute;left:50%;top:.02em;transform:translateX(-50%);color:var(--accent-text);animation:lg-drop .5s var(--ease) both;animation-delay:calc(var(--d) + 1.4s)}
+.lg-pyd-ru{font-size:16px;color:var(--text-2);animation:lg-in .4s var(--ease) both;animation-delay:calc(var(--d) + 1.6s)}
+
+/* конструктор слога */
+.lg-sylb-eq{display:flex;flex-wrap:wrap;align-items:stretch;justify-content:center;gap:10px}
+.lg-sylb-part{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:88px;padding:10px 12px;border-radius:var(--r-md);border:1px solid var(--border);background:var(--bg-1);animation:lg-in .45s var(--ease) both}
+.lg-sylb-part.p-fin{animation-delay:.45s}.lg-sylb-part.p-tone{animation-delay:.9s}
+.lg-sylb-part .k{font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3)}
+.lg-sylb-part .v{display:flex;align-items:center;min-height:42px;font:600 36px/1.1 var(--font-display);color:var(--text)}
+.lg-sylb-part .v .lg-ticon{width:46px;height:32px}
+.lg-sylb-part .v .lg-ticon path{stroke:var(--accent-line);stroke-width:2.6;opacity:1}
+.lg-sylb-part .s{font-size:13px;color:var(--text-2)}
+.lg-sylb-part[data-empty] .v{color:var(--text-3)}
+.lg-sylb-eq .op{align-self:center;font:600 26px var(--font-display);color:var(--text-3);animation:lg-in .3s both;animation-delay:.3s}
+.lg-sylb-eq .op.eq{animation-delay:1.2s}
+.lg-sylb-res{align-self:center;display:inline-flex;align-items:center;gap:10px;padding:10px 20px;border:0;border-radius:var(--r-lg);background:var(--lime);color:var(--ink);cursor:pointer;animation:lg-pop .55s var(--ease) both;animation-delay:1.35s}
+.lg-sylb-res.now{animation-delay:0s}
+.lg-sylb-res .py{font:700 clamp(38px,6vw,48px)/1.1 var(--font-display);color:var(--ink)}
+.lg-sylb-note{min-height:1.5em;text-align:center;font-size:15px;color:var(--text-2)}
+.lg-sylb-ctl{display:grid;gap:12px;width:100%}
+.lg-sylb-ctl .lg-chip{display:inline-flex;align-items:center;gap:6px}
+
+/* губы */
+.lg-mouth-main{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:18px;width:100%}
+.lg-mouth-main p{font-size:16px;line-height:1.55;color:var(--text-2)}
+.lg-mouth{display:block;width:96px;height:auto}
+.lg-mouth.big{width:clamp(150px,30vw,220px)}
+.lg-mouth .lips{fill:#C97B7D;stroke:#9E5458;vector-effect:non-scaling-stroke}
+.lg-mouth .hole{fill:#2B1A1F}
+.lg-mouth .teeth{fill:#F3EFE6}
+.lg-mouth .tongue{fill:none;stroke:#E49BA1;stroke-width:7;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.lg-mouth-g{transform-box:view-box;transform-origin:80px 55px;transform:scale(var(--sx),var(--sy));transition:transform .6s var(--ease)}
+.lg-mouth .say{transform-box:view-box;transform-origin:80px 55px;animation:lg-say .55s var(--ease)}
+@keyframes lg-say{40%{transform:scale(1.06,1.2)}}
+.lg-mouth-strip{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;width:100%}
+.lg-mouth-mini{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border-radius:var(--r-md);border:1px solid var(--border);background:var(--bg-1);color:var(--text);cursor:pointer}
+.lg-mouth-mini.on{border-color:var(--accent-line);box-shadow:inset 0 0 0 1px var(--accent-line)}
+.lg-mouth-mini .lg-mouth{width:100%;max-width:64px}
+.lg-mouth-mini .py{font:600 17px var(--font-display)}
+
+/* свеча и выдох */
+.lg-breath-lead{font-size:15px;line-height:1.5;color:var(--text-2);text-align:center}
+.lg-candles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:100%}
+.lg-candle{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 8px;border-radius:var(--r-md);border:1px solid var(--border);background:var(--bg-1);color:var(--text);cursor:pointer}
+.lg-candle:hover{border-color:var(--accent-line)}
+.lg-candle svg{display:block;width:min(130px,100%);height:auto;overflow:visible}
+.lg-candle .py{font:600 24px var(--font-display)}
+.lg-candle-sub{font-size:13.5px;color:var(--text-2);text-align:center}
+.lg-candle .body{fill:#EDE5D3;stroke:#CBBFA6}
+.lg-candle .wick{stroke:var(--text-2);stroke-width:2}
+.lg-candle .flame{fill:#FFAE3B}
+.lg-candle .core{fill:#FFE48C}
+.lg-candle .flame-g{transform-box:view-box;transform-origin:79px 70px;animation:lg-flicker 2.4s ease-in-out infinite}
+.lg-candle.weak .flame-g[data-run]{animation:lg-flame-weak .9s var(--ease)}
+.lg-candle.strong .flame-g[data-run]{animation:lg-flame-strong 1.25s var(--ease)}
+.lg-candle .air path{fill:none;stroke:var(--text-3);stroke-width:2.5;stroke-linecap:round;opacity:0}
+.lg-candle.strong .air[data-run] path{animation:lg-air .8s ease-out both}
+.lg-candle.weak .air[data-run] path{animation:lg-air-weak .8s ease-out both}
+@keyframes lg-flicker{50%{transform:scale(.97,1.04)}}
+@keyframes lg-flame-weak{30%{transform:rotate(7deg) scale(1,.97)}65%{transform:rotate(-3deg)}}
+@keyframes lg-flame-strong{18%{transform:rotate(64deg) scale(.72,.55)}45%{transform:rotate(50deg) scale(.62,.5)}78%{transform:rotate(-8deg) scale(.96)}}
+@keyframes lg-air{0%{opacity:0;transform:translateX(0)}30%{opacity:.9}100%{opacity:0;transform:translateX(48px)}}
+@keyframes lg-air-weak{0%{opacity:0}40%{opacity:.35;transform:translateX(8px)}100%{opacity:0;transform:translateX(16px)}}
+
+/* тон крупно: схема слева, объяснение справа */
+.lg-tone-body{grid-template-columns:minmax(160px,280px) minmax(0,1fr)}
+.lg-tone-body .lg-tchart.one svg{max-width:280px;margin-inline:0}
+.lg-tone-text{display:flex;flex-direction:column;gap:14px}
+@media (max-width:620px){
+  .lg-tone-body{grid-template-columns:minmax(0,1fr)}
+  .lg-tone-body .lg-tchart.one svg{max-width:220px;margin-inline:auto}
+  .lg-mouth-main{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center}
+  .lg-mouth-strip{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (prefers-reduced-motion: reduce){
+  .lg-pyd *,.lg-sylb-part,.lg-sylb-eq .op,.lg-sylb-res,.lg-candle .flame-g,.lg-mouth .say{animation:none !important}
+  .lg-mouth-g{transition:none}
+}

@@ -83,6 +83,8 @@ function poolsFor(ix, lesson) {
 
 /* ---------- задания на тоны и звуки ---------- */
 const TONE_NAMES = ['1-й: ровный высокий', '2-й: восходящий', '3-й: низкий, с провалом', '4-й: резкий падающий'];
+/* Слоги, на которых схема тонов даёт послушать каждый тон */
+export const TONE_EXAMPLES = ['mā', 'má', 'mǎ', 'mà'];
 export { TONE_NAMES };
 /* Слог: «услышьте и выберите тон»; без голоса — «какой тон обозначен» */
 function toneTask([zh, py, ru], audio, rnd) {
@@ -188,10 +190,16 @@ export function buildLesson(ix, lessonId, { audio = false, rnd = Math.random } =
   const lesson = ix.lessonBy[lessonId];
   if (!lesson) return [];
   const out = [];
+  // вводные карточки идут по порядку, до правила: с них начинается курс с нуля
+  if (lesson.intro) lesson.intro.forEach(r => out.push({ type: 'rule', rule: { k: 'С чего начать', ...r } }));
   if (lesson.rule) out.push({ type: 'rule', rule: lesson.rule });
+  // тоны: каждый по очереди — знак, схема, как звучит
+  if (lesson.tones) lesson.tones.forEach(([tone, how, ex]) => out.push({ type: 'toneIntro', tone, how, ex }));
   // звуки урока: сначала знакомство с каждым, потом «послушайте и повторите»
   if (lesson.sounds) lesson.sounds.forEach(([py, how, ex]) => out.push({ type: 'soundIntro', s: { py, how, ex } }));
   if (lesson.repeat && audio) out.push({ type: 'repeat', items: lesson.repeat });
+  // знак тона на чтение: «какой тон обозначен» — и со звуком, и без
+  if (lesson.marks) shuffle(lesson.marks, rnd).forEach(py => out.push(toneTask(['', py], false, rnd)));
 
   if (lesson.syl) {                                   // тоны: отдельные слоги
     const items = shuffle([...lesson.syl, ...lesson.syl], rnd);
