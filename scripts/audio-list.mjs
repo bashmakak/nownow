@@ -1,11 +1,13 @@
 /* Список всего, что должно звучать в треке: node scripts/audio-list.mjs > список.json
    Нужен сборщику звука (scripts/audio/make_audio.py) и проверке данных: у каждого пункта должен быть файл.
    Поля: key — ключ (lib/audio-keys.js), zh — текст для синтеза, py — пиньинь, role — чья реплика
-   (me — фраза ученика, them — собеседник в сценарии, word — слово, syl — слог). */
+   (me — фраза ученика, them — собеседник в сценарии, word — слово, tile — слово из фразы для кнопки
+   «по словам», syl — слог); syl — слоги с тонами [[основа, тон, эризация]]; oneWord — запись в одно слово
+   (такую сборщик может склеить из записей слогов носителя, если нет записи слова целиком). */
 import zh from '../src/data/lang/zh.js';
 import { TONE_EXAMPLES, charTable, indexTrack } from '../src/lib/lang-engine.js';
 import { keysFor, sylKey, textKey } from '../src/lib/audio-keys.js';
-import { airPair, parseSyllable, splitSyllable, withInitial } from '../src/lib/pinyin.js';
+import { airPair, parseSyllable, splitSyllable, syllables, withInitial } from '../src/lib/pinyin.js';
 import { VOWEL_EX, builderSyllables, pinyinDemoSyllables } from '../src/lib/demo-data.js';
 
 export function audioNeeds(track) {
@@ -13,10 +15,14 @@ export function audioNeeds(track) {
   const add = (zhText, py, role) => {
     const k = keysFor({ zh: zhText, py })[0];
     if (!k || need.has(k)) return;
-    need.set(k, { key: k, zh: zhText || '', py: py || '', role });
+    const words = String(py || '').trim().split(/[\s,.?!:;，。？！、…]+/).filter(Boolean);
+    const syl = words.flatMap(w => (syllables(w) || []).map(x => [x.base, x.tone, x.erhua ? 1 : 0]));
+    need.set(k, { key: k, zh: zhText || '', py: py || '', role, syl, oneWord: words.length === 1 });
   };
   const syl = py => { if (sylKey(py)) add('', py, 'syl'); };
   Object.values(ix.phrases).forEach(p => add(p.zh, p.py, 'me'));
+  // «по словам»: каждое слово фразы отдельно — записью носителя
+  Object.values(ix.phrases).forEach(p => p.tiles.forEach(t => add(t.zh, t.py, 'tile')));
   ix.lessons.forEach(l => {
     (l.dialog || []).forEach(line => { if (line[0] === 'them') add(line[1].replace(/ /g, ''), line[2], 'them'); });
     (l.syl || []).forEach(([z, py]) => syl(py));

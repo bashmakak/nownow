@@ -452,3 +452,13 @@ a.lg-track:hover{border-color:var(--accent-line);transform:translateY(-2px)}
   .lg-pyd *,.lg-sylb-part,.lg-sylb-eq .op,.lg-sylb-res,.lg-candle .flame-g,.lg-mouth .say{animation:none !important}
   .lg-mouth-g{transition:none}
 }
+
+.lg-teach-note{font-size:13.5px !important;line-height:1.45 !important;color:var(--text-3) !important;text-align:center}
+.lg-tone-text .lg-teach-note{text-align:left}
+
+/* фраза по словам */
+.lg-w{border-radius:6px;transition:background-color .15s,color .15s}
+.lg-w.on{background:var(--lime);color:var(--ink)}
+.lg-big .lg-words{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;margin-top:4px;padding:6px 12px;border-radius:var(--r-pill);border:1px solid var(--border);background:var(--bg-1);color:var(--text-2);font-size:13.5px;font-weight:600;cursor:pointer}
+.lg-big .lg-words:hover{border-color:var(--accent-line);color:var(--text)}
+.ch-opt.cmp{border-color:var(--lime);box-shadow:inset 0 0 0 1px var(--lime)}

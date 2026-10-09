@@ -11,7 +11,7 @@ import ToneChart, { TONE_MARK, ToneIcon } from './ToneChart.jsx';
    MouthDemo — положение губ для простых гласных, BreathDemo — свеча и выдох для пар b — p.
    Всё работает и без звука: анимация показывает движение, звук его дополняет. */
 
-const say = (lang, voice, py) => { if (voice) speak('', lang, { voice, py }); };
+const say = (lang, voice, py, slow = false) => { if (voice) speak('', lang, { voice, py, slow }); };
 
 /* ---------- иероглиф → пиньинь ---------- */
 export function PinyinDemo({ lang, voice }) {
@@ -160,7 +160,12 @@ export function BreathDemo({ ini, ex, pulse = 0, lang, voice }) {
 
 /* Схема тонов в карточке: все четыре, нажать — услышать */
 export function TonesDemo({ lang, voice, labels }) {
-  return <div className="lg-demo lg-tonesdemo" id="lg-demo-tones"><ToneChart labels={labels} onPlay={voice ? n => say(lang, voice, labels[n - 1]) : null} /></div>;
+  return (
+    <div className="lg-demo lg-tonesdemo" id="lg-demo-tones">
+      <ToneChart labels={labels} onPlay={voice ? n => say(lang, voice, labels[n - 1], true) : null} />
+      {voice && <p className="lg-teach-note">Звучит учебная запись носителя: медленно и чуть ярче обычного, чтобы тон было легче расслышать.</p>}
+    </div>
+  );
 }
 
 /* Какая наглядная схема подходит звуку: губы для гласных, свеча для пар с выдохом */

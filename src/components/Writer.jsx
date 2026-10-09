@@ -113,7 +113,8 @@ export default function Writer({ ch, script = 'hanzi', mode = 'trace', onDone, o
         showCharacter: false, showOutline: mode !== 'memory',
         strokeColor: c('--wr-ink') || '#F5F7FA', outlineColor: c('--wr-outline') || '#34404B', drawingColor: c('--wr-pen') || '#D8FF5A',
         highlightColor: c('--wr-hint') || '#00C897', radicalColor: null,
-        drawingWidth: Math.max(14, Math.round(px / 18)), strokeAnimationSpeed: 1.4, delayBetweenStrokes: 180, strokeHighlightSpeed: 2,
+        // толщина «кисти» — в единицах знака (поле 1024): как настоящая черта, на экране 16–23 точки
+        drawingWidth: script === 'latin' ? 64 : 72, strokeAnimationSpeed: 1.4, delayBetweenStrokes: 180, strokeHighlightSpeed: 2,
         showHintAfterMisses: mode === 'memory' ? 2 : 3, highlightOnComplete: true,
         charDataLoader: (_c, onLoad) => { onLoad(data); return data; },
       });

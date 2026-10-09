@@ -4,7 +4,7 @@ import { LEVELS, LEVEL_BY, TRACKS, TRACK_BY, levelsOf, loadTrack } from '../data
 import { LETTER_GROUPS } from '../data/lang/letters.js';
 import { PLACEMENT, TONE_EXAMPLES, TONE_NAMES, buildLesson, buildPlacement, buildReview, charTable, duePhrases, indexTrack, isGraded, lessonPhrases, levelLessonsOf, nextLessonOf, shuffle } from '../lib/lang-engine.js';
 import { finishLesson, finishReview, langOf, practiceWrite, setLevel } from '../lib/lang-progress.js';
-import { speak, stopSpeech, useVoice } from '../lib/speech.js';
+import { speak, speakSyllables, speakWords, stopSpeech, useVoice, wordUrls } from '../lib/speech.js';
 import { audioUrl, preload, registerAudio } from '../lib/audio.js';
 import { getState, plural, update, useStore } from '../lib/store.js';
 import { useTitle } from '../lib/ui.jsx';
@@ -288,7 +288,7 @@ function TrackBody({ ix }) {
           <div className="lg-cards">{t.before.map(c => <Card c={c} key={c.t} />)}</div>
         </div>
         {t.audio && (
-          <p className="wr-credits" id="lg-audio-credits">Звук: слоги — записи носителя из проекта <a href="https://github.com/hugolpz/audio-cmn" target="_blank" rel="noopener noreferrer">audio-cmn</a> (голос Chen Wang), слова — записи Yue Tan из того же проекта (Shtooka), обе коллекции — по лицензии CC BY-SA; фразы — синтез речи Kokoro (Apache 2.0). <a href="licenses/audio-zh.txt" target="_blank" rel="noopener">Подробнее о лицензиях</a>.</p>
+          <p className="wr-credits" id="lg-audio-credits">Звук: слоги — записи носителя из проекта <a href="https://github.com/hugolpz/audio-cmn" target="_blank" rel="noopener noreferrer">audio-cmn</a> (голос Chen Wang), слова — записи Yue Tan из того же проекта (Shtooka), обе коллекции — по лицензии CC BY-SA; фразы целиком — синтез речи Kokoro (Apache 2.0). Тоны синтез передаёт неточно, поэтому для тонов ориентируйтесь на записи носителя: слоги, слова и кнопку «По словам». <a href="licenses/audio-zh.txt" target="_blank" rel="noopener">Подробнее о лицензиях</a>.</p>
         )}
       </div>
     </section>
@@ -538,16 +538,35 @@ function Task(props) {
     default: return <Choice {...props} />;
   }
 }
+/* Текст фразы с разметкой по словам: слова — по плиткам, знаки препинания остаются как есть */
+function byTiles(zh, tiles) {
+  const out = []; let at = 0;
+  (tiles || []).forEach((t, k) => {
+    const i = zh.indexOf(t.zh, at);
+    if (i < 0) return;
+    if (i > at) out.push({ text: zh.slice(at, i), k: -1 });
+    out.push({ text: t.zh, k }); at = i + t.zh.length;
+  });
+  if (at < zh.length) out.push({ text: zh.slice(at), k: -1 });
+  return out;
+}
 function Big({ p, lang, voice, auto }) {
+  const [at, setAt] = useState(-1);
   useEffect(() => { if (auto && voice) speak(p.zh, lang, { voice, py: p.py }); }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+  // по словам — записи носителя: слово за словом, текущее подсвечено
+  const words = voice && wordUrls(p.tiles, lang) ? p.tiles : null;
+  const pyWords = p.py.split(/(\s+)/);
+  const pyAligned = words && pyWords.filter(w => w.trim()).length === words.length;
+  let wi = -1;
   return (
     <div className={`lg-big ${p.kind === 'sign' ? 'sign' : ''}`}>
       <div className="lg-big-row">
-        <span className="zh" lang="zh-CN" id="lg-zh">{p.zh}</span>
+        <span className="zh" lang="zh-CN" id="lg-zh">{words ? byTiles(p.zh, words).map((x, k) => (x.k < 0 ? x.text : <span key={k} className={`lg-w ${at === x.k ? 'on' : ''}`}>{x.text}</span>)) : p.zh}</span>
         <SpeakBtn text={p.zh} py={p.py} lang={lang} voice={voice} id="lg-play" />
         <SpeakBtn text={p.zh} py={p.py} lang={lang} voice={voice} slow />
       </div>
-      <span className="py" id="lg-py">{p.py}</span>
+      <span className="py" id="lg-py">{pyAligned ? pyWords.map((w, k) => { if (!w.trim()) return w; wi += 1; return <span key={k} className={`lg-w ${at === wi ? 'on' : ''}`}>{w}</span>; }) : p.py}</span>
+      {words && <button type="button" className="lg-words" id="lg-words" onClick={() => speakWords(words, lang, { onStep: setAt })} aria-label="Послушать по словам: каждое слово отдельно, записи носителя"><Icon name="list-ordered" size={15} />По словам · голос носителя</button>}
     </div>
   );
 }
@@ -593,6 +612,7 @@ function CountryCard({ card, onNext }) {
 /* Задания с выбором варианта */
 function Choice({ task: x, lang, voice, answer, onAnswer }) {
   const picked = answer ? answer.picked : null;
+  const [cmp, setCmp] = useState(-1);                 // «сравнить все четыре»: какой тон звучит сейчас
   const pick = (k, el) => {
     if (answer) return;
     const ok = k === x.correct;
@@ -619,14 +639,15 @@ function Choice({ task: x, lang, voice, answer, onAnswer }) {
       {x.type === 'meaning' && <Big p={x.p} lang={lang} voice={voice} />}
       {x.type === 'reverse' && <p className="lg-ru big" id="lg-ru">{x.p.ru}</p>}
       {x.type === 'listen' && <div className="lg-listen"><SpeakBtn text={x.p.zh} py={x.p.py} lang={lang} voice={voice} big id="lg-play" label="Послушать ещё раз" /><SpeakBtn text={x.p.zh} py={x.p.py} lang={lang} voice={voice} slow /></div>}
-      {['tone', 'toneWord'].includes(x.type) && <div className="lg-big"><div className="lg-big-row">{x.syl.zh ? <span className="zh" lang="zh-CN">{x.syl.zh}</span> : <span className="lg-pyb" id="lg-base">{x.syl.base}</span>}<SpeakBtn text={x.syl.zh} py={x.syl.py} lang={lang} voice={voice} id="lg-play" /><SpeakBtn text={x.syl.zh} py={x.syl.py} lang={lang} voice={voice} slow /></div>{x.syl.ru && x.type === 'toneWord' && <span className="lg-ru">{x.syl.ru}</span>}</div>}
+      {['tone', 'toneWord'].includes(x.type) && <div className="lg-big"><div className="lg-big-row">{x.syl.zh ? <span className="zh" lang="zh-CN">{x.syl.zh}</span> : <span className="lg-pyb" id="lg-base">{x.syl.base}</span>}<SpeakBtn text={x.syl.zh} py={x.syl.py} lang={lang} voice={voice} id="lg-play" /><SpeakBtn text={x.syl.zh} py={x.syl.py} lang={lang} voice={voice} slow /></div>{x.syl.ru && x.type === 'toneWord' && <span className="lg-ru">{x.syl.ru}</span>}
+        {x.type === 'tone' && voice && <button type="button" className="lg-words" id="lg-compare" onClick={() => speakSyllables(x.options, lang, { slow: true, onStep: setCmp })} aria-label="Сравнить: все четыре тона по очереди, медленно"><Icon name="list-ordered" size={15} />Сравнить все четыре</button>}</div>}
       {['toneRead', 'toneWordRead'].includes(x.type) && <div className="lg-big">{x.syl.zh ? <span className="zh" lang="zh-CN">{x.syl.zh}</span> : null}{x.type === 'toneRead' ? <span className={x.syl.zh ? 'py' : 'lg-pyb'}>{x.syl.py}</span> : x.syl.ru && <span className="lg-ru">{x.syl.ru}</span>}</div>}
       {x.type === 'sound' && <div className="lg-listen"><SpeakBtn text={x.syl.zh} py={x.syl.py} lang={lang} voice={voice} big id="lg-play" label="Послушать ещё раз" /><SpeakBtn text={x.syl.zh} py={x.syl.py} lang={lang} voice={voice} slow /></div>}
       {x.type === 'compose' && <div className="lg-big lg-parts" id="lg-parts"><span className="lg-pyb">{x.parts.initial || '—'}</span><span className="lg-plus">+</span><span className="lg-pyb">{x.parts.final}</span><span className="lg-plus">,</span><span className="lg-tone-name">{TONE_NAMES[x.parts.tone - 1]} тон</span></div>}
       {x.type === 'radPick' && <div className="lg-big"><div className="lg-big-row"><span className="zh" lang="zh-CN">{x.ch.zh}</span><SpeakBtn text={x.ch.zh} py={x.ch.py} lang={lang} voice={voice} /></div><span className="py">{x.ch.py}</span></div>}
       <div className="lg-opts ch-list" role="group" aria-label="Варианты ответа">
         {x.options.map((o, k) => (
-          <button key={typeof o === 'string' ? o : o.id || o.zh} type="button" className={`ch-opt ${cls(k)}`} disabled={Boolean(answer)} aria-pressed={picked === k} data-ok={k === x.correct ? '1' : undefined} onClick={e => pick(k, e.currentTarget)}>
+          <button key={typeof o === 'string' ? o : o.id || o.zh} type="button" className={`ch-opt ${cls(k)} ${cmp === k ? 'cmp' : ''}`} disabled={Boolean(answer)} aria-pressed={picked === k} data-ok={k === x.correct ? '1' : undefined} onClick={e => pick(k, e.currentTarget)}>
             <span className="ch-key" aria-hidden="true">{answer && k === x.correct ? <Icon name="check" size={16} /> : answer && k === picked ? <Icon name="x" size={16} /> : LETTERS[k]}</span>
             {x.type === 'radPick' ? <span className="lg-rad-opt"><span className="zh" lang="zh-CN">{o.zh}</span><span>{o.ru}</span></span> : optText(o, k)}
             {answer && k === x.correct && <span className="sr"> (верный ответ)</span>}
@@ -777,9 +798,10 @@ function ToneIntro({ task: { tone, how, ex }, lang, voice, onNext }) {
       <p className="label pl-kicker">Тон {tone} из 4</p>
       <h2 className="h3">{TONE_TITLE[tone]} <span className="lg-tone-mark">{ex[0]}</span></h2>
       <div className="lg-tone-body">
-        <ToneChart only={tone} labels={[ex[0], ex[0], ex[0], ex[0]]} autoplay pulse={pulse} onPlay={voice ? () => speak('', lang, { voice, py: ex[0] }) : null} />
+        <ToneChart only={tone} labels={[ex[0], ex[0], ex[0], ex[0]]} autoplay pulse={pulse} onPlay={voice ? () => speak('', lang, { voice, py: ex[0], slow: true }) : null} />
         <div className="lg-tone-text">
           <p>{how}</p>
+          {voice && <p className="lg-teach-note">На схеме звучит учебная запись — медленно и чуть ярче обычного. Примеры ниже — в обычном темпе.</p>}
           <div className="lg-syls" aria-label="Примеры">{ex.map((py, k) => <SylBtn key={py} py={py} lang={lang} voice={voice} id={k === 0 ? 'lg-ex0' : undefined} onPlay={() => play(py)} />)}</div>
         </div>
       </div>

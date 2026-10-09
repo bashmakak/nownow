@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { audioUrl, hasAudio, playUrl, stopAudio } from './audio.js';
+import { audioUrl, hasAudio, playSequence, playUrl, stopAudio } from './audio.js';
 
 /* ===== Озвучка фраз =====
    Сначала — свои файлы сайта (lib/audio.js): записи носителей и синтез, собранные заранее. Если у трека файлов нет
@@ -66,8 +66,10 @@ export function useVoice(lang) {
 /* Прочитать фразу или слог. py — пиньинь: по нему находится запись слога. slow — медленнее.
    Возвращает false, если ни файла, ни голоса нет */
 export function speak(text, lang, { slow = false, voice, py } = {}) {
-  const url = audioUrl(lang, { zh: text, py });
-  if (url) { if (ok()) window.speechSynthesis.cancel(); playUrl(url, { slow }); return true; }
+  // медленно: у слога есть учебная запись — она уже медленная, иначе замедляем обычную
+  const url = audioUrl(lang, { zh: text, py }, { slow });
+  const teach = slow && url && /\/x-[^/]+$/.test(url);
+  if (url) { if (ok()) window.speechSynthesis.cancel(); playUrl(url, { slow: slow && !teach }); return true; }
   if (!ok()) return false;
   stopAudio();
   const v = voice && !voice.files ? voice : pickVoice(voices, lang);
@@ -77,6 +79,27 @@ export function speak(text, lang, { slow = false, voice, py } = {}) {
   const u = new window.SpeechSynthesisUtterance(norm(lang).startsWith('zh') ? String(text).replace(/\s+/g, '') : String(text));
   u.lang = v.lang || lang; u.voice = v; u.rate = slow ? 0.55 : 0.85;
   s.speak(u);
+  return true;
+}
+/* Фраза по словам: у каждого слова свой файл — запись носителя (слог, слово HSK или склейка слогов).
+   Если хотя бы одно слово озвучено только синтезом (t-*.mp3), кнопки нет: она обещает голос носителя */
+export const wordUrls = (tiles, lang) => {
+  const u = (tiles || []).map(t => audioUrl(lang, { zh: t.zh, py: t.py }));
+  return u.length > 1 && u.every(x => x && !/\/t-[^/]+$/.test(x)) ? u : null;
+};
+export function speakWords(tiles, lang, { onStep } = {}) {
+  const urls = wordUrls(tiles, lang);
+  if (!urls) return false;
+  if (ok()) window.speechSynthesis.cancel();
+  playSequence(urls, { onStep });
+  return true;
+}
+/* Несколько слогов подряд (сравнить тоны): slow — учебные записи */
+export function speakSyllables(pys, lang, { slow = false, onStep } = {}) {
+  const urls = pys.map(py => audioUrl(lang, { py }, { slow }));
+  if (!urls.length || !urls.every(Boolean)) return false;
+  if (ok()) window.speechSynthesis.cancel();
+  playSequence(urls, { onStep, gap: 260 });
   return true;
 }
 export const stopSpeech = () => { stopAudio(); if (ok()) window.speechSynthesis.cancel(); };

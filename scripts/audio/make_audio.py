@@ -13,8 +13,13 @@
      (Paraformer, тоже из sherpa-onnx): если распознанный текст не совпал с исходным, фраза пересинтезируется
      другим голосом. Фразы, которые не совпали ни с одним голосом, попадают в отчёт для ручной проверки.
      Повторный запуск с --retry ПРОШЛЫЙ_ОТЧЁТ пересинтезирует такие фразы с бо́льшим набором голосов.
-  Несколько слов, которые синтез стабильно читает неверно (GLUE ниже), склеиваются из записей слогов Chen Wang
-  с короткими паузами — только слова из слогов первого тона, где при склейке тон не искажается.
+  Для каждого слога собирается и учебная версия (x-*.mp3, ключ x:…): та же запись носителя, замедленная
+  и с чуть более широким размахом тона (Praat через praat-parselmouth, метод PSOLA). Её играет кнопка
+  «медленно» и схема тонов: так тон легче расслышать с непривычки.
+  Слово (или фраза из одного слова), которого нет в наборе HSK, склеивается из записей слогов Chen Wang
+  с короткими паузами (g-*.mp3): тон каждого слога — как у носителя, два третьих подряд — второй и третий.
+  Синтез речи тоны передаёт плохо (проверено по высоте голоса), поэтому отдельные слова им не озвучиваются,
+  если склейка возможна. Не склеиваются слова с лёгким тоном и эризацией: таких записей слогов нет.
   Слога, которого нет среди записей Chen Wang, берётся запись того же проекта (Yue Tan) отдельного иероглифа
   с этим чтением (чтение — по pypinyin), а если и её нет — синтез этого иероглифа.
 
@@ -39,8 +44,14 @@ SYL = os.path.join(args.cmn, '24k-abr', 'syllabs'); HSK = os.path.join(args.cmn,
 HAN = re.compile(r'[一-鿿]')
 h = lambda k: hashlib.sha1(k.encode()).hexdigest()[:10]
 
-# слова, которые Kokoro читает неверно (распознавание слышит «性弃»): склейка записей слогов первого тона
-GLUE = {'星期一': ['xing1', 'qi1', 'yi1'], '星期天': ['xing1', 'qi1', 'tian1']}
+def glue_parts(n):
+    """Слоги для склейки: [ma3, ...] с изменением третьего тона; None, если склеить нельзя"""
+    syl = n.get('syl') or []
+    if not n.get('oneWord') or not (2 <= len(syl) <= 7) or any(t == 0 or er for _, t, er in syl): return None
+    tones = [t for _, t, _ in syl]
+    tones = [2 if t == 3 and k + 1 < len(tones) and tones[k + 1] == 3 else t for k, t in enumerate(tones)]
+    parts = [f"{b.replace('ü', 'v')}{t}" for (b, _, _), t in zip(syl, tones)]
+    return parts if all(os.path.exists(os.path.join(SYL, f'cmn-{p}.mp3')) for p in parts) else None
 TRIM = 'silenceremove=start_periods=1:start_threshold=-45dB,areverse,silenceremove=start_periods=1:start_threshold=-45dB,areverse'
 def glue(parts, out):
     tmp = tempfile.mkdtemp(); pieces = []
@@ -51,6 +62,27 @@ def glue(parts, out):
     inputs = sum((['-i', w] for w in pieces), [])
     chain = ''.join(f'[{k}]apad=pad_dur=0.04[p{k}];' for k in range(len(pieces))) + ''.join(f'[p{k}]' for k in range(len(pieces))) + f'concat=n={len(pieces)}:v=0:a=1,adelay=60,apad=pad_dur=0.08,loudnorm=I=-18:TP=-2:LRA=11'
     subprocess.run(['ffmpeg', '-v', 'error', '-y', *inputs, '-filter_complex', chain, '-ac', '1', '-ar', '24000', '-b:a', '40k', out], check=True)
+
+def exaggerate(src, dst):
+    """Учебная версия слога: голос растянут до ~0,6 с, размах тона шире в 1,35 раза (в полутонах)"""
+    import numpy as np, parselmouth
+    from parselmouth.praat import call
+    wav = tempfile.mktemp(suffix='.wav')
+    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', src, '-af', 'silenceremove=start_periods=1:start_threshold=-40dB,areverse,silenceremove=start_periods=1:start_threshold=-40dB,areverse', '-ac', '1', '-ar', '22050', wav], check=True)
+    snd = parselmouth.Sound(wav); os.remove(wav)
+    f = snd.to_pitch_ac(time_step=0.01, pitch_floor=70, pitch_ceiling=450).selected_array['frequency']
+    voiced = (f > 0).sum() * 0.01; f = f[f > 0]
+    med = float(np.median(f)) if len(f) else 200.0
+    stretch = min(2.2, max(1.3, 0.6 / max(voiced, 0.05)))
+    manip = call(snd, 'To Manipulation', 0.01, 70, 450)
+    pt = call(manip, 'Extract pitch tier')
+    call(pt, 'Formula', f'max({med / 2 ** (10 / 12)}, {med} * (self / {med}) ^ 1.35)')   # скрипучее дно не ниже 10 полутонов
+    call([pt, manip], 'Replace pitch tier')
+    dur = call('Create DurationTier', 'd', snd.xmin, snd.xmax); call(dur, 'Add point', snd.xmin, stretch)
+    call([dur, manip], 'Replace duration tier')
+    tmp = tempfile.mktemp(suffix='.wav'); call(manip, 'Get resynthesis (overlap-add)').save(tmp, 'WAV')
+    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', tmp, '-af', 'adelay=80,apad=pad_dur=0.12,loudnorm=I=-18:TP=-2:LRA=11', '-ac', '1', '-ar', '24000', '-b:a', '40k', dst], check=True)
+    os.remove(tmp)
 
 FILLER = re.compile(r'[啊呀哦呢嗯耶了吧]+$')
 same = lambda ref, hyp: ''.join(HAN.findall(ref)) == FILLER.sub('', ''.join(HAN.findall(hyp)))   # лишняя частица в конце — огрехи распознавания
@@ -76,6 +108,9 @@ for n in needs:
         src = os.path.join(SYL, f"cmn-{k[2:]}.mp3")
         if os.path.exists(src):
             name = f"cmn-{k[2:]}.mp3"; shutil.copyfile(src, os.path.join(OUT, name)); manifest[k] = name; report['sources']['syl'] += 1
+            slow = f"x-{k[2:]}.mp3"
+            if not os.path.exists(os.path.join(OUT, slow)): exaggerate(src, os.path.join(OUT, slow))
+            manifest[f"x:{k[2:]}"] = slow
             continue
         # слога нет среди записей Chen Wang: отдельный иероглиф с тем же чтением
         ch, rec = char_for(k[2:])
@@ -91,8 +126,11 @@ for n in needs:
         if os.path.exists(src):
             name = f'w-{h(k)}.mp3'; shutil.copyfile(src, os.path.join(OUT, name)); manifest[k] = name; report['sources']['hsk'] += 1
             continue
-        if word in GLUE:
-            name = f'g-{h(k)}.mp3'; glue(GLUE[word], os.path.join(OUT, name)); manifest[k] = name; report['sources']['glue'] = report['sources'].get('glue', 0) + 1
+        parts = glue_parts(n)
+        if parts:
+            name = f'g-{h(k)}.mp3'
+            if not os.path.exists(os.path.join(OUT, name)): glue(parts, os.path.join(OUT, name))
+            manifest[k] = name; report['sources']['glue'] = report['sources'].get('glue', 0) + 1
             continue
     name = f't-{h(k)}.mp3'
     if old.get(k) == name and os.path.exists(os.path.join(OUT, name)) and k not in retry:

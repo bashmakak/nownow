@@ -9,17 +9,19 @@ const banks = {};
 const norm = lang => String(lang || '').toLowerCase().split('-')[0];
 export function registerAudio(lang, manifest, base) { banks[norm(lang)] = { manifest: manifest || {}, base }; }
 export const hasAudio = lang => Boolean(banks[norm(lang)]);
-export function audioUrl(lang, item) {
+export function audioUrl(lang, item, { slow = false } = {}) {
   const b = banks[norm(lang)];
   if (!b) return null;
-  for (const k of keysFor(item)) if (b.manifest[k]) return b.base + b.manifest[k];
+  for (const k of keysFor(item, { slow })) if (b.manifest[k]) return b.base + b.manifest[k];
   return null;
 }
 
-let current = null;
+
+let current = null, seq = 0;
 /* Звук, который играет сейчас: по нему анимации подстраиваются под длительность */
 export const currentAudio = () => current;
 export function stopAudio() {
+  seq++;                                            // прерывает и проигрывание по словам
   if (current) { try { current.pause(); } catch { /* уже остановлен */ } current = null; }
 }
 /* Проиграть файл. slow — медленнее, высота голоса сохраняется. Возвращает обещание: true, если звук пошёл */
@@ -32,6 +34,26 @@ export function playUrl(url, { slow = false } = {}) {
   if (typeof window !== 'undefined') window.__nnAudio = (window.__nnAudio || []).concat({ url, rate: a.playbackRate });   // для проверки в тестах
   const p = a.play();
   return p && p.then ? p.then(() => true, () => false) : Promise.resolve(true);
+}
+/* Несколько файлов подряд (фраза по словам): onStep(k) — какой звучит сейчас, onStep(-1) — закончили.
+   Любой другой звук или stopAudio() прерывает очередь */
+export function playSequence(urls, { gap = 160, onStep } = {}) {
+  stopAudio();
+  const id = seq;
+  const step = k => {
+    if (id !== seq) return;
+    if (k >= urls.length) { if (onStep) onStep(-1); return; }
+    if (onStep) onStep(k);
+    playUrl(urls[k]);
+    seq = id;                                       // playUrl вызывает stopAudio — очередь остаётся своей
+    const a = current;
+    let moved = false;
+    const next = () => { if (moved) return; moved = true; setTimeout(() => step(k + 1), gap); };
+    a.addEventListener('ended', next, { once: true });
+    a.addEventListener('error', next, { once: true });
+    setTimeout(() => { if (!moved && (a.paused || a.ended)) next(); }, 4000);   // звук не пошёл — не зависаем
+  };
+  step(0);
 }
 /* Заранее скачать файлы урока, чтобы звук начинался без паузы */
 const warm = new Set();

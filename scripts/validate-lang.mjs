@@ -114,6 +114,9 @@ function checkTrack(track) {
   const needs = audioNeeds(track), man = track.audio || {};
   const lost = needs.filter(x => !man[x.key] || !existsSync(join(root, 'public', 'audio', track.code, man[x.key])));
   ok(!lost.length, `звук: нет файлов для ${lost.length} из ${needs.length}: ${lost.slice(0, 8).map(x => x.key).join(', ')}`);
+  // у каждой записи слога носителем есть учебная версия (кнопка «медленно»)
+  const noSlow = Object.entries(man).filter(([k, f]) => k.startsWith('s:') && f.startsWith('cmn-') && !(man[`x:${k.slice(2)}`] && existsSync(join(root, 'public', 'audio', track.code, man[`x:${k.slice(2)}`]))));
+  ok(!noSlow.length, `звук: нет учебной версии для ${noSlow.length} слогов: ${noSlow.slice(0, 6).map(x => x[0]).join(', ')}`);
   // проверка уровня: на каждый уровень хватает фраз
   levelsOf(track.code).forEach(lv => {
     for (const audio of [true, false]) {
