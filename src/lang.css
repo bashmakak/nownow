@@ -396,23 +396,19 @@ a.lg-track:hover{border-color:var(--accent-line);transform:translateY(-2px)}
 .lg-sylb-ctl{display:grid;gap:12px;width:100%}
 .lg-sylb-ctl .lg-chip{display:inline-flex;align-items:center;gap:6px}
 
-/* губы */
-.lg-mouth-main{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:18px;width:100%}
-.lg-mouth-main p{font-size:16px;line-height:1.55;color:var(--text-2)}
-.lg-mouth{display:block;width:96px;height:auto}
-.lg-mouth.big{width:clamp(150px,30vw,220px)}
-.lg-mouth .lips{fill:#C97B7D;stroke:#9E5458;vector-effect:non-scaling-stroke}
-.lg-mouth .hole{fill:#2B1A1F}
-.lg-mouth .teeth{fill:#F3EFE6}
-.lg-mouth .tongue{fill:none;stroke:#E49BA1;stroke-width:7;stroke-linecap:round;vector-effect:non-scaling-stroke}
-.lg-mouth-g{transform-box:view-box;transform-origin:80px 55px;transform:scale(var(--sx),var(--sy));transition:transform .6s var(--ease)}
-.lg-mouth .say{transform-box:view-box;transform-origin:80px 55px;animation:lg-say .55s var(--ease)}
-@keyframes lg-say{40%{transform:scale(1.06,1.2)}}
+/* рот спереди и сбоку */
+.lg-mouth-views{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;width:100%}
+.lg-mouth-view{margin:0;display:flex;flex-direction:column;gap:6px;align-items:center}
+.lg-mouth-view svg{display:block;width:100%;max-width:340px;height:auto;border-radius:16px}
+.lg-mouth-view figcaption{font-size:12.5px;color:var(--text-3);text-align:center}
+.lg-mouth-txt{font-size:16px !important;line-height:1.55 !important;color:var(--text-2) !important;text-align:center;max-width:620px}
 .lg-mouth-strip{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;width:100%}
-.lg-mouth-mini{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border-radius:var(--r-md);border:1px solid var(--border);background:var(--bg-1);color:var(--text);cursor:pointer}
+.lg-mouth-mini{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px;border-radius:var(--r-md);border:1px solid var(--border);background:var(--bg-1);color:var(--text);cursor:pointer}
+.lg-mouth-mini:hover{border-color:var(--accent-line)}
 .lg-mouth-mini.on{border-color:var(--accent-line);box-shadow:inset 0 0 0 1px var(--accent-line)}
-.lg-mouth-mini .lg-mouth{width:100%;max-width:64px}
+.lg-mouth-mini svg{display:block;width:100%;height:auto;border-radius:10px}
 .lg-mouth-mini .py{font:600 17px var(--font-display)}
+@media (max-width:620px){.lg-mouth-views{grid-template-columns:minmax(0,1fr)}.lg-mouth-strip{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
 /* свеча и выдох */
 .lg-breath-lead{font-size:15px;line-height:1.5;color:var(--text-2);text-align:center}
@@ -445,12 +441,10 @@ a.lg-track:hover{border-color:var(--accent-line);transform:translateY(-2px)}
 @media (max-width:620px){
   .lg-tone-body{grid-template-columns:minmax(0,1fr)}
   .lg-tone-body .lg-tchart.one svg{max-width:220px;margin-inline:auto}
-  .lg-mouth-main{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center}
-  .lg-mouth-strip{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .lg-mouth-strip{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 @media (prefers-reduced-motion: reduce){
-  .lg-pyd *,.lg-sylb-part,.lg-sylb-eq .op,.lg-sylb-res,.lg-candle .flame-g,.lg-mouth .say{animation:none !important}
-  .lg-mouth-g{transition:none}
+  .lg-pyd *,.lg-sylb-part,.lg-sylb-eq .op,.lg-sylb-res,.lg-candle .flame-g{animation:none !important}
 }
 
 .lg-teach-note{font-size:13.5px !important;line-height:1.45 !important;color:var(--text-3) !important;text-align:center}

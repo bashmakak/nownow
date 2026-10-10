@@ -4,6 +4,7 @@ import { airPair, mark, parseSyllable, splitSyllable, withInitial } from '../lib
 import { PY_DEMO, SYL_PARTS, spellSyl as spell } from '../lib/demo-data.js';
 import { Icon } from './Icon.jsx';
 import ToneChart, { TONE_MARK, ToneIcon } from './ToneChart.jsx';
+import Mouth, { MouthSide } from './Mouth.jsx';
 
 /* ===== Наглядные объяснения для вводного курса =====
    Анимации и интерактивные схемы, которые вставляются в карточки урока:
@@ -77,41 +78,28 @@ export function SyllableBuilder({ lang, voice }) {
   );
 }
 
-/* ---------- губы для простых гласных ---------- */
-const MOUTH = {
-  a: { sx: 1, sy: 1, lip: 7, txt: 'Рот открыт широко, губы спокойны.' },
-  o: { sx: 0.58, sy: 0.74, lip: 11, txt: 'Губы округлены, рот открыт средне.' },
-  e: { sx: 0.82, sy: 0.46, lip: 7, txt: 'Губы не округлены, рот приоткрыт, язык оттянут назад.' },
-  i: { sx: 1.08, sy: 0.2, lip: 6, txt: 'Губы растянуты, как в улыбке, зубы почти сомкнуты.' },
-  u: { sx: 0.3, sy: 0.36, lip: 14, txt: 'Губы вытянуты вперёд трубочкой, отверстие маленькое.' },
-  ü: { sx: 0.3, sy: 0.32, lip: 14, txt: 'Губы трубочкой, как для u, а язык — как для i.' },
+/* ---------- губы и язык для простых гласных: рот спереди и в разрезе сбоку (components/Mouth.jsx) ---------- */
+const VOWEL_TXT = {
+  a: 'Рот открыт широко, челюсть опущена. Язык лежит низко и спокойно.',
+  o: 'Губы округлены и чуть вытянуты. Язык оттянут назад, его спинка приподнята.',
+  e: 'Губы не округлены, рот приоткрыт. Язык оттянут назад, как для «о», а губы — как для «э».',
+  i: 'Губы растянуты, зубы почти сомкнуты. Язык поднят высоко и вперёд, почти касается нёба.',
+  u: 'Губы вытянуты вперёд трубочкой. Язык оттянут назад и поднят.',
+  ü: 'Губы трубочкой, как для u, а язык — высоко впереди, как для i.',
 };
-export const hasMouth = v => Boolean(MOUTH[v]);
-function Mouth({ v, big = false, speaking = 0 }) {
-  const m = MOUTH[v];
-  const [shown, setShown] = useState(big ? { sx: 0.7, sy: 0.25, lip: 7 } : m);
-  useEffect(() => { const r = requestAnimationFrame(() => setShown(m)); return () => cancelAnimationFrame(r); }, [v]);  // eslint-disable-line react-hooks/exhaustive-deps
-  return (
-    <svg className={`lg-mouth ${big ? 'big' : ''}`} viewBox="0 0 160 110" aria-hidden="true">
-      <g className={speaking ? 'say' : ''} key={speaking}>
-        <g className="lg-mouth-g" style={{ '--sx': shown.sx, '--sy': shown.sy }}>
-          <ellipse className="lips" cx="80" cy="55" rx="62" ry="40" style={{ strokeWidth: shown.lip }} />
-          <ellipse className="hole" cx="80" cy="55" rx="56" ry="34" />
-          {v === 'i' && <rect className="teeth" x="30" y="47" width="100" height="9" rx="3" />}
-          {v === 'ü' && <path className="tongue" d="M44 72 Q80 44 116 72" />}
-        </g>
-      </g>
-    </svg>
-  );
-}
+export const hasMouth = v => Boolean(VOWEL_TXT[v]);
 export function MouthDemo({ v, pulse = 0, lang, voice, examples = {} }) {
   return (
     <div className="lg-demo lg-mouthdemo" id="lg-demo-mouth" data-v={v}>
-      <div className="lg-mouth-main"><Mouth v={v} big speaking={pulse} /><p>{MOUTH[v].txt}</p></div>
-      <div className="lg-mouth-strip" role="group" aria-label="Сравните губы для шести гласных">
-        {Object.keys(MOUTH).map(k => (
+      <div className="lg-mouth-views">
+        <figure className="lg-mouth-view"><Mouth v={v} pulse={pulse} className="big" /><figcaption>Спереди</figcaption></figure>
+        <figure className="lg-mouth-view"><MouthSide v={v} /><figcaption>Сбоку, в разрезе: точка — самая высокая часть языка</figcaption></figure>
+      </div>
+      <p className="lg-mouth-txt">{VOWEL_TXT[v]}</p>
+      <div className="lg-mouth-strip" role="group" aria-label="Сравните рот для шести гласных">
+        {Object.keys(VOWEL_TXT).map(k => (
           <button type="button" key={k} className={`lg-mouth-mini ${k === v ? 'on' : ''}`} data-v={k} onClick={() => say(lang, voice, examples[k])} aria-label={`Гласная ${k}: послушать ${examples[k] || k}`}>
-            <Mouth v={k} /><span className="py">{k}</span>
+            <Mouth v={k} animate={false} /><span className="py">{k}</span>
           </button>
         ))}
       </div>
