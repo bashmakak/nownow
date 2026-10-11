@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { speak } from '../lib/speech.js';
 import { airPair, mark, parseSyllable, splitSyllable, withInitial } from '../lib/pinyin.js';
-import { PY_DEMO, SYL_PARTS, spellSyl as spell } from '../lib/demo-data.js';
+import { PY_DEMO, SYL_PARTS, TONGUE_TRIPLES, spellSyl as spell, tongueTriple } from '../lib/demo-data.js';
 import { Icon } from './Icon.jsx';
 import ToneChart, { TONE_MARK, ToneIcon } from './ToneChart.jsx';
-import Mouth, { MouthSide } from './Mouth.jsx';
+import Mouth, { MouthSide, PLACE_OF, PLACE_TXT, TongueSide } from './Mouth.jsx';
 
 /* ===== Наглядные объяснения для вводного курса =====
    Анимации и интерактивные схемы, которые вставляются в карточки урока:
@@ -157,9 +157,35 @@ export function TonesDemo({ lang, voice, labels }) {
 }
 
 /* Какая наглядная схема подходит звуку: губы для гласных, свеча для пар с выдохом */
-export function demoFor(py, ex) {
-  if (hasMouth(py)) return 'mouth';
+export function demosFor(py, ex) {
+  if (hasMouth(py)) return ['mouth'];
+  const out = [];
+  if (PLACE_OF[py]) out.push('tongue');
   const { base } = parseSyllable(ex || '');
-  if (airPair(py) && splitSyllable(base).initial === py) return 'breath';
-  return null;
+  if (airPair(py) && splitSyllable(base).initial === py) out.push('breath');
+  return out;
+}
+
+/* ---------- положение языка: зубной, загнутый и мягкий ряд ---------- */
+const PLACE_NAME = { dental: 'зубной', retro: 'загнутый', palatal: 'мягкий' };
+const ROW_PLACES = ['dental', 'retro', 'palatal'];
+export function TongueDemo({ ini = null, lang, voice, row = null }) {
+  const triple = tongueTriple(ini) || TONGUE_TRIPLES[row ?? 0];
+  const [place, setPlace] = useState(PLACE_OF[ini] || 'retro');
+  const pick = (pl, k) => { setPlace(pl); say(lang, voice, triple[k]); };
+  return (
+    <div className="lg-demo lg-tongue" id="lg-demo-tongue" data-place={place}>
+      <div className="lg-tongue-main">
+        <figure className="lg-mouth-view"><TongueSide place={place} /><figcaption>Сбоку, в разрезе: точка — где язык ближе всего к зубам или нёбу</figcaption></figure>
+        <p className="lg-mouth-txt" id="lg-tongue-txt">{PLACE_TXT[place]}</p>
+      </div>
+      <div className="lg-tongue-pick" role="group" aria-label="Сравните три ряда согласных">
+        {ROW_PLACES.map((pl, k) => (
+          <button type="button" key={pl} className={`lg-tongue-btn ${place === pl ? 'on' : ''}`} data-place={pl} onClick={() => pick(pl, k)} aria-pressed={place === pl} aria-label={`${PLACE_NAME[pl]} ряд: послушать ${triple[k]}`}>
+            <span className="py">{triple[k]}</span><span className="lg-tongue-name">{PLACE_NAME[pl]}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }

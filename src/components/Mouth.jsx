@@ -171,29 +171,38 @@ export function MouthSide({ v, animate = true, labels = true }) {
   }, [v]);  // eslint-disable-line react-hooks/exhaustive-deps
   const id = useId().replace(/:/g, '');
   const { jaw: J, gap, prot, px, py } = p;
-  const P = prot;
-  // профиль лица: лоб и нос, верхняя губа, нижняя губа и подбородок опускаются вместе с челюстью
-  const face = `M92 0 C88 12 60 22 40 33 C33 37 36 45 47 47 C54 48 60 50 63 54`
-    + ` C${f(58 - P * 0.5)} 58 ${f(52 - P)} 63 ${f(51 - P)} 69 C${f(50 - P)} 75 ${f(53 - P * 0.7)} 79 ${f(58 - P * 0.5)} 81`
-    + ` L${f(58 - P * 0.5)} ${f(82 + gap)} C${f(52 - P * 0.8)} ${f(85 + gap)} ${f(51 - P)} ${f(93 + J * 0.7)} ${f(56 - P * 0.6)} ${f(98 + J * 0.85)}`
-    + ` C60 ${f(102 + J)} 63 ${f(104 + J)} 61 ${f(110 + J)} C57 ${f(120 + J)} 58 ${f(134 + J)} 70 ${f(142 + J)}`
-    + ` C86 ${f(151 + J)} 112 ${f(152 + J * 0.6)} 128 ${f(160 + J * 0.4)} L134 200 L260 200 L260 0 Z`;
   // язык: кончик за нижними зубами, спинка поднята к самой высокой точке (px, py), корень уходит в глотку
   const tip = [73, 95 + J * 0.9];
   const tongue = `M${f(tip[0])} ${f(tip[1])} C${f(tip[0] + 10)} ${f(tip[1] - 16)} ${f(px - 34)} ${f(py + 2)} ${f(px)} ${f(py)}`
     + ` C${f(px + 30)} ${f(py - 1)} ${f(Math.max(px + 34, 172))} ${f(py + 24)} 172 ${f(Math.max(py + 46, 124))} C171 150 170 176 170 200`
     + ` L118 200 C108 ${f(178 + J * 0.4)} 94 ${f(150 + J * 0.8)} 84 ${f(126 + J)} C78 ${f(114 + J)} ${f(tip[0] - 4)} ${f(104 + J)} ${f(tip[0])} ${f(tip[1])} Z`;
+  return <SideSvg id={id} parts={sideParts(J, gap, prot, tip)} tongue={tongue} glow={[px + 4, py + 14]} dot={[px, py - 1]} labels={labels} />;
+}
+
+/* Неподвижные части разреза: профиль лица, полость рта и глотка, нёбо, зубы, губы.
+   J — насколько опущена челюсть, gap — раскрытие губ, P — насколько губы вытянуты вперёд */
+function sideParts(J, gap, P, tip) {
+  const face = `M92 0 C88 12 60 22 40 33 C33 37 36 45 47 47 C54 48 60 50 63 54`
+    + ` C${f(58 - P * 0.5)} 58 ${f(52 - P)} 63 ${f(51 - P)} 69 C${f(50 - P)} 75 ${f(53 - P * 0.7)} 79 ${f(58 - P * 0.5)} 81`
+    + ` L${f(58 - P * 0.5)} ${f(82 + gap)} C${f(52 - P * 0.8)} ${f(85 + gap)} ${f(51 - P)} ${f(93 + J * 0.7)} ${f(56 - P * 0.6)} ${f(98 + J * 0.85)}`
+    + ` C60 ${f(102 + J)} 63 ${f(104 + J)} 61 ${f(110 + J)} C57 ${f(120 + J)} 58 ${f(134 + J)} 70 ${f(142 + J)}`
+    + ` C86 ${f(151 + J)} 112 ${f(152 + J * 0.6)} 128 ${f(160 + J * 0.4)} L134 200 L260 200 L260 0 Z`;
   // воздух: под нёбом до задней стенки глотки и вниз по глотке
   const air = `M${f(60 - P * 0.4)} 81 C64 78 66 74 72 70 C80 62 94 55 112 53 C134 51 150 53 160 57 C170 61 178 66 183 72`
     + ` C187 78 188 86 188 98 C188 130 187 170 187 200 L160 200 L150 150 L${f(tip[0] + 6)} ${f(tip[1] + 6)}`
     + ` L64 ${f(88 + J)} C62 ${f(86 + gap)} 61 ${f(84 + gap)} ${f(60 - P * 0.4)} ${f(82 + gap)} Z`;
-  // твёрдое нёбо — кость, мягкое нёбо с язычком
-  const palate = `M68 72 C76 64 92 56 112 54 C134 52 150 54 160 57`;
-  const velum = `M160 57 C170 60 178 64 184 70 C188 74 188 80 184 82 C180 84 176 80 172 74 C168 68 164 63 158 60 Z`;
-  const upperTooth = `M60 67 C63 66 67 66 69 67 L68 81 C66 84 62 85 60 83 Z`;
-  const lowerTooth = `M62 ${f(88 + J)} C64 ${f(86 + J)} 68 ${f(86 + J)} 70 ${f(88 + J)} L72 ${f(104 + J)} C70 ${f(106 + J)} 66 ${f(106 + J)} 65 ${f(104 + J)} Z`;
-  const upperLip = `M63 54 C${f(58 - P * 0.6)} 58 ${f(52 - P)} 63 ${f(51 - P)} 69 C${f(50 - P)} 75 ${f(53 - P * 0.7)} 79 ${f(58 - P * 0.5)} 81 L66 81 C65 74 65 62 63 54 Z`;
-  const lowerLip = `M${f(58 - P * 0.5)} ${f(82 + gap)} C${f(52 - P * 0.8)} ${f(85 + gap)} ${f(51 - P)} ${f(93 + J * 0.7)} ${f(56 - P * 0.6)} ${f(98 + J * 0.85)} C59 ${f(101 + J)} 62 ${f(103 + J)} 65 ${f(101 + J)} C67 ${f(95 + J * 0.8)} 66 ${f(88 + gap)} 64 ${f(82 + gap)} Z`;
+  return {
+    face, air,
+    palate: `M68 72 C76 64 92 56 112 54 C134 52 150 54 160 57`,                       // твёрдое нёбо — кость
+    velum: `M160 57 C170 60 178 64 184 70 C188 74 188 80 184 82 C180 84 176 80 172 74 C168 68 164 63 158 60 Z`,   // мягкое нёбо с язычком
+    upperTooth: `M60 67 C63 66 67 66 69 67 L68 81 C66 84 62 85 60 83 Z`,
+    lowerTooth: `M62 ${f(88 + J)} C64 ${f(86 + J)} 68 ${f(86 + J)} 70 ${f(88 + J)} L72 ${f(104 + J)} C70 ${f(106 + J)} 66 ${f(106 + J)} 65 ${f(104 + J)} Z`,
+    upperLip: `M63 54 C${f(58 - P * 0.6)} 58 ${f(52 - P)} 63 ${f(51 - P)} 69 C${f(50 - P)} 75 ${f(53 - P * 0.7)} 79 ${f(58 - P * 0.5)} 81 L66 81 C65 74 65 62 63 54 Z`,
+    lowerLip: `M${f(58 - P * 0.5)} ${f(82 + gap)} C${f(52 - P * 0.8)} ${f(85 + gap)} ${f(51 - P)} ${f(93 + J * 0.7)} ${f(56 - P * 0.6)} ${f(98 + J * 0.85)} C59 ${f(101 + J)} 62 ${f(103 + J)} 65 ${f(101 + J)} C67 ${f(95 + J * 0.8)} 66 ${f(88 + gap)} 64 ${f(82 + gap)} Z`,
+  };
+}
+
+function SideSvg({ id, parts: q, tongue, glow, dot, labels = true, note = null }) {
   return (
     <svg className="lg-side" viewBox="0 0 260 200" aria-hidden="true">
       <defs>
@@ -205,25 +214,66 @@ export function MouthSide({ v, animate = true, labels = true }) {
       </defs>
       <g clipPath={`url(#hc${id})`}>
         <rect x="0" y="0" width="260" height="200" fill="#F5E9E0" />
-        <path d={face} fill={`url(#hs${id})`} />
-        <path d={face} fill="none" stroke="#B5765C" strokeWidth="1.6" />
-        <path d={air} fill={`url(#ai${id})`} />
-        <path d={palate} fill="none" stroke="#F3DCCD" strokeWidth="6" strokeLinecap="round" />
-        <path d={palate} fill="none" stroke="#9A5A55" strokeWidth="1.4" strokeLinecap="round" transform="translate(0 3)" />
-        <path d={velum} fill="#D88E86" stroke="#9A5A55" strokeWidth="1.2" />
+        <path d={q.face} fill={`url(#hs${id})`} />
+        <path d={q.face} fill="none" stroke="#B5765C" strokeWidth="1.6" />
+        <path d={q.air} fill={`url(#ai${id})`} />
+        <path d={q.palate} fill="none" stroke="#F3DCCD" strokeWidth="6" strokeLinecap="round" />
+        <path d={q.palate} fill="none" stroke="#9A5A55" strokeWidth="1.4" strokeLinecap="round" transform="translate(0 3)" />
+        <path d={q.velum} fill="#D88E86" stroke="#9A5A55" strokeWidth="1.2" />
         <path d={tongue} fill={`url(#tn${id})`} stroke="#8A3842" strokeWidth="1.5" />
-        <ellipse cx={f(px + 4)} cy={f(py + 14)} rx="22" ry="7" fill="#F2A9AE" opacity="0.35" filter={`url(#sb${id})`} />
-        <path d={upperTooth} fill="#F6F1E8" stroke="#BDB4A5" strokeWidth="1" />
-        <path d={lowerTooth} fill="#EFE9DE" stroke="#BDB4A5" strokeWidth="1" />
-        <path d={upperLip} fill="#B46A6C" />
-        <path d={lowerLip} fill="#C27D7B" />
-        <circle cx={f(px)} cy={f(py - 1)} r="4.5" fill="#D8FF5A" stroke="#0B0F14" strokeWidth="1.5" />
+        <ellipse cx={f(glow[0])} cy={f(glow[1])} rx="22" ry="7" fill="#F2A9AE" opacity="0.35" filter={`url(#sb${id})`} />
+        <path d={q.upperTooth} fill="#F6F1E8" stroke="#BDB4A5" strokeWidth="1" />
+        <path d={q.lowerTooth} fill="#EFE9DE" stroke="#BDB4A5" strokeWidth="1" />
+        <path d={q.upperLip} fill="#B46A6C" />
+        <path d={q.lowerLip} fill="#C27D7B" />
+        <circle cx={f(dot[0])} cy={f(dot[1])} r="4.5" fill="#D8FF5A" stroke="#0B0F14" strokeWidth="1.5" />
         {labels && <g className="lg-side-lab" fontSize="10.5" fontFamily="Inter, system-ui, sans-serif">
           <text x="98" y="44" fill="#6B4438">нёбо</text>
           <text x="128" y="166" fill="#FFFFFF" opacity="0.9">язык</text>
           <text x="196" y="150" fill="#6B4438">глотка</text>
         </g>}
+        {note}
       </g>
     </svg>
   );
+}
+
+/* ===== Положение языка для согласных: три ряда z c s · zh ch sh r · j q x =====
+   Зубные — кончик языка у верхних зубов; загнутые — кончик поднят и загнут назад к нёбу;
+   мягкие — кончик за нижними зубами, а передняя часть спинки прижата к твёрдому нёбу.
+   Форма языка задана точками: кончик T, верхняя поверхность до спинки D и корня R, нижняя сторона через U. */
+export const PLACE = {
+  dental: { T: [70, 80], c1: [78, 78], c2: [98, 85], D: [128, 87], c3: [150, 86], c4: [168, 101], R: [172, 126], U: [82, 121], u1: [74, 108], u2: [66, 90], dot: [68, 78], P: 0 },
+  retro: { T: [88, 61], c1: [92, 70], c2: [100, 93], D: [132, 93], c3: [152, 91], c4: [168, 103], R: [172, 126], U: [82, 114], u1: [70, 100], u2: [74, 58], dot: [89, 58], P: 3 },
+  palatal: { T: [71, 96], c1: [70, 78], c2: [82, 60], D: [102, 59], c3: [128, 58], c4: [162, 76], R: [172, 122], U: [82, 124], u1: [76, 114], u2: [70, 104], dot: [100, 56], P: 0 },
+};
+/* Где язык ближе всего: полоса на зубах или нёбе */
+const ZONE = { dental: 'M65 70 C66 74 67 78 68 82', retro: 'M80 63 C84 59 89 57 96 56', palatal: 'M90 57 C100 54 110 53 122 53' };
+export const PLACE_OF = { z: 'dental', c: 'dental', s: 'dental', zh: 'retro', ch: 'retro', sh: 'retro', r: 'retro', j: 'palatal', q: 'palatal', x: 'palatal' };
+export const PLACE_TXT = {
+  dental: 'Кончик языка упирается в верхние зубы, язык лежит плоско. Воздух проходит в узкую щель между языком и зубами.',
+  retro: 'Кончик языка поднят и загнут назад — к нёбу за бугорками над верхними зубами. Язык как ложка кончиком вверх.',
+  palatal: 'Кончик языка опущен за нижние зубы, а передняя часть его спинки прижата к твёрдому нёбу. Губы растянуты, как в улыбке.',
+};
+const PKEYS = ['T', 'c1', 'c2', 'D', 'c3', 'c4', 'R', 'U', 'u1', 'u2', 'dot'];
+const pmix = (a, b, k) => ({ ...Object.fromEntries(PKEYS.map(n => [n, [a[n][0] + (b[n][0] - a[n][0]) * k, a[n][1] + (b[n][1] - a[n][1]) * k]])), P: a.P + (b.P - a.P) * k });
+const pt = q => `${f(q[0])} ${f(q[1])}`;
+
+export function TongueSide({ place, labels = true }) {
+  const target = PLACE[place] || PLACE.dental;
+  const [p, setP] = useState(target);
+  const cur = useRef(target), raf = useRef(0);
+  useEffect(() => {
+    cancelAnimationFrame(raf.current);
+    const a = cur.current, t0 = performance.now();
+    const step = now => { const k = Math.min(1, (now - t0) / 500), e = 1 - (1 - k) ** 3; const x = pmix(a, target, e); cur.current = x; setP(x); if (k < 1) raf.current = requestAnimationFrame(step); };
+    raf.current = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf.current);
+  }, [place]);  // eslint-disable-line react-hooks/exhaustive-deps
+  const id = useId().replace(/:/g, '');
+  const J = 3;
+  const tongue = `M${pt(p.T)} C${pt(p.c1)} ${pt(p.c2)} ${pt(p.D)} C${pt(p.c3)} ${pt(p.c4)} ${pt(p.R)} C171 150 170 176 170 200`
+    + ` L118 200 C108 ${f(178 + J * 0.4)} 94 ${f(150 + J * 0.8)} ${pt(p.U)} C${pt(p.u1)} ${pt(p.u2)} ${pt(p.T)} Z`;
+  const zone = <path d={ZONE[place] || ZONE.dental} fill="none" stroke="#D8FF5A" strokeWidth="5" strokeLinecap="round" opacity="0.85" />;
+  return <SideSvg id={id} parts={sideParts(J, 2, p.P, [73, 98])} tongue={tongue} glow={[p.D[0] + 4, p.D[1] + 12]} dot={p.dot} labels={labels} note={zone} />;
 }

@@ -17,7 +17,8 @@ import { Crumbs, EmptyState } from '../components/Cards.jsx';
 import { CountUp, XpBar } from '../components/GameUI.jsx';
 import Writer from '../components/Writer.jsx';
 import ToneChart, { ToneIcon } from '../components/ToneChart.jsx';
-import { BreathDemo, MouthDemo, PinyinDemo, SyllableBuilder, TonesDemo, demoFor } from '../components/LangDemos.jsx';
+import ToneMic, { micSupported } from '../components/ToneMic.jsx';
+import { BreathDemo, MouthDemo, PinyinDemo, SyllableBuilder, TonesDemo, TongueDemo, demosFor } from '../components/LangDemos.jsx';
 import { VOWEL_EX } from '../lib/demo-data.js';
 import NotFound from './NotFound.jsx';
 import '../lang.css';
@@ -232,6 +233,7 @@ function TrackBody({ ix }) {
               {learned > 0 && <Link className="btn btn-secondary" id="lg-review" to={`/lang/${t.code}/review`}><Icon name="repeat" size={17} />{due ? `Повторить: ${nPhrases(due)}` : 'Повторить фразы'}</Link>}
               <Link className="btn btn-ghost" id="lg-phrases" to={`/lang/${t.code}/phrases`}><Icon name="book-open" size={17} />Разговорник</Link>
               <Link className="btn btn-ghost" id="lg-write" to={`/lang/${t.code}/write`}><Icon name="brush" size={17} />Прописи</Link>
+              {t.code === 'zh' && <Link className="btn btn-ghost" id="lg-tones" to={`/lang/${t.code}/tones`}><Icon name="mic" size={17} />Тренажёр тонов</Link>}
             </div>
           </div>
           <div className="stack lg-side">
@@ -335,7 +337,7 @@ export function LangReview() {
 }
 
 /* Объяснения со схемами занимают больше места на экране */
-const isWide = t => t.type === 'toneIntro' || t.type === 'soundIntro' || (t.type === 'rule' && Boolean(t.rule.demo));
+const isWide = t => t.type === 'toneIntro' || t.type === 'soundIntro' || t.type === 'speakTone' || (t.type === 'rule' && Boolean(t.rule.demo));
 const PROMPT = {
   meaning: 'Что это значит?', reverse: 'Как сказать по-китайски?', listen: 'Что прозвучало?',
   tone: 'Каким тоном произнесён слог?', toneRead: 'Какой это тон?', toneWord: 'Где тоны записаны верно?', toneWordRead: 'Где тоны записаны верно?', sound: 'Какой слог прозвучал?',
@@ -368,7 +370,7 @@ function Player({ ix, lessonId, review = false }) {
   const start = () => {
     let tasks;
     if (review) { const r = buildReview(ix, getState().lang?.[t.code]?.ph || {}, { audio }); tasks = r.tasks; ids.current = r.ids; }
-    else tasks = buildLesson(ix, lessonId, { audio });
+    else tasks = buildLesson(ix, lessonId, { audio, mic: micSupported() });
     first.current = {}; wrong.current = new Set(); written.current = 0;
     if (audio) preload(tasks.flatMap(x => [x.p, x.syl, x.ch, ...(x.options || []).map(o => (typeof o === 'string' ? { py: o } : o))].filter(Boolean).map(o => audioUrl(t.lang, { zh: o.zh, py: o.py }))));
     setQueue(tasks.map((x, k) => ({ ...x, key: k }))); setI(0); setAnswer(null); setMarks([]); setRes(null); setPhase('play');
@@ -535,6 +537,7 @@ function Task(props) {
     case 'hear2': return <Hear2 {...props} />;
     case 'build': return <Build {...props} />;
     case 'radIntro': return <RadIntro {...props} />;
+    case 'speakTone': return <SpeakTone {...props} />;
     default: return <Choice {...props} />;
   }
 }
@@ -586,6 +589,7 @@ function ruleDemo(kind, { lang, voice }) {
   if (kind === 'tones') return <TonesDemo lang={lang} voice={voice} labels={TONE_EXAMPLES} />;
   if (kind === 'pinyin') return <PinyinDemo lang={lang} voice={voice} />;
   if (kind === 'syllable') return <SyllableBuilder lang={lang} voice={voice} />;
+  if (kind === 'rows') return <TongueDemo lang={lang} voice={voice} row={0} />;
   return null;
 }
 function Note({ kicker, title, text, onNext, id, demo = null }) {
@@ -775,16 +779,29 @@ function SoundIntro({ task: { s }, lang, voice, onNext }) {
   const [pulse, setPulse] = useState(0);
   const play = py => { if (voice) speak('', lang, { voice, py }); setPulse(x => x + 1); };
   useEffect(() => { if (s.ex[0]) { const t = setTimeout(() => play(s.ex[0]), 250); return () => clearTimeout(t); } return undefined; }, []);  // eslint-disable-line react-hooks/exhaustive-deps
-  const demo = demoFor(s.py, s.ex[0]);
+  const demos = demosFor(s.py, s.ex[0]);
   return (
-    <div className={`lg-rule lg-sound ${demo ? 'has-demo' : ''}`} id="lg-sound-intro">
+    <div className={`lg-rule lg-sound ${demos.length ? 'has-demo' : ''}`} id="lg-sound-intro">
       <p className="label pl-kicker">Новый звук</p>
       <div className="lg-sound-head"><span className="lg-pyb" id="lg-sound-py">{s.py}</span><p>{s.how}</p></div>
-      {demo === 'mouth' && <MouthDemo v={s.py} pulse={pulse} lang={lang} voice={voice} examples={VOWEL_EX} />}
-      {demo === 'breath' && <BreathDemo ini={s.py} ex={s.ex[0]} pulse={pulse} lang={lang} voice={voice} />}
+      {demos.includes('mouth') && <MouthDemo v={s.py} pulse={pulse} lang={lang} voice={voice} examples={VOWEL_EX} />}
+      {demos.includes('tongue') && <TongueDemo ini={s.py} lang={lang} voice={voice} />}
+      {demos.includes('breath') && <BreathDemo ini={s.py} ex={s.ex[0]} pulse={pulse} lang={lang} voice={voice} />}
       <div className="lg-syls" aria-label="Примеры">{s.ex.map((py, k) => <SylBtn key={py} py={py} lang={lang} voice={voice} id={k === 0 ? 'lg-ex0' : undefined} onPlay={() => play(py)} />)}</div>
       {!voice && <p className="muted">Озвучка выключена: включите её, чтобы услышать примеры.</p>}
       <div className="row"><button type="button" className="btn btn-primary" id="lg-next" onClick={onNext}>Дальше<Icon name="arrow-right" size={17} /></button></div>
+    </div>
+  );
+}
+/* Скажите сами: тренажёр тонов в уроке. Оценки нет — это подсказка, урок идёт дальше в любом случае */
+function SpeakTone({ task: { syl }, lang, voice, onNext }) {
+  const [tried, setTried] = useState(false);
+  return (
+    <div className="lg-rule lg-speak" id="lg-speak">
+      <p className="label pl-kicker">Скажите сами</p>
+      <h2 className="h3">Произнесите <span className="py">{syl.py}</span> и сравните со схемой</h2>
+      <ToneMic py={syl.py} lang={lang} voice={voice} onResult={() => setTried(true)} />
+      <div className="row"><button type="button" className={`btn ${tried ? 'btn-primary' : 'btn-ghost'}`} id="lg-next" onClick={onNext}>{tried ? 'Дальше' : 'Пропустить'}<Icon name="arrow-right" size={17} /></button></div>
     </div>
   );
 }
@@ -1043,6 +1060,53 @@ function Placement({ ix }) {
 }
 
 /* ---------- прописи ---------- */
+/* ---------- тренажёр тонов: любой слог, любой тон, линия своего голоса ---------- */
+const TONE_BASES = ['ma', 'ba', 'a', 'yi', 'wu', 'da', 'ni', 'li', 'ge', 'hao', 'shi', 'qi', 'tang', 'yu'];
+export function LangTones() {
+  const { code } = useParams();
+  if (code !== 'zh') return <NotFound />;
+  return <Gate code={code}>{ix => <TonesPage ix={ix} />}</Gate>;
+}
+function TonesPage({ ix }) {
+  const t = ix.track;
+  useTitle(`Тренажёр тонов — ${t.title}`);
+  const voice = useSound(t.lang);
+  const [base, setBase] = useState('ma');
+  const [tone, setTone] = useState(1);
+  const [got, setGot] = useState({});                 // что получилось в этот раз: слог с тоном → да/нет
+  const py = markPy(base, tone);
+  const group = (label, items, cur, set, show) => (
+    <div className="lg-bgrp" role="radiogroup" aria-label={label}>
+      <span className="label">{label}</span>
+      <div className="lg-chips">{items.map(v => <button key={v} type="button" role="radio" aria-checked={cur === v} className={`lg-chip ${cur === v ? 'on' : ''}`} data-v={v} onClick={() => set(v)}>{show(v)}</button>)}</div>
+    </div>
+  );
+  const okCount = [1, 2, 3, 4].filter(n => got[markPy(base, n)]).length;
+  return (
+    <section className="page tn-page">
+      <div className="wrap">
+        <header className="page-head">
+          <Crumbs items={[['Языки', '/lang'], [t.title, `/lang/${t.code}`], ['Тренажёр тонов']]} />
+          <h1 className="h1">Тренажёр тонов</h1>
+          <p className="lead">Выберите слог и тон, послушайте носителя и скажите сами. Линия вашего голоса появится на схеме рядом с линией носителя — так видно, куда нужно вести голос.</p>
+        </header>
+        <div className="tn-layout">
+          <div className="panel tn-pick" id="tn-pick">
+            {group('Слог', TONE_BASES, base, setBase, v => v)}
+            {group('Тон', [1, 2, 3, 4], tone, setTone, v => <><ToneIcon tone={v} />{markPy(base, v)}{got[markPy(base, v)] && <Icon name="check" size={14} />}</>)}
+            <p className="muted" id="tn-count">{okCount ? `Получилось: ${okCount} из 4 тонов слога ${base}` : 'Начните с первого тона и пройдите все четыре.'}</p>
+            <p className="muted tn-hint">Говорите обычным голосом, не шёпотом. Тон лучше слышен, если немного протянуть слог.</p>
+          </div>
+          <div className="panel tn-mic">
+            {!voice.voice && <p className="muted">Озвучка выключена — образец носителя не прозвучит. Включите её на странице курса.</p>}
+            <ToneMic py={py} lang={t.lang} voice={voice.voice} onResult={r => setGot(g => ({ ...g, [py]: g[py] || r.ok }))} />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function LangWrite() {
   const { code } = useParams();
   if (code === 'latin') return <LatinWrite />;

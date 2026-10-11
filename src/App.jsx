@@ -24,7 +24,7 @@ const Studio = studio('Studio'), LessonEditor = studio('LessonEditor'), Moderati
 // языки для путешествий: страницы и тексты треков скачиваются, когда человек открывает раздел
 const lang = name => lazy(() => import('./pages/Lang.jsx').then(m => ({ default: m[name] })));
 const LangHub = lang('LangHub'), LangTrack = lang('LangTrack'), LangLesson = lang('LangLesson'), LangReview = lang('LangReview'), LangPhrases = lang('LangPhrases'),
-  LangTest = lang('LangTest'), LangWrite = lang('LangWrite');
+  LangTest = lang('LangTest'), LangWrite = lang('LangWrite'), LangTones = lang('LangTones');
 
 export default function App() {
   return (
@@ -47,6 +47,7 @@ export default function App() {
           <Route path="lang/:code/phrases" element={<LangPhrases />} />
           <Route path="lang/:code/test" element={<LangTest />} />
           <Route path="lang/:code/write" element={<LangWrite />} />
+          <Route path="lang/:code/tones" element={<LangTones />} />
           <Route path="me" element={<Me />} />
           <Route path="about" element={<About />} />
           <Route path="login" element={<Login />} />

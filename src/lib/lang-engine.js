@@ -186,7 +186,7 @@ const GRADED = new Set(['meaning', 'reverse', 'listen', 'tiles', 'pairs', 'reply
 export const isGraded = t => GRADED.has(t.type);
 
 /* Задания одного урока. audio — есть ли на устройстве голос нужного языка */
-export function buildLesson(ix, lessonId, { audio = false, rnd = Math.random } = {}) {
+export function buildLesson(ix, lessonId, { audio = false, mic = false, rnd = Math.random } = {}) {
   const lesson = ix.lessonBy[lessonId];
   if (!lesson) return [];
   const out = [];
@@ -288,6 +288,8 @@ export function buildLesson(ix, lessonId, { audio = false, rnd = Math.random } =
     const all = unit.lessons.flatMap(l => l.ph || []).map(id => ix.phrases[id]).filter(p => p.kind === 'sign');
     pickN(all, 12, rnd).forEach(p => out.push(choice('meaning', p, distractors(ix, p, [all], 3, x => x.ru, rnd), rnd)));
   }
+  // тренажёр тонов: скажите слог сами — линия голоса на схеме (нужны звук и микрофон; задание без оценки)
+  if (lesson.speak && audio && mic) lesson.speak.forEach(py => out.push({ type: 'speakTone', syl: { py } }));
   if (lesson.card) out.push({ type: 'card', card: lesson.card });
   return out;
 }

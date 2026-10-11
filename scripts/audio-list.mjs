@@ -8,7 +8,7 @@ import zh from '../src/data/lang/zh.js';
 import { TONE_EXAMPLES, charTable, indexTrack } from '../src/lib/lang-engine.js';
 import { keysFor, sylKey, textKey } from '../src/lib/audio-keys.js';
 import { airPair, parseSyllable, splitSyllable, syllables, withInitial } from '../src/lib/pinyin.js';
-import { VOWEL_EX, builderSyllables, pinyinDemoSyllables } from '../src/lib/demo-data.js';
+import { TONGUE_TRIPLES, VOWEL_EX, builderSyllables, pinyinDemoSyllables, tongueTriple } from '../src/lib/demo-data.js';
 
 export function audioNeeds(track) {
   const ix = indexTrack(track), need = new Map();
@@ -34,9 +34,11 @@ export function audioNeeds(track) {
     if (demos.includes('tones')) TONE_EXAMPLES.forEach(syl);
     if (demos.includes('pinyin')) pinyinDemoSyllables().forEach(syl);
     if (demos.includes('syllable')) builderSyllables().forEach(syl);
+    if (demos.includes('rows')) TONGUE_TRIPLES[0].forEach(syl);
     (l.sounds || []).forEach(([py, , ex]) => {
       ex.forEach(syl);
       if (VOWEL_EX[py]) Object.values(VOWEL_EX).forEach(syl);                       // губы: все шесть гласных
+      (tongueTriple(py) || []).forEach(syl);                                         // язык: три ряда согласных
       const pair = airPair(py);                                                    // свеча: пара без выдоха и с выдохом
       if (pair && splitSyllable(parseSyllable(ex[0]).base).initial === py) pair.forEach(i => syl(withInitial(ex[0], i)));
     });

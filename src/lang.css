@@ -456,3 +456,42 @@ a.lg-track:hover{border-color:var(--accent-line);transform:translateY(-2px)}
 .lg-big .lg-words{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;margin-top:4px;padding:6px 12px;border-radius:var(--r-pill);border:1px solid var(--border);background:var(--bg-1);color:var(--text-2);font-size:13.5px;font-weight:600;cursor:pointer}
 .lg-big .lg-words:hover{border-color:var(--accent-line);color:var(--text)}
 .ch-opt.cmp{border-color:var(--lime);box-shadow:inset 0 0 0 1px var(--lime)}
+
+/* ---------- тренажёр тонов (components/ToneMic.jsx) ---------- */
+.lg-mic{display:flex;flex-direction:column;gap:12px;width:100%}
+.lg-mic-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.lg-mic-listen{display:flex;gap:8px}
+.lg-micchart{margin:0;padding:12px 12px 8px;border-radius:var(--r-lg);background:var(--bg-2)}
+.lg-micchart svg{display:block;width:100%;max-width:520px;height:auto;margin-inline:auto;overflow:visible}
+.lg-micchart .grid line{stroke:var(--border);stroke-dasharray:3 5}
+.lg-micchart .grid text{fill:var(--text-3);font:500 11px var(--font-body)}
+.lg-micchart .ideal{fill:none;stroke:var(--accent-line);stroke-width:4;stroke-dasharray:2 8;stroke-linecap:round;opacity:.9}
+.lg-micchart .native{fill:none;stroke:var(--text-3);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.lg-micchart .mine{fill:none;stroke:var(--lime);stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.lg-micchart .mine.live{opacity:.75}
+.lg-micchart figcaption{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px 14px;margin-top:6px;font-size:12.5px;color:var(--text-3)}
+.lg-micchart .k{display:inline-block;width:18px;height:0;border-top:3px solid;margin-right:-8px;vertical-align:middle}
+.lg-micchart .k.ideal{border-top:3px dotted var(--accent-line)}
+.lg-micchart .k.native{border-color:var(--text-3)}
+.lg-micchart .k.mine{border-color:var(--lime);border-top-width:4px}
+.lg-mic-tip{font-size:15.5px;line-height:1.55;color:var(--text-2);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lg-mic-tip b{color:var(--text)}
+.lg-mic-tip.ok b{color:var(--ok)}
+.lg-mic-tip.bad b{color:var(--bad)}
+.lg-mic-dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--bad);transition:transform .08s linear}
+.lg-mic-privacy{font-size:12.5px;color:var(--text-3)}
+.lg-speak .h3 .py{font-size:1em}
+.tn-layout{display:grid;grid-template-columns:minmax(260px,360px) minmax(0,1fr);gap:20px;align-items:start}
+.tn-pick{display:flex;flex-direction:column;gap:14px}
+.tn-pick .lg-chip{display:inline-flex;align-items:center;gap:6px}
+.tn-hint{font-size:13.5px}
+@media (max-width:860px){.tn-layout{grid-template-columns:minmax(0,1fr)}}
+
+/* положение языка для согласных */
+.lg-tongue-main{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:16px 22px;align-items:center;width:100%}
+.lg-tongue-pick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%}
+.lg-tongue-btn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 6px;border-radius:var(--r-md);border:1px solid var(--border);background:var(--bg-1);color:var(--text);cursor:pointer}
+.lg-tongue-btn .py{font:600 20px var(--font-display)}
+.lg-tongue-name{font-size:12.5px;color:var(--text-3)}
+.lg-tongue-btn.on{border-color:var(--accent-line);box-shadow:inset 0 0 0 1px var(--accent-line)}
+@media (max-width:620px){.lg-tongue-main{grid-template-columns:minmax(0,1fr);text-align:center}}
