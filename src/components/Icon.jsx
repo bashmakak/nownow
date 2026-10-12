@@ -8,10 +8,11 @@ import {
   ShieldAlert, ShieldCheck, SlidersHorizontal, Sparkles, Sun, Tag, Target, TextCursorInput, Thermometer, Timer,
   Trash2, TrendingUp, Trophy, Undo2, User, Wallet, WandSparkles, X, Zap,
   AudioLines, BedDouble, CarTaxiFront, LifeBuoy, MapPin, MessageCircle, Plane, Printer, ShoppingBag, Signpost, Turtle, UtensilsCrossed, Volume2, VolumeX, Ear,
-  Brush, CalendarClock, Ticket, TriangleAlert, Stethoscope, Users, CloudSun, SkipForward, Signature,
+  Brush, CalendarClock, Ticket, TriangleAlert, Stethoscope, Users, CloudSun, SkipForward, Signature, Link2, Phone, Car,
 } from 'lucide-react';
 
 const MAP = {
+  link: Link2, phone: Phone, car: Car,
   calculator: Calculator, 'circle-dot': CircleDot, delete: Delete, 'grid-3x3': Grid3x3, hash: Hash, palette: Palette,
   apple: Apple, 'arrow-down': ArrowDown, 'arrow-left': ArrowLeft, 'arrow-right': ArrowRight, 'arrow-up': ArrowUp,
   award: Award, 'badge-check': BadgeCheck, 'battery-charging': BatteryCharging, blocks: Blocks,

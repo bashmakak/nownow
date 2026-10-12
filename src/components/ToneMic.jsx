@@ -18,7 +18,8 @@ const loadPitch = () => pitchData || (pitchData = fetch(`${import.meta.env.BASE_
 
 /* Запись: до 3,5 с, останавливается сама через полсекунды тишины после голоса */
 const MAX_MS = 3500, QUIET_MS = 500, VOICE = 0.02, SILENT = 0.012;
-function useRecorder() {
+/* Запись с микрофона. Для фразы (интонация во французском) паузы длиннее: maxMs и quietMs задаёт вызов */
+export function useRecorder() {
   const st = useRef(null);
   const stop = () => {
     const s = st.current; st.current = null;
@@ -28,7 +29,7 @@ function useRecorder() {
     try { s.ctx.close(); } catch { /* уже закрыт */ }
     return s;
   };
-  const start = async ({ onLevel, onFrames, onEnd }) => {
+  const start = async ({ onLevel, onFrames, onEnd, maxMs = MAX_MS, quietMs = QUIET_MS }) => {
     stop();
     const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
     const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -45,7 +46,7 @@ function useRecorder() {
       if (level > VOICE) { s.voiced += ms; s.quiet = 0; } else if (s.voiced && level < SILENT) s.quiet += ms;
       onLevel(Math.min(1, level * 8));
       onFrames(live.frames);
-      if ((s.voiced > 150 && s.quiet > QUIET_MS) || now - s.t0 > MAX_MS) { stop(); onEnd(s); }
+      if ((s.voiced > 150 && s.quiet > quietMs) || now - s.t0 > maxMs) { stop(); onEnd(s); }
     };
     // звук идёт в отдельный обработчик (AudioWorklet); старые браузеры — через ScriptProcessor
     const mute = ctx.createGain(); mute.gain.value = 0; mute.connect(ctx.destination);

@@ -1,0 +1,18 @@
+Звук французского курса NowNow (audio/fr/)
+
+Все файлы (t-*.mp3) — синтез речи Piper (rhasspy, код — лицензия MIT) через sherpa-onnx (k2-fsa, лицензия Apache 2.0).
+Сборка: scripts/audio/make_audio_fr.py в репозитории сайта. Записей носителей пока нет.
+
+1. Голос siwis (женский) — модель Piper fr_FR-siwis-medium, обучена на корпусе SIWIS
+   (University of Edinburgh, https://datashare.is.ed.ac.uk/handle/10283/2353).
+   Лицензия корпуса и модели: Creative Commons Attribution 4.0 (CC BY 4.0).
+   Этим голосом озвучены слова и фразы ученика.
+
+2. Голоса pierre (мужской) и jessica (женский) — модель Piper fr_FR-upmc-medium, обучена на корпусе UPMC
+   (https://github.com/marytts/upmc-pierre-data).
+   Лицензия: Creative Commons Attribution-ShareAlike 4.0 (CC BY-SA 4.0).
+   Голосом pierre озвучены реплики собеседника в сценариях; jessica — запасной голос, если первый голос
+   распознавание речи поняло неверно. Файлы этих голосов распространяются на тех же условиях CC BY-SA 4.0.
+
+Каждую фразу проверяло распознавание речи Whisper small (OpenAI, лицензия MIT; сборка sherpa-onnx),
+отдельные слова — по фонетической записи espeak-ng.

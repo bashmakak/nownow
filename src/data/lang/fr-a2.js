@@ -1,0 +1,402 @@
+/* ===== Французский, уровень A2: когда что-то пошло не так =====
+   Формат — как в fr-a1.js. Новое поле: order: [рассказ, [события по порядку]] — расставить события
+   рассказа по времени. */
+
+export const CHECKED = '2026-10-12';
+const T = (...line) => ['them', ...line];
+const M = (ok, no, ask) => ['me', ok, no, ask];
+
+export const phrases = [
+  // ---------- 13. рассказать, что случилось ----------
+  ['clesperdues', "J'ai perdu mes clés.", 'Я потерял ключи.'],
+  ['rate', "J'ai raté le train.", 'Я опоздал на поезд.'],
+  ['oublie', "J'ai oublié mon sac dans le taxi.", 'Я забыл сумку в такси.'],
+  ['payedeux', "J'ai payé deux fois.", 'Я заплатил два раза.'],
+  ['hier', "Hier, j'ai visité le Louvre.", 'Вчера я был в Лувре.'],
+  ['volesac', "On m'a volé mon sac.", 'У меня украли сумку.'],
+  ['danslemetro', "C'était dans le métro.", 'Это было в метро.'],
+  ['cematin', 'Ce matin, vers dix‿heures.', 'Сегодня утром, около десяти.'],
+  ['plainte', 'Je voudrais porter plainte.', 'Я хочу подать заявление в полицию.'],
+  ['dedans', "Il y avait mon passeport dedans.", 'Там был мой паспорт.'],
+  ['avanthier', 'Avant-hier.', 'Позавчера.'],
+  ['ilya2jours', 'Il y a deux jours.', 'Два дня назад.'],
+  ['exactement', 'Je ne sais pas exactement.', 'Я точно не знаю.'],
+  ['laisse', "Je l'ai laissé sur la table.", 'Я оставил его на столе.'],
+  // ---------- 14. поменять билет ----------
+  ['changer', 'Je voudrais changer mon billet.', 'Я хотел бы поменять билет.'],
+  ['annuler', 'Je voudrais annuler ma réservation.', 'Я хотел бы отменить бронь.'],
+  ['possible', "C'est possible ?", 'Это возможно?'],
+  ['frais', 'Il y a des frais ?', 'Это платно?'],
+  ['suivant', 'Pour le train suivant.', 'На следующий поезд.'],
+  ['quelledate', 'Pour quelle date ?', 'На какое число?'],
+  ['semaineprochaine', 'La semaine prochaine.', 'На следующей неделе.'],
+  ['lundiprochain', 'Lundi prochain.', 'В следующий понедельник.'],
+  ['greve', 'Il y a une grève.', 'Забастовка.'],
+  ['remplace', 'Le train est remplacé par un bus.', 'Вместо поезда пойдёт автобус.'],
+  ['partirdemain', 'Je vais partir demain.', 'Я уеду завтра.'],
+  ['attendre', 'Je vais attendre.', 'Я подожду.'],
+  ['prochaintrain', 'Quand part le prochain train ?', 'Когда следующий поезд?'],
+  // ---------- 15. звонок ----------
+  ['allo', 'Allô, bonjour !', 'Алло, здравствуйте!'],
+  ['reserver', 'Je voudrais réserver une table pour ce soir.', 'Я хотел бы забронировать столик на вечер.'],
+  ['quatre', 'Pour quatre personnes.', 'На четверых.'],
+  ['vers20h', 'Vers vingt‿heures.', 'Около восьми вечера.'],
+  ['note', "C'est noté ?", 'Записали?'],
+  ['email', "Mon adresse e-mail, c'est…", 'Мой электронный адрес…'],
+  ['arobase', 'Arobase.', '«Собака», значок @.'],
+  ['message', 'Je vous‿envoie un message.', 'Я пришлю вам сообщение.'],
+  ['rappeler', 'Je vous rappelle plus tard.', 'Я перезвоню позже.'],
+  ['occupe', "C'est‿occupé.", 'Занято.'],
+  ['entends', 'Je ne vous‿entends pas bien.', 'Вас плохо слышно.'],
+  ['coupe', 'Ça a coupé.', 'Связь прервалась.'],
+  // ---------- 16. у врача ----------
+  ['rendezvous', 'Je voudrais prendre rendez-vous.', 'Я хотел бы записаться на приём.'],
+  ['sipossible', "Aujourd'hui, si possible.", 'Сегодня, если можно.'],
+  ['assurance', "J'ai une‿assurance voyage.", 'У меня туристическая страховка.'],
+  ['consultation', 'Combien coûte la consultation ?', 'Сколько стоит приём?'],
+  ['depuis', 'Depuis deux jours.', 'Уже два дня.'],
+  ['malcoeur', "J'ai mal au cœur.", 'Меня тошнит.', 'Буквально «болит сердце», но значит тошноту. Боль в груди — une douleur à la poitrine.'],
+  ['tousse', 'Je tousse beaucoup.', 'Я сильно кашляю.'],
+  ['penicilline', 'Je suis‿allergique à la pénicilline.', 'У меня аллергия на пенициллин.'],
+  ['prends', 'Je prends ce médicament.', 'Я принимаю это лекарство.'],
+  ['avantapres', 'Avant ou après le repas ?', 'До еды или после?'],
+  ['combienjours', 'Pendant combien de jours ?', 'Сколько дней принимать?'],
+  ['facture', 'Je peux‿avoir une facture pour mon‿assurance ?', 'Можно счёт для страховой компании?'],
+  // ---------- 17. машина ----------
+  ['voiturereservee', "J'ai réservé une voiture.", 'Я забронировал машину.'],
+  ['permis', 'Voici mon permis de conduire.', 'Вот мои водительские права.'],
+  ['assurancecomprise', "L'assurance est comprise ?", 'Страховка включена?'],
+  ['plein', 'Il faut rendre la voiture avec le plein ?', 'Машину нужно вернуть с полным баком?'],
+  ['rendre', 'Où est-ce que je rends la voiture ?', 'Где сдать машину?'],
+  ['leplein', "Le plein, s'il vous plaît.", 'Полный бак, пожалуйста.'],
+  ['diesel', "C'est‿une voiture diesel.", 'Это дизельная машина.'],
+  ['pompe', 'La pompe numéro trois.', 'Колонка номер три.'],
+  ['peage', 'Il y a un péage ?', 'Дорога платная?'],
+  // ---------- 18. жалоба ----------
+  ['erreur', "Il y a une‿erreur dans l'addition.", 'В счёте ошибка.'],
+  ['pasdessert', "Nous n'avons pas pris de dessert.", 'Мы не брали десерт.'],
+  ['verifier', 'Vous pouvez vérifier ?', 'Можете проверить?'],
+  ['pascommande', "Ce n'est pas ce que j'ai commandé.", 'Это не то, что я заказывал.'],
+  ['froid', "C'est froid.", 'Это холодное.'],
+  ['pourriez', "Pourriez-vous m'aider ?", 'Не могли бы вы мне помочь?'],
+  ['autrechambre', "J'aimerais une‿autre chambre.", 'Я хотел бы другой номер.'],
+  ['pasgrave', "Ce n'est pas grave.", 'Ничего страшного.'],
+  ['decu', 'Je suis très déçu.', 'Я очень разочарован.'],
+  ['double', "J'avais réservé une chambre double.", 'Я бронировал двухместный номер.'],
+  ['propre', "La chambre n'est pas propre.", 'В номере не убрано.'],
+  ['chauffage', 'Le chauffage ne marche pas.', 'Не работает отопление.'],
+  ['responsable', 'Je voudrais parler au responsable.', 'Я хотел бы поговорить с администратором.'],
+  ['rembourser', 'Vous pouvez me rembourser ?', 'Можете вернуть деньги?'],
+  // ---------- 19. музеи и впечатления ----------
+  ['deuxbillets', "Deux billets, s'il vous plaît.", 'Два билета, пожалуйста.'],
+  ['tarifreduit', 'Il y a un tarif réduit ?', 'Есть льготный билет?'],
+  ['gratuit', "C'est gratuit pour les‿enfants ?", 'Для детей бесплатно?'],
+  ['creneau', 'Il faut réserver un créneau ?', 'Нужно бронировать время входа?'],
+  ['vestiaire', 'Où est le vestiaire ?', 'Где гардероб?'],
+  ['photos', 'On peut prendre des photos ?', 'Можно фотографировать?'],
+  ['audioguide', 'Vous‿avez un‿audioguide en russe ?', 'У вас есть аудиогид на русском?'],
+  ['suisalle', "Je suis‿allé au musée d'Orsay.", 'Я сходил в музей Орсе.', 'Женщина пишет allée, звучит одинаково.'],
+  ['genial', "C'était génial !", 'Было здорово!'],
+  ['adore', "J'ai adoré.", 'Мне очень понравилось.'],
+  ['monde', 'Il y avait beaucoup de monde.', 'Было много народу.'],
+  ['restes', 'Nous sommes restés deux‿heures.', 'Мы пробыли там два часа.'],
+  // ---------- 20. франкофония ----------
+  ['diner', 'On se voit pour le dîner ?', 'Увидимся за обедом? (в Бельгии и Швейцарии — днём)'],
+  ['souper', 'Le souper est‿à dix-neuf heures.', 'Ужин в семь вечера. (в Бельгии, Швейцарии и Квебеке)'],
+  ['bienvenue', 'Bienvenue !', 'Не за что! (в Квебеке — в ответ на «спасибо»)'],
+  ['magasiner', 'Je vais magasiner.', 'Пойду по магазинам. (в Квебеке)'],
+  ['char', 'Mon char est stationné ici.', 'Моя машина стоит здесь. (в Квебеке)'],
+  ['bonmatin', 'Bon matin !', 'Доброе утро! (в Квебеке)'],
+  ['parlezfrancais', 'Vous parlez français ?', 'Вы говорите по-французски?'],
+  ['dirhams', "C'est combien en dirhams ?", 'Сколько это в дирхамах?'],
+  ['dernierprix', "C'est votre dernier prix ?", 'Это ваша окончательная цена?'],
+  ['medina', "La médina, c'est par où ?", 'Где медина, в какую сторону?'],
+];
+
+export const signs = [
+  ['s-cedez', 'Cédez le passage', 'Уступите дорогу'],
+  ['s-toutes', 'Toutes directions', 'Все направления'],
+  ['s-sensunique', 'Sens unique', 'Одностороннее движение'],
+  ['s-stationnement', 'Stationnement interdit', 'Стоянка запрещена'],
+  ['s-peage', 'Péage', 'Пункт оплаты, платная дорога'],
+  ['s-autres', 'Autres directions', 'Другие направления'],
+  ['s-photos', 'Photos interdites', 'Фотографировать нельзя'],
+  ['s-toucher', 'Ne pas toucher', 'Не трогать'],
+  ['s-secours', 'Sortie de secours', 'Запасный выход'],
+  ['s-visite', 'Visite guidée', 'Экскурсия'],
+];
+
+const SRCB = {
+  be: ['Университет Лаваля, 9 июня 2024', 'https://axl.cefan.ulaval.ca/europe/belgiqueetat_pol-lng.htm'],
+  swiss: ['Википедия: Swiss French', 'https://en.wikipedia.org/wiki/Swiss_French'],
+  qc: ['Правительство Квебека, 5 августа 2026', 'https://www.quebec.ca/culture/langue-francaise/portrait-francais-quebec/a-propos-francais/a-propos-charte'],
+  qctip: ['Immigrant Québec, 28 апреля 2023', 'https://immigrantquebec.com/fr/conseils-d-experts/le-pourboire-au-quebec/'],
+  ma: ['Linguasphere', 'https://linguasphere.info/guides/countries-and-speech/what-language-do-they-speak-in-morocco/'],
+  tn: ['Википедия: Languages of Tunisia', 'https://en.wikipedia.org/wiki/Languages_of_Tunisia'],
+};
+const card = (t, x, src) => ({ t, x, src: src ? { name: SRCB[src][0], url: SRCB[src][1] } : null, checked: CHECKED });
+
+export const units = [
+  {
+    id: 'fr-u13', level: 'a2', icon: 'triangle-alert', title: 'Рассказать, что случилось',
+    hook: 'Потеряли ключи, опоздали на поезд, украли телефон: прошедшее время, чтобы объяснить, что, где и когда произошло.',
+    lessons: [
+      {
+        id: 'fr-u13-l1', title: 'Прошедшее время', goal: 'Сказать, что вы потеряли, забыли или пропустили', ph: ['clesperdues', 'rate', 'oublie', 'payedeux', 'hier'],
+        rule: { t: 'Passé composé: j’ai + причастие', x: 'Главное прошедшее время собирается из avoir и причастия: j’ai perdu — «я потерял», j’ai payé — «я заплатил». У глаголов на -er причастие кончается на -é: payer → payé, oublier → oublié. У остальных его запоминают: perdre → perdu, prendre → pris, voir → vu, faire → fait.' },
+        sort: { groups: ['-é, от глагола на -er', 'другое причастие'], items: [['payé', 0, 'заплатил'], ['oublié', 0, 'забыл'], ['raté', 0, 'пропустил'], ['visité', 0, 'посетил'], ['perdu', 1, 'потерял'], ['pris', 1, 'взял'], ['vu', 1, 'увидел'], ['fait', 1, 'сделал']] },
+      },
+      {
+        id: 'fr-u13-l2', title: 'Кража', goal: 'Сообщить о краже и подать заявление', ph: ['volesac', 'danslemetro', 'cematin', 'plainte', 'dedans'], hearAsk: 'Что, когда и где?',
+        hear: [["On m'a volé mon portefeuille hier soir.", 'кошелёк, вчера вечером', ['телефон, вчера вечером', 'кошелёк, сегодня утром']], ["On m'a volé mon téléphone dans le bus.", 'телефон, в автобусе', ['телефон, в метро', 'сумку, в автобусе']], ["J'ai perdu mon passeport à la gare.", 'паспорт, на вокзале', ['паспорт, в аэропорту', 'билет, на вокзале']]],
+      },
+      {
+        id: 'fr-u13-l3', title: 'Где и когда', goal: 'Рассказать о событиях по порядку', ph: ['avanthier', 'ilya2jours', 'exactement', 'laisse'],
+        rule: { t: 'Когда это было', x: 'hier — вчера, avant-hier — позавчера, ce matin — сегодня утром, il y a deux jours — два дня назад. События по порядку связывают словами d’abord — сначала, ensuite — потом, après — после этого. Послушайте рассказ и расставьте события.' },
+        order: [["D'abord, j'ai pris le métro. Ensuite, j'ai acheté un café. Après, j'ai vu que mon sac était ouvert.", ['поехал на метро', 'купил кофе', 'увидел, что сумка открыта']], ["Hier, j'ai visité le Louvre. Ensuite, j'ai mangé au restaurant. Après, j'ai perdu mes clés.", ['был в Лувре', 'поел в ресторане', 'потерял ключи']], ["Ce matin, j'ai raté le train. Ensuite, j'ai pris un taxi. Après, j'ai payé deux fois.", ['опоздал на поезд', 'взял такси', 'заплатил дважды']]],
+      },
+      {
+        id: 'fr-u13-s', kind: 'scene', title: 'Сценарий: в полиции', goal: 'Подать заявление о краже',
+        dialog: [
+          T('Bonjour. Qu’est-ce qui vous arrive ?', 'Здравствуйте. Что у вас случилось?'),
+          M('volesac', ['payedeux', 'rate'], 'Скажите, что у вас украли сумку'),
+          T('Où est-ce que c’est arrivé ?', 'Где это произошло?'),
+          M('danslemetro', ['laisse', 'hier'], 'Скажите, что в метро'),
+          T('Et quand ?', 'А когда?'),
+          M('cematin', ['avanthier', 'ilya2jours'], 'Скажите, что сегодня утром, около десяти'),
+          T('Qu’est-ce qu’il y avait dans le sac ?', 'Что было в сумке?'),
+          M('dedans', ['clesperdues', 'oublie'], 'Скажите, что там был паспорт'),
+          M('plainte', ['exactement', 'possible'], 'Скажите, что хотите подать заявление'),
+          T('D’accord. Remplissez ce formulaire, s’il vous plaît.', 'Хорошо. Заполните, пожалуйста, этот бланк.'),
+          M('merci', ['pardon', 'bonsoir'], 'Поблагодарите'),
+        ],
+      },
+    ],
+  },
+  {
+    id: 'fr-u14', level: 'a2', icon: 'calendar-clock', title: 'Поменять билет и бронь',
+    hook: 'Поезд отменили, планы поменялись: поменять билет, отменить бронь, назвать дату и понять объявление о забастовке.',
+    lessons: [
+      { id: 'fr-u14-l1', title: 'Поменять и отменить', goal: 'Поменять билет или отменить бронь', ph: ['changer', 'annuler', 'possible', 'frais', 'suivant'] },
+      {
+        id: 'fr-u14-l2', title: 'Даты', goal: 'Назвать и понять дату', ph: ['quelledate', 'semaineprochaine', 'lundiprochain'], hearAsk: 'Какая это дата?',
+        rule: { t: 'Le trois mai', x: 'Дату говорят с артиклем le и обычным числом: le trois mai — 3 мая, le vingt et un juillet — 21 июля. Только первое число — premier: le premier août. Месяцы: janvier, février, mars, avril, mai, juin, juillet, août, septembre, octobre, novembre, décembre.' },
+        hear: [['le trois mai', '3 мая', ['13 мая', '3 марта']], ['le vingt et un juillet', '21 июля', ['21 июня', '12 июля']], ['le premier août', '1 августа', ['1 апреля', '11 августа']], ['le quinze septembre', '15 сентября', ['5 сентября', '15 декабря']], ['le trente et un décembre', '31 декабря', ['30 декабря', '31 ноября']]],
+      },
+      {
+        id: 'fr-u14-l3', title: 'Забастовка', goal: 'Понять объявление о забастовке и сказать, что вы будете делать', ph: ['greve', 'remplace', 'partirdemain', 'attendre', 'prochaintrain'], hearAsk: 'Что сказали в объявлении?',
+        rule: { t: 'Je vais + глагол', x: 'Ближайшее будущее строится как в английском going to: je vais partir — «я уеду», je vais attendre — «я подожду». Забастовки (grèves) на транспорте во Франции случаются; о них объявляют заранее, а вместо отменённых поездов иногда пускают автобусы.' },
+        hear: [["En raison d'une grève, le train est supprimé.", 'поезд отменён из-за забастовки', ['поезд опаздывает из-за погоды', 'поезд уходит с другого пути']], ['Un bus remplace le train.', 'вместо поезда — автобус', ['автобус отменён', 'поезд ждёт автобус']], ['Le prochain train part dans une heure.', 'следующий поезд через час', ['следующий поезд в час дня', 'поезд опоздал на час']]],
+      },
+      {
+        id: 'fr-u14-s', kind: 'scene', title: 'Сценарий: поменять билет', goal: 'Поменять билет из-за забастовки',
+        dialog: [
+          T('Bonjour, je vous écoute.', 'Здравствуйте, слушаю вас.'),
+          M('changer', ['annuler', 'attendre'], 'Скажите, что хотите поменять билет'),
+          T('Pour quelle date ?', 'На какое число?'),
+          M('lundiprochain', ['semaineprochaine', 'avanthier'], 'Скажите, что на следующий понедельник'),
+          T('Le lundi seize, il y a un train à neuf heures.', 'В понедельник, шестнадцатого, есть поезд в девять.'),
+          M('frais', ['possible', 'greve'], 'Спросите, платно ли это'),
+          T('Non, à cause de la grève, c’est gratuit.', 'Нет, из-за забастовки бесплатно.'),
+          M('mercibeaucoup', ['pardon', 'exactement'], 'Поблагодарите'),
+          T('Voilà votre nouveau billet. Bon voyage !', 'Вот ваш новый билет. Счастливого пути!'),
+          M('aurevoir', ['bonjour', 'suivant'], 'Попрощайтесь'),
+        ],
+      },
+    ],
+  },
+  {
+    id: 'fr-u15', level: 'a2', icon: 'phone', title: 'Звонок',
+    hook: 'Телефон без картинок: забронировать столик, продиктовать почту и понять голосовое меню.',
+    lessons: [
+      { id: 'fr-u15-l1', title: 'Забронировать столик', goal: 'Забронировать столик по телефону', ph: ['allo', 'reserver', 'quatre', 'vers20h', 'note'] },
+      {
+        id: 'fr-u15-l2', title: 'Почта по буквам', goal: 'Продиктовать электронный адрес', ph: ['email', 'arobase', 'message'],
+        rule: { t: 'Arobase и point', x: '@ — arobase, точка — point, дефис — tiret, нижнее подчёркивание — tiret bas. Адрес anna.k@example.com читают: anna point ka arobase example point com. Послушайте и запишите.' },
+        dictee: [['anna point ka arobase example point com', 'anna.k@example.com'], ['ivan tiret petrov arobase example point com', 'ivan-petrov@example.com'], ['aliya tiret bas nour arobase example point com', 'aliya_nour@example.com']],
+      },
+      {
+        id: 'fr-u15-l3', title: 'Голосовое меню', goal: 'Понять голосовое меню и автоответчик', ph: ['rappeler', 'occupe', 'entends', 'coupe'], hearAsk: 'Что предлагает голосовое меню?',
+        hear: [['Pour les réservations, tapez un.', 'бронь — нажать 1', ['бронь — нажать 2', 'отмена — нажать 1']], ['Pour parler à un conseiller, tapez deux.', 'оператор — нажать 2', ['оператор — нажать 1', 'бронь — нажать 2']], ['Laissez un message après le bip.', 'оставить сообщение после сигнала', ['перезвонить после сигнала', 'дождаться оператора']], ['Nos bureaux sont fermés.', 'офис закрыт', ['все операторы заняты', 'офис открыт до вечера']]],
+      },
+      {
+        id: 'fr-u15-s', kind: 'scene', title: 'Сценарий: столик по телефону', goal: 'Забронировать столик на вечер',
+        dialog: [
+          T('Restaurant Le Lys, bonsoir !', 'Ресторан «Лис», добрый вечер!'),
+          M('allo', ['coupe', 'aurevoir'], 'Поздоровайтесь'),
+          M('reserver', ['annuler', 'changer'], 'Скажите, что хотите забронировать столик на вечер'),
+          T('Pour combien de personnes ?', 'На сколько человек?'),
+          M('quatre', ['deuxnuits', 'tabledeux'], 'Скажите, что на четверых'),
+          T('À quelle heure ?', 'На какое время?'),
+          M('vers20h', ['dixminutes', 'midi'], 'Скажите, что около восьми вечера'),
+          T('C’est à quel nom ?', 'На какое имя?'),
+          M('aunom', ['email', 'message'], 'Назовите фамилию'),
+          T('Très bien, monsieur Petrov.', 'Хорошо, месье Петров.'),
+          M('note', ['occupe', 'entends'], 'Уточните, записали ли'),
+          T('Oui, c’est noté. À ce soir !', 'Да, записали. До вечера!'),
+          M('merci', ['pardon', 'rappeler'], 'Поблагодарите'),
+        ],
+      },
+    ],
+  },
+  {
+    id: 'fr-u16', level: 'a2', icon: 'stethoscope', title: 'У врача',
+    hook: 'Записаться на приём, объяснить, что и сколько дней болит, и понять, как принимать лекарство.',
+    lessons: [
+      { id: 'fr-u16-l1', title: 'Записаться', goal: 'Записаться к врачу и спросить о цене', ph: ['rendezvous', 'sipossible', 'assurance', 'consultation'] },
+      {
+        id: 'fr-u16-l2', title: 'Симптомы', goal: 'Объяснить, что болит и с какого времени', ph: ['depuis', 'malcoeur', 'tousse', 'penicilline', 'prends'],
+        rule: { t: 'Depuis — «уже»', x: 'Сколько времени что-то длится, говорят через depuis и настоящее время: j’ai mal à la tête depuis deux jours — «у меня уже два дня болит голова». Не путайте: j’ai mal au cœur — «меня тошнит», а не боль в сердце.' },
+      },
+      {
+        id: 'fr-u16-l3', title: 'Рецепт', goal: 'Понять, как принимать лекарство', ph: ['avantapres', 'combienjours', 'facture'], hearAsk: 'Как принимать лекарство?',
+        hear: [['Un comprimé trois fois par jour.', '1 таблетка 3 раза в день', ['3 таблетки 1 раз в день', '1 таблетка 2 раза в день']], ['Deux comprimés le matin.', '2 таблетки утром', ['2 таблетки вечером', '1 таблетка утром']], ['Pendant cinq jours.', 'в течение 5 дней', ['через 5 дней', '5 раз в день']], ['À prendre après le repas.', 'после еды', ['до еды', 'во время еды']]],
+      },
+      {
+        id: 'fr-u16-s', kind: 'scene', title: 'Сценарий: приём у врача', goal: 'Объяснить врачу симптомы и понять назначение',
+        dialog: [
+          T('Bonjour. Qu’est-ce qui ne va pas ?', 'Здравствуйте. На что жалуетесь?'),
+          M('gorge', ['ventre', 'dents'], 'Скажите, что болит горло'),
+          T('Depuis quand ?', 'С какого времени?'),
+          M('depuis', ['ilya2jours', 'demain'], 'Скажите, что уже два дня'),
+          T('Vous avez de la fièvre ?', 'Температура есть?'),
+          M('tousse', ['malcoeur', 'prends'], 'Скажите, что сильно кашляете'),
+          T('Vous êtes allergique à un médicament ?', 'У вас есть аллергия на лекарства?'),
+          M('penicilline', ['allergique', 'gluten'], 'Скажите, что на пенициллин'),
+          T('Prenez ce sirop trois fois par jour.', 'Принимайте этот сироп три раза в день.'),
+          M('avantapres', ['combienjours', 'consultation'], 'Спросите, до еды или после'),
+          T('Après le repas, pendant cinq jours.', 'После еды, пять дней.'),
+          M('facture', ['assurance', 'rendezvous'], 'Попросите счёт для страховой'),
+        ],
+      },
+    ],
+  },
+  {
+    id: 'fr-u17', level: 'a2', icon: 'car', title: 'Машина и трасса',
+    hook: 'Взять машину напрокат, заправиться нужным топливом, проехать платную дорогу и понять дорожные надписи.',
+    lessons: [
+      { id: 'fr-u17-l1', title: 'Прокат', goal: 'Забрать машину по брони и уточнить условия', ph: ['voiturereservee', 'permis', 'assurancecomprise', 'plein', 'rendre'] },
+      {
+        id: 'fr-u17-l2', title: 'Заправка и платная дорога', goal: 'Заправиться и проехать платную дорогу', ph: ['leplein', 'diesel', 'pompe', 'peage'],
+        rule: { t: 'Gazole — это дизель', x: 'На колонках: gazole — дизельное топливо, sans plomb 95 или 98 — бензин. Перепутать их дорого, поэтому проверяйте надпись на пистолете. На автостраде (autoroute) дорога часто платная: péage — пункт оплаты.' },
+        spell: [['Какое топливо — дизель?', 'gazole', ['sans plomb 95', 'sans plomb 98'], 'Gazole — дизель, sans plomb — бензин без свинца.'], ['Что такое péage?', 'пункт оплаты на платной дороге', ['парковка', 'заправка'], 'На автострадах Франции дорога часто платная.'], ['Что значит le plein?', 'полный бак', ['пустой бак', 'половина бака']]],
+      },
+      { id: 'fr-u17-l3', title: 'Дорожные надписи', goal: 'Узнавать надписи на дорожных знаках', ph: ['s-cedez', 's-toutes', 's-sensunique', 's-stationnement', 's-peage', 's-autres'] },
+      {
+        id: 'fr-u17-s', kind: 'scene', title: 'Сценарий: стойка проката', goal: 'Забрать машину в прокате',
+        dialog: [
+          T('Bonjour ! Vous avez une réservation ?', 'Здравствуйте! У вас есть бронь?'),
+          M('voiturereservee', ['reservation', 'changer'], 'Скажите, что забронировали машину'),
+          T('Votre permis de conduire, s’il vous plaît.', 'Ваши права, пожалуйста.'),
+          M('permis', ['passeport', 'carte'], 'Отдайте права'),
+          M('assurancecomprise', ['frais', 'peage'], 'Спросите, включена ли страховка'),
+          T('Oui, l’assurance de base est comprise.', 'Да, базовая страховка включена.'),
+          M('plein', ['leplein', 'diesel'], 'Спросите, нужно ли вернуть с полным баком'),
+          T('Oui, avec le plein. C’est une voiture diesel.', 'Да, с полным баком. Машина дизельная.'),
+          M('rendre', ['pompe', 'toilettes'], 'Спросите, где сдать машину'),
+          T('Ici, au parking de la gare.', 'Здесь, на парковке у вокзала.'),
+          M('merci', ['pardon', 'decu'], 'Поблагодарите'),
+        ],
+      },
+    ],
+  },
+  {
+    id: 'fr-u18', level: 'a2', icon: 'scale', title: 'Вежливо пожаловаться',
+    hook: 'Ошибка в счёте, не тот номер, холодное блюдо: пожаловаться так, чтобы вам захотели помочь.',
+    lessons: [
+      { id: 'fr-u18-l1', title: 'Ошибка в счёте', goal: 'Указать на ошибку и попросить проверить', ph: ['erreur', 'pasdessert', 'verifier', 'pascommande', 'froid'] },
+      {
+        id: 'fr-u18-l2', title: 'Ступени вежливости', goal: 'Выбрать вежливую форму просьбы', ph: ['pourriez', 'autrechambre', 'pasgrave', 'decu'],
+        rule: { t: 'Vous pouvez → pourriez-vous', x: 'Просьбу смягчают условной формой: vous pouvez — «вы можете», pourriez-vous — «не могли бы вы», je voudrais и j’aimerais — «я бы хотел». С жалобой на условной форме французы охотнее помогают. Приказ — Changez ma chambre ! — звучит резко.' },
+        spell: [['Как вежливее всего попросить поменять номер?', 'Pourriez-vous changer ma chambre ?', ['Changez ma chambre !', 'Vous changez ma chambre.'], 'Pourriez-vous… — «не могли бы вы…».'], ['Как мягко сказать «я хочу другой номер»?', "J'aimerais une autre chambre.", ['Je veux une autre chambre !', 'Une autre chambre !'], 'J’aimerais — «я бы хотел».'], ['Что ответить, если извинились?', "Ce n'est pas grave.", ['Je suis très déçu.', "C'est froid."], '«Ничего страшного».']],
+      },
+      { id: 'fr-u18-l3', title: 'Номер не тот', goal: 'Пожаловаться на номер и попросить возврат', ph: ['double', 'propre', 'chauffage', 'responsable', 'rembourser'] },
+      {
+        id: 'fr-u18-s', kind: 'scene', title: 'Сценарий: не тот номер', goal: 'Вежливо добиться другого номера',
+        dialog: [
+          T('Bonjour, je peux vous aider ?', 'Здравствуйте, чем могу помочь?'),
+          M('double', ['reservation', 'deuxbillets'], 'Скажите, что бронировали двухместный номер'),
+          T('Ah, vous avez une chambre simple ?', 'А, у вас одноместный?'),
+          M('autrechambre', ['froid', 'pasgrave'], 'Мягко скажите, что хотели бы другой номер'),
+          T('Je suis désolé, je vérifie…', 'Простите, сейчас проверю…'),
+          M('chauffage', ['propre', 'pasdessert'], 'Добавьте, что не работает отопление'),
+          T('Je vous donne la chambre vingt-quatre, au deuxième étage.', 'Даю вам номер двадцать четыре, на втором этаже.'),
+          M('pourriez', ['rembourser', 'responsable'], 'Попросите помочь с чемоданом'),
+          T('Bien sûr. Encore désolé pour l’erreur.', 'Конечно. Ещё раз простите за ошибку.'),
+          M('pasgrave', ['decu', 'erreur'], 'Скажите, что ничего страшного'),
+        ],
+      },
+    ],
+  },
+  {
+    id: 'fr-u19', level: 'a2', icon: 'landmark', title: 'Музеи и впечатления',
+    hook: 'Билеты со скидкой, надписи в залах и рассказ о том, где вы были и что понравилось.',
+    lessons: [
+      { id: 'fr-u19-l1', title: 'Билеты в музей', goal: 'Купить билеты и спросить о скидках', ph: ['deuxbillets', 'tarifreduit', 'gratuit', 'creneau', 'vestiaire'] },
+      { id: 'fr-u19-l2', title: 'В залах', goal: 'Понимать надписи в музее', ph: ['photos', 'audioguide', 's-photos', 's-toucher', 's-secours', 's-visite'] },
+      {
+        id: 'fr-u19-l3', title: 'Рассказать о дне', goal: 'Рассказать, где были и что понравилось', ph: ['suisalle', 'genial', 'adore', 'monde', 'restes'],
+        rule: { t: 'Je suis allé и c’était', x: 'Глаголы движения и состояния — aller, venir, arriver, partir, rester — образуют прошедшее время с être: je suis allé, nous sommes restés. Остальные — с avoir: j’ai visité, j’ai vu. Впечатление — c’était: c’était génial — «было здорово».' },
+        sort: { groups: ['с avoir', 'с être'], items: [['visité', 0, 'посетил'], ['mangé', 0, 'поел'], ['vu', 0, 'увидел'], ['acheté', 0, 'купил'], ['allé', 1, 'сходил'], ['arrivé', 1, 'приехал'], ['resté', 1, 'пробыл'], ['venu', 1, 'пришёл']] },
+      },
+      {
+        id: 'fr-u19-s', kind: 'scene', title: 'Сценарий: как прошёл день', goal: 'Рассказать хозяину квартиры о дне в городе',
+        dialog: [
+          T('Alors, votre journée ?', 'Ну, как прошёл день?'),
+          M('suisalle', ['hier', 'rate'], 'Скажите, что сходили в музей Орсе'),
+          T('Ah, super ! Ça vous a plu ?', 'О, здорово! Понравилось?'),
+          M('adore', ['decu', 'froid'], 'Скажите, что очень понравилось'),
+          T('Il y avait du monde ?', 'Народу было много?'),
+          M('monde', ['gratuit', 'tarifreduit'], 'Скажите, что было много народу'),
+          T('Vous êtes restés longtemps ?', 'Долго там пробыли?'),
+          M('restes', ['semaine', 'depuis'], 'Скажите, что два часа'),
+          T('Et demain, qu’est-ce que vous faites ?', 'А завтра что делаете?'),
+          M('partirdemain', ['attendre', 'magasiner'], 'Скажите, что завтра уезжаете'),
+          T('Bon voyage alors !', 'Тогда счастливого пути!'),
+          M('genial', ['pasgrave', 'possible'], 'Скажите, что было здорово'),
+        ],
+      },
+    ],
+  },
+  {
+    id: 'fr-u20', level: 'a2', icon: 'map-pin', title: 'Франкофония',
+    hook: 'Тот же французский — другие числа, обед и ужин: Бельгия, Швейцария, Квебек, Марокко и Тунис.',
+    lessons: [
+      {
+        id: 'fr-u20-l1', title: 'Бельгия и Швейцария', goal: 'Понимать бельгийские и швейцарские числа и названия еды', ph: ['diner', 'souper'], hearAsk: 'Какое это число?',
+        rule: { t: 'Septante и nonante', x: 'В Бельгии и Швейцарии 70 — septante, 90 — nonante, а 80 в части Швейцарии — huitante. И еда по-старому: déjeuner — завтрак, dîner — обед, souper — ужин. Во Франции déjeuner — обед, dîner — ужин.', demo: 'fr-count', w: [[70, 'septante'], [75, 'septante-cinq'], [80, 'huitante'], [90, 'nonante'], [99, 'nonante-neuf']] },
+        hear: [['septante-cinq', '75', ['65', '95']], ['nonante', '90', ['80', '19']], ['huitante', '80', ['18', '90']], ['nonante-neuf', '99', ['89', '79']]],
+        card: card('Бельгия', 'В Бельгии три официальных языка: в Валлонии — французский, во Фландрии — нидерландский, на востоке — немецкий. Брюссель двуязычный, вывески там на французском и нидерландском. В Брюгге и Антверпене французский не основной.', 'be'),
+      },
+      {
+        id: 'fr-u20-l2', title: 'Квебек', goal: 'Понимать слова, которые в Квебеке значат другое', ph: ['bienvenue', 'magasiner', 'char', 'bonmatin'],
+        rule: { t: 'Французский Квебека', x: 'В Квебеке звучит иначе и есть свои слова: char — машина, magasiner — ходить по магазинам, bon matin — доброе утро. На «спасибо» отвечают bienvenue — «не за что». Стандартный французский там понимают все.' },
+        spell: [['Что значит в Квебеке char?', 'машина', ['колесница', 'тележка в магазине']], ['Что значит в Квебеке Bienvenue ! в ответ на «спасибо»?', 'не за что', ['добро пожаловать', 'до свидания']]],
+        card: card('Квебек', 'Французский — единственный официальный язык Квебека с 1977 года: вывески обязаны быть на французском, и покупатель вправе требовать обслуживания на французском. В отличие от Франции, в ресторане ждут чаевых — 15–20% от суммы до налогов.', 'qc'),
+      },
+      {
+        id: 'fr-u20-l3', title: 'Марокко и Тунис', goal: 'Объясниться по-французски на рынке и в такси', ph: ['parlezfrancais', 'dirhams', 'dernierprix', 'medina'],
+        card: card('Марокко и Тунис', 'В Марокко официальные языки — арабский и амазигский, но французский преобладает в бизнесе, медицине и образовании. В Тунисе официальный язык арабский; по оценке правительства на 2022 год, по-французски говорят около 52% жителей.', 'ma'),
+      },
+      {
+        id: 'fr-u20-s', kind: 'scene', title: 'Сценарий: рынок в медине', goal: 'Поторговаться по-французски',
+        dialog: [
+          T('Bonjour, mon ami ! Regardez, c’est fait main !', 'Здравствуйте, друг мой! Посмотрите, ручная работа!'),
+          M('regarde', ['jeprends', 'adore'], 'Скажите, что просто смотрите'),
+          T('Pour vous, quatre cents dirhams.', 'Для вас четыреста дирхамов.'),
+          M('tropcher', ['pascher', 'combien'], 'Скажите, что для вас это слишком дорого'),
+          T('Bon, trois cents. C’est un bon prix !', 'Ладно, триста. Хорошая цена!'),
+          M('dernierprix', ['dirhams', 'possible'], 'Спросите, окончательная ли это цена'),
+          T('D’accord, deux cent cinquante. Dernier prix !', 'Хорошо, двести пятьдесят. Последняя цена!'),
+          M('jeprends', ['regarde', 'annuler'], 'Скажите, что берёте'),
+          T('Merci, bonne journée !', 'Спасибо, хорошего дня!'),
+          M('medina', ['toilettes', 'dou'], 'Спросите, в какую сторону выход в медину'),
+        ],
+      },
+    ],
+  },
+];
+// вторые источники карточек: Тунис — к «Марокко и Тунис», чаевые — к «Квебеку», числа — к «Бельгии»
+units[7].lessons[2].card.more = [{ name: SRCB.tn[0], url: SRCB.tn[1] }];
+units[7].lessons[1].card.more = [{ name: SRCB.qctip[0], url: SRCB.qctip[1] }];
+units[7].lessons[0].card.more = [{ name: SRCB.swiss[0], url: SRCB.swiss[1] }];

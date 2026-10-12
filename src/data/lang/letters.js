@@ -38,6 +38,11 @@ const S = (...parts) => parts.reduce((out, p) => {
 /* ---------- буквы ---------- */
 const dot = x => S(L(x, X + 190, x, X + 120));
 const acute = x => S(L(x + 35, X + 210, x - 30, X + 120));
+const grave = x => S(L(x - 35, X + 210, x + 30, X + 120));
+const circ = x => S(L(x - 62, X + 120, x, X + 205), L(x, X + 205, x + 62, X + 120));
+const dots = x => [dot(x - 62), dot(x + 62)];
+const stem = () => S(L(512, X, 512, B));                                      // i без точки — под значок
+const cedilla = () => S(L(522, B + 4, 512, B - 32), E(512, B - 62, 40, 30, 90, -160));
 const LOWER = {
   a: [S(E(510, M, 125, 155, 20, 370)), S(L(635, X, 635, B))],
   b: [S(L(385, A, 385, B)), S(E(510, M, 125, 155, 160, -160))],
@@ -104,12 +109,22 @@ const EXTRA = {
   ú: [...LOWER.u, acute(512)],
   ü: [...LOWER.u, dot(445), dot(580)],
 };
-const ALL = { ...LOWER, ...UPPER, ...EXTRA };
+/* Французские буквы со значками и œ */
+const FR = {
+  è: [...LOWER.e, grave(510)], ê: [...LOWER.e, circ(515)], ë: [...LOWER.e, ...dots(515)],
+  à: [...LOWER.a, grave(505)], â: [...LOWER.a, circ(505)],
+  î: [stem(), circ(512)], ï: [stem(), ...dots(512)],
+  ô: [...LOWER.o, circ(512)], ù: [...LOWER.u, grave(505)], û: [...LOWER.u, circ(505)],
+  ç: [...LOWER.c, cedilla()],
+  œ: [S(E(400, M, 110, 155, 90, 440)), S(L(512, M, 742, M), E(627, M, 115, 155, 0, 320))],
+};
+const ALL = { ...LOWER, ...UPPER, ...EXTRA, ...FR };
 
 export const LETTER_GROUPS = [
   { id: 'lower', title: 'Строчные буквы', chars: Object.keys(LOWER) },
   { id: 'upper', title: 'Заглавные буквы', chars: Object.keys(UPPER) },
   { id: 'es', title: 'Испанские буквы и ударения', chars: Object.keys(EXTRA) },
+  { id: 'fr', title: 'Французские буквы со значками', chars: ['é', ...Object.keys(FR)] },
 ];
 export const LETTERS = Object.keys(ALL);
 

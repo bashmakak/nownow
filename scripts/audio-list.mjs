@@ -5,6 +5,8 @@
    «по словам», syl — слог); syl — слоги с тонами [[основа, тон, эризация]]; oneWord — запись в одно слово
    (такую сборщик может склеить из записей слогов носителя, если нет записи слова целиком). */
 import zh from '../src/data/lang/zh.js';
+import fr from '../src/data/lang/fr.js';
+import { frDemoWords, frPlain } from '../src/lib/fr-data.js';
 import { TONE_EXAMPLES, charTable, indexTrack } from '../src/lib/lang-engine.js';
 import { keysFor, sylKey, textKey } from '../src/lib/audio-keys.js';
 import { airPair, parseSyllable, splitSyllable, syllables, withInitial } from '../src/lib/pinyin.js';
@@ -55,7 +57,43 @@ export function audioNeeds(track) {
   return [...need.values()];
 }
 
+/* Латиница (французский): всё озвучивается по тексту. Поля: key, text — что синтезировать (без дужек и скобок),
+   role — чья реплика: me — фраза ученика, them — собеседник, word — отдельное слово, tile — слово из фразы */
+export function latinNeeds(track) {
+  const ix = indexTrack(track), need = new Map();
+  const add = (src, role) => {
+    const text = frPlain(src);
+    const k = textKey(text);
+    if (k === 't:' || need.has(k)) return;
+    need.set(k, { key: k, text, role, words: text.split(' ').length });
+  };
+  Object.values(ix.phrases).forEach(p => add(p.zh, 'me'));
+  Object.values(ix.phrases).forEach(p => p.tiles.forEach(t => add(t.zh, 'tile')));
+  Object.values(ix.vocab).forEach(w => add(w.zh, 'word'));
+  ix.lessons.forEach(l => {
+    (l.dialog || []).forEach(line => { if (line[0] === 'them') add(line[1], 'them'); });
+    [...(l.intro || []), ...(l.rule ? [l.rule] : [])].forEach(r => frDemoWords(r).forEach(w => add(w, 'word')));
+    (l.sounds || []).forEach(([, , ex]) => ex.forEach(w => add(w, 'word')));
+    (l.repeat || []).forEach(w => add(w, 'word'));
+    (l.pick || []).forEach(([w, others]) => [w, ...others].forEach(x => add(x, 'word')));
+    (l.minimal || []).forEach(pair => pair.forEach(x => add(x, 'word')));
+    (l.silent || []).forEach(w => add(w, 'word'));
+    (l.link || []).forEach(w => add(w, 'me'));
+    (l.hear || []).forEach(([w]) => add(w, 'me'));
+    (l.dictee || []).forEach(d => add(Array.isArray(d) ? d[0] : d, Array.isArray(d) ? 'them' : 'word'));
+    ((l.sort && l.sort.items) || []).forEach(([w]) => add(w, 'word'));
+    (l.route || []).forEach(([w]) => add(w, 'them'));
+    (l.digits || []).forEach(([w]) => add(w, 'them'));
+    (l.body || []).forEach(([w]) => add(w, 'me'));
+    ((l.board && l.board.ask) || []).forEach(([w]) => add(w, 'them'));
+    (l.speakQ || []).forEach(([w]) => add(w, 'me'));
+    (l.order || []).forEach(([w]) => add(w, 'them'));
+  });
+  return [...need.values()];
+}
+
 if (import.meta.url === `file://${process.argv[1]}`) {
-  console.log(JSON.stringify(audioNeeds(zh), null, 0));
+  const code = process.argv[2] || 'zh';
+  console.log(JSON.stringify(code === 'fr' ? latinNeeds(fr) : audioNeeds(zh), null, 0));
 }
 export { textKey };

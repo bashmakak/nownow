@@ -6,7 +6,7 @@ import { numbered, syllables } from './pinyin.js';
    x:<слог с цифрой тона> — учебная версия слога: медленнее и с более широким размахом тона (кнопка «медленно»);
    t:<иероглифы без пробелов и знаков препинания> — слово или фраза: t:登机口在哪儿. */
 
-const PUNCT = /[\s，。？！、；：…,.?!;:“”"'‘’（）()·—\-~～]/g;
+const PUNCT = /[\s，。？！、；：…,.?!;:“”"'‘’（）()·—\-~～‿«»]/g;
 export const textKey = zh => `t:${String(zh || '').replace(PUNCT, '')}`;
 export function sylKey(py) {
   const s = py ? syllables(py) : null;

@@ -13,6 +13,12 @@ export const SHAPES = {
   i: { w: 57, h: 9, r: 0, s: 6, lu: 7, ll: 9, tt: 5, tb: 4, tg: 0 },
   u: { w: 17, h: 14, r: 1, s: 0, lu: 15, ll: 17, tt: 0, tb: 0, tg: 0 },
   ü: { w: 17, h: 12, r: 1, s: 0, lu: 15, ll: 16, tt: 0, tb: 0, tg: 0.75 },
+  // французские гласные: закрытое и открытое e, огублённые [ø] и [œ], беглое [ə]; [y] — та же форма, что ü
+  é: { w: 52, h: 12, r: 0, s: 4, lu: 8, ll: 10, tt: 6, tb: 4, tg: 0.15 },
+  è: { w: 48, h: 25, r: 0.05, s: 2, lu: 9, ll: 11, tt: 8, tb: 3, tg: 0.35 },
+  ø: { w: 21, h: 15, r: 0.95, s: 0, lu: 14, ll: 16, tt: 2, tb: 0, tg: 0.6 },
+  œ: { w: 27, h: 25, r: 0.8, s: 0, lu: 13, ll: 15, tt: 4, tb: 0, tg: 0.6 },
+  ə: { w: 31, h: 19, r: 0.6, s: 0, lu: 12, ll: 14, tt: 4, tb: 0, tg: 0.4 },
 };
 const KEYS = Object.keys(SHAPES.rest);
 const mix = (a, b, k) => Object.fromEntries(KEYS.map(n => [n, a[n] + (b[n] - a[n]) * k]));
@@ -154,11 +160,17 @@ export const SIDE = {
   i: { jaw: 3, gap: 3, prot: -2, px: 98, py: 64 },
   u: { jaw: 6, gap: 4, prot: 10, px: 158, py: 66 },
   ü: { jaw: 4, gap: 3, prot: 10, px: 98, py: 65 },
+  é: { jaw: 5, gap: 5, prot: -1, px: 103, py: 67 },
+  è: { jaw: 12, gap: 11, prot: 0, px: 112, py: 80 },
+  ø: { jaw: 6, gap: 5, prot: 9, px: 104, py: 70 },
+  œ: { jaw: 11, gap: 9, prot: 7, px: 112, py: 80 },
+  ə: { jaw: 9, gap: 7, prot: 6, px: 122, py: 78 },
 };
 const SKEYS = Object.keys(SIDE.rest);
 const smix = (a, b, k) => Object.fromEntries(SKEYS.map(n => [n, a[n] + (b[n] - a[n]) * k]));
 
-export function MouthSide({ v, animate = true, labels = true }) {
+/* nasal — показать путь воздуха: true — носовая гласная (мягкое нёбо опущено, воздух идёт и через нос: французские an, on, in), false — обычная, null — без воздуха */
+export function MouthSide({ v, animate = true, labels = true, nasal = null }) {
   const target = SIDE[v] || SIDE.rest;
   const [p, setP] = useState(animate ? SIDE.rest : target);
   const cur = useRef(animate ? SIDE.rest : target), raf = useRef(0);
@@ -176,7 +188,7 @@ export function MouthSide({ v, animate = true, labels = true }) {
   const tongue = `M${f(tip[0])} ${f(tip[1])} C${f(tip[0] + 10)} ${f(tip[1] - 16)} ${f(px - 34)} ${f(py + 2)} ${f(px)} ${f(py)}`
     + ` C${f(px + 30)} ${f(py - 1)} ${f(Math.max(px + 34, 172))} ${f(py + 24)} 172 ${f(Math.max(py + 46, 124))} C171 150 170 176 170 200`
     + ` L118 200 C108 ${f(178 + J * 0.4)} 94 ${f(150 + J * 0.8)} 84 ${f(126 + J)} C78 ${f(114 + J)} ${f(tip[0] - 4)} ${f(104 + J)} ${f(tip[0])} ${f(tip[1])} Z`;
-  return <SideSvg id={id} parts={sideParts(J, gap, prot, tip)} tongue={tongue} glow={[px + 4, py + 14]} dot={[px, py - 1]} labels={labels} />;
+  return <SideSvg id={id} parts={sideParts(J, gap, prot, tip)} tongue={tongue} glow={[px + 4, py + 14]} dot={[px, py - 1]} labels={labels} nasal={nasal} air={nasal !== null} />;
 }
 
 /* Неподвижные части разреза: профиль лица, полость рта и глотка, нёбо, зубы, губы.
@@ -202,7 +214,11 @@ function sideParts(J, gap, P, tip) {
   };
 }
 
-function SideSvg({ id, parts: q, tongue, glow, dot, labels = true, note = null }) {
+/* Путь воздуха: изо рта и, у носовых гласных, через нос. Мягкое нёбо поворачивается вокруг точки, где оно
+   крепится к твёрдому: поднято — проход в нос закрыт, опущено — открыт */
+const NOSE_AIR = 'M178 60 C168 47 140 40 112 39 C86 38 62 39 44 45';
+const MOUTH_AIR = 'M184 104 C178 86 160 74 132 70 C108 67 84 72 50 76';
+function SideSvg({ id, parts: q, tongue, glow, dot, labels = true, note = null, nasal = false, air = false }) {
   return (
     <svg className="lg-side" viewBox="0 0 260 200" aria-hidden="true">
       <defs>
@@ -219,7 +235,10 @@ function SideSvg({ id, parts: q, tongue, glow, dot, labels = true, note = null }
         <path d={q.air} fill={`url(#ai${id})`} />
         <path d={q.palate} fill="none" stroke="#F3DCCD" strokeWidth="6" strokeLinecap="round" />
         <path d={q.palate} fill="none" stroke="#9A5A55" strokeWidth="1.4" strokeLinecap="round" transform="translate(0 3)" />
-        <path d={q.velum} fill="#D88E86" stroke="#9A5A55" strokeWidth="1.2" />
+        {air && <path className={`lg-nose-cav ${nasal ? 'open' : ''}`} d={NOSE_AIR} />}
+        <g className="lg-velum" style={{ transform: `rotate(${nasal ? 30 : 0}deg)`, transformOrigin: '160px 57px' }}>
+          <path d={q.velum} fill="#D88E86" stroke="#9A5A55" strokeWidth="1.2" />
+        </g>
         <path d={tongue} fill={`url(#tn${id})`} stroke="#8A3842" strokeWidth="1.5" />
         <ellipse cx={f(glow[0])} cy={f(glow[1])} rx="22" ry="7" fill="#F2A9AE" opacity="0.35" filter={`url(#sb${id})`} />
         <path d={q.upperTooth} fill="#F6F1E8" stroke="#BDB4A5" strokeWidth="1" />
@@ -233,6 +252,11 @@ function SideSvg({ id, parts: q, tongue, glow, dot, labels = true, note = null }
           <text x="196" y="150" fill="#6B4438">глотка</text>
         </g>}
         {note}
+        {air && <g className="lg-air" aria-hidden="true">
+          <path className="flow mouth" d={MOUTH_AIR} />
+          {nasal && <path className="flow nose" d={NOSE_AIR} />}
+        </g>}
+        {air && labels && <text x="104" y="22" fontSize="10.5" fontFamily="Inter, system-ui, sans-serif" fill="#6B4438" fontWeight="600">{nasal ? 'воздух идёт и через нос' : 'проход в нос закрыт'}</text>}
       </g>
     </svg>
   );
@@ -246,14 +270,17 @@ export const PLACE = {
   dental: { T: [70, 80], c1: [78, 78], c2: [98, 85], D: [128, 87], c3: [150, 86], c4: [168, 101], R: [172, 126], U: [82, 121], u1: [74, 108], u2: [66, 90], dot: [68, 78], P: 0 },
   retro: { T: [88, 61], c1: [92, 70], c2: [100, 93], D: [132, 93], c3: [152, 91], c4: [168, 103], R: [172, 126], U: [82, 114], u1: [70, 100], u2: [74, 58], dot: [89, 58], P: 3 },
   palatal: { T: [71, 96], c1: [70, 78], c2: [82, 60], D: [102, 59], c3: [128, 58], c4: [162, 76], R: [172, 122], U: [82, 124], u1: [76, 114], u2: [70, 104], dot: [100, 56], P: 0 },
+  // французское картавое r: кончик за нижними зубами, задняя часть спинки поднята к маленькому язычку
+  uvular: { T: [71, 98], c1: [76, 86], c2: [104, 84], D: [146, 80], c3: [164, 76], c4: [180, 92], R: [176, 124], U: [82, 124], u1: [76, 114], u2: [70, 104], dot: [176, 84], P: 0 },
 };
 /* Где язык ближе всего: полоса на зубах или нёбе */
-const ZONE = { dental: 'M65 70 C66 74 67 78 68 82', retro: 'M80 63 C84 59 89 57 96 56', palatal: 'M90 57 C100 54 110 53 122 53' };
+const ZONE = { dental: 'M65 70 C66 74 67 78 68 82', retro: 'M80 63 C84 59 89 57 96 56', palatal: 'M90 57 C100 54 110 53 122 53', uvular: 'M172 74 C177 78 181 81 185 83' };
 export const PLACE_OF = { z: 'dental', c: 'dental', s: 'dental', zh: 'retro', ch: 'retro', sh: 'retro', r: 'retro', j: 'palatal', q: 'palatal', x: 'palatal' };
 export const PLACE_TXT = {
   dental: 'Кончик языка упирается в верхние зубы, язык лежит плоско. Воздух проходит в узкую щель между языком и зубами.',
   retro: 'Кончик языка поднят и загнут назад — к нёбу за бугорками над верхними зубами. Язык как ложка кончиком вверх.',
   palatal: 'Кончик языка опущен за нижние зубы, а передняя часть его спинки прижата к твёрдому нёбу. Губы растянуты, как в улыбке.',
+  uvular: 'Кончик языка лежит за нижними зубами и не двигается. Задняя часть спинки поднимается к маленькому язычку, и воздух шумно проходит в узкую щель между ними — как при полоскании горла, только тише.',
 };
 const PKEYS = ['T', 'c1', 'c2', 'D', 'c3', 'c4', 'R', 'U', 'u1', 'u2', 'dot'];
 const pmix = (a, b, k) => ({ ...Object.fromEntries(PKEYS.map(n => [n, [a[n][0] + (b[n][0] - a[n][0]) * k, a[n][1] + (b[n][1] - a[n][1]) * k]])), P: a.P + (b.P - a.P) * k });

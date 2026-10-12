@@ -169,3 +169,40 @@ export function analyze(samples, sr, tone) {
   const c = contourOf(track(samples, sr));
   return { contour: c, ...judge(c, tone) };
 }
+
+/* ===== Интонация фразы (французский): голос к концу вопроса поднимается, к концу утверждения опускается =====
+   В отличие от тона слога, здесь нужна вся фраза: берём все кадры с голосом по порядку, без пауз,
+   убираем скачки на октаву, сглаживаем и меряем в полутонах от середины голоса. */
+export function lineOf(frames, { points = 40 } = {}) {
+  const f = frames.map(x => x.f).filter(x => x > 0);
+  if (f.length < 15) return null;
+  let s = f.map(st);
+  for (let i = 1; i < s.length; i++) { while (s[i] - s[i - 1] > 9) s[i] -= 12; while (s[i - 1] - s[i] > 9) s[i] += 12; }
+  const mid = median(s);
+  s = s.map(x => (x - mid > 10 ? x - 12 : mid - x > 10 ? x + 12 : x));
+  s = s.map((_, i) => median(s.slice(Math.max(0, i - 3), i + 4)));
+  s = s.slice(0, s.length - Math.floor(s.length * 0.04));         // самый край — затухание
+  const res = Array.from({ length: points }, (_, k) => {
+    const pos = (k / (points - 1)) * (s.length - 1), i = Math.floor(pos), t = pos - i;
+    return s[i] + ((s[i + 1] ?? s[i]) - s[i]) * t;
+  });
+  const m = median(res);
+  return { st: res.map(x => Math.round((x - m) * 10) / 10), voiced: f.length / 100 };
+}
+/* rise — нужен подъём (вопрос «да или нет»), иначе — спокойное утверждение с понижением к концу */
+export function judgeLine(c, rise) {
+  if (!c) return { ok: false, code: 'silent', tip: 'Голос не расслышали: скажите фразу громче или поднесите телефон ближе.' };
+  const s = c.st, n = s.length, avg = a => a.reduce((p, x) => p + x, 0) / a.length;
+  // вопрос поднимается на последнем слоге, поэтому для подъёма берём вершину последней пятой части,
+  // а для утверждения — её среднее: голос должен уйти вниз и не взлететь в конце
+  const last = s.slice(Math.floor(n * 0.8)), body = avg(s.slice(Math.floor(n * 0.35), Math.floor(n * 0.75)));
+  const peak = Math.max(...last) - body, d = avg(last) - body, m = { peak, body, d };
+  if (rise) {
+    if (peak >= 2.5) return { ok: true, code: 'ok', tip: 'Голос поднялся к концу — так и звучит вопрос.', m };
+    return { ok: false, code: 'flat', tip: 'К концу голос не поднялся. Поднимите его на последнем слоге, как в удивлённом «Да?».', m };
+  }
+  if (d <= 0.5 && peak < 2.5) return { ok: true, code: 'ok', tip: 'Голос спокойно опустился к концу — так звучит утверждение.', m };
+  return { ok: false, code: 'rise', tip: 'Голос к концу поднялся, и фраза прозвучала как вопрос. Опустите его на последнем слоге.', m };
+}
+/* Линия фразы из звука целиком (запись образца) */
+export const analyzeLine = (samples, sr, rise) => { const c = lineOf(track(samples, sr)); return { contour: c, ...judgeLine(c, rise) }; };

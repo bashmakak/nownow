@@ -30,6 +30,16 @@ export const TRACKS = [
       ['zh-u15', 'a2', 4], ['zh-u16', 'a2', 4], ['zh-u17', 'a2', 4], ['zh-u18', 'a2', 4], ['zh-u19', 'a2', 4], ['zh-u20', 'a2', 4], ['zh-u21', 'a2', 4], ['zh-u22', 'a2', 4],
     ],
   },
+  {
+    code: 'fr', title: 'Французский', native: 'Français', ready: true, country: 'Франция', script: 'latin',
+    hook: 'С нуля: чтение, носовые звуки и связки слов, затем ситуации поездки — Франция, Бельгия, Швейцария и Квебек.',
+    units: [
+      ['fr-p1', 'a0', 5], ['fr-p2', 'a0', 5], ['fr-p3', 'a0', 5], ['fr-p4', 'a0', 5], ['fr-p5', 'a0', 5], ['fr-p6', 'a0', 4],
+      ['fr-u1', 'a1', 5], ['fr-u2', 'a1', 5], ['fr-u3', 'a1', 4], ['fr-u4', 'a1', 5], ['fr-u5', 'a1', 4], ['fr-u6', 'a1', 4],
+      ['fr-u7', 'a1', 5], ['fr-u8', 'a1', 5], ['fr-u9', 'a1', 5], ['fr-u10', 'a1', 4], ['fr-u11', 'a1', 5], ['fr-u12', 'a1', 4],
+      ['fr-u13', 'a2', 4], ['fr-u14', 'a2', 4], ['fr-u15', 'a2', 4], ['fr-u16', 'a2', 4], ['fr-u17', 'a2', 4], ['fr-u18', 'a2', 4], ['fr-u19', 'a2', 4], ['fr-u20', 'a2', 4],
+    ],
+  },
   { code: 'en', title: 'Английский', native: 'English', ready: false, script: 'latin', hook: 'Английский, на котором говорят с туристами в любой стране.', units: [] },
   { code: 'es', title: 'Испанский', native: 'Español', ready: false, script: 'latin', hook: 'Испания и Латинская Америка: от бара с тапас до рынка в Мехико.', units: [] },
 ];
@@ -40,7 +50,7 @@ export const levelsOf = code => LEVELS.filter(l => (TRACK_BY[code] ? TRACK_BY[co
 export const levelLessons = (code, level) => (TRACK_BY[code] ? TRACK_BY[code].units.filter(u => u[1] === level).reduce((n, u) => n + u[2], 0) : 0);
 
 /* Загрузка текста трека по требованию */
-const LOADERS = { zh: () => import('./zh.js') };
+const LOADERS = { zh: () => import('./zh.js'), fr: () => import('./fr.js') };
 const cache = {};
 export function loadTrack(code) {
   if (!LOADERS[code]) return Promise.reject(new Error('no track'));
