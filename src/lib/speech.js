@@ -65,9 +65,10 @@ export function useVoice(lang) {
 
 /* Прочитать фразу или слог. py — пиньинь: по нему находится запись слога. slow — медленнее.
    Возвращает false, если ни файла, ни голоса нет */
-export function speak(text, lang, { slow = false, voice, py } = {}) {
-  // медленно: у слога есть учебная запись — она уже медленная, иначе замедляем обычную
-  const url = audioUrl(lang, { zh: text, py }, { slow });
+export function speak(text, lang, { slow = false, voice, py, variant } = {}) {
+  // медленно: у слога есть учебная запись — она уже медленная, иначе замедляем обычную.
+  // variant — голос другой страны (mx, ar), если такой файл собран
+  const url = audioUrl(lang, { zh: text, py, v: variant }, { slow });
   const teach = slow && url && /\/x-[^/]+$/.test(url);
   if (url) { if (ok()) window.speechSynthesis.cancel(); playUrl(url, { slow: slow && !teach }); return true; }
   if (!ok()) return false;

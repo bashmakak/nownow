@@ -9,7 +9,7 @@ import { SYLLABLES, mark, parseSyllable, retone, splitSyllable, spoken3, syllabl
 
 const PUNCT = /[，。？！、；：…,.?!;:]/g;
 export const clean = s => s.replace(PUNCT, '').trim();
-const cleanLat = s => s.replace(/[,.?!;:…«»"“”()]/g, '').trim();
+const cleanLat = s => s.replace(/[,.?!;:…«»"“”()¿¡]/g, '').trim();
 /* Связка или сцепление слов во французском: в данных — знак ‿ между словами (vous‿avez).
    В записи фразы он рисуется дужкой, для плиток и звука это обычный промежуток */
 export const LINK = '‿';
@@ -368,7 +368,7 @@ function phoneticTasks(src, audio, rnd, out, latin = false) {
   shuffle(src.spell || [], rnd).forEach(x => out.push(spellTask(x, rnd)));
 }
 
-/* ---------- задания для латиницы (французский) ---------- */
+/* ---------- задания для латиницы (французский, испанский) ---------- */
 /* Немые буквы: в данных они в скобках — peti(t), (h)ôtel, beau(x). Задание: отметить буквы, которые не звучат */
 export function silentOf(src) {
   const letters = []; let mute = false;
@@ -409,7 +409,7 @@ function latinTasks(src, audio, rnd, out) {
   shuffle(src.body || [], rnd).forEach(([say, zone, ru]) => out.push({ type: 'body', say, zone, ru: ru || '' }));
   // порядок событий в рассказе: события даны по порядку, на экране — вперемешку
   shuffle(src.order || [], rnd).forEach(([say, items]) => out.push({ type: 'order', say, items, bank: shuffle(items.map((t, k) => ({ t, k })), rnd) }));
-  (src.board ? [src.board] : []).forEach(b => shuffle(b.ask, rnd).forEach(([say, row]) => out.push({ type: 'board', rows: b.rows, head: b.head, say, correct: row })));
+  (src.board ? [src.board] : []).forEach(b => shuffle(b.ask, rnd).forEach(([say, row]) => out.push({ type: 'board', rows: b.rows, head: b.head, title: b.title || '', say, correct: row })));
 }
 
 /* Сборка фразы из слов: верные плитки и одна-две лишние из других фраз */

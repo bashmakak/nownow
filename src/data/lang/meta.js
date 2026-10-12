@@ -41,7 +41,16 @@ export const TRACKS = [
     ],
   },
   { code: 'en', title: 'Английский', native: 'English', ready: false, script: 'latin', hook: 'Английский, на котором говорят с туристами в любой стране.', units: [] },
-  { code: 'es', title: 'Испанский', native: 'Español', ready: false, script: 'latin', hook: 'Испания и Латинская Америка: от бара с тапас до рынка в Мехико.', units: [] },
+  {
+    code: 'es', title: 'Испанский', native: 'Español', ready: true, country: 'Испания', script: 'latin',
+    hook: 'С нуля: чтение, ударение и раскатистое rr, затем ситуации поездки — Испания, Мексика и Аргентина.',
+    units: [
+      ['es-p1', 'a0', 5], ['es-p2', 'a0', 5], ['es-p3', 'a0', 5], ['es-p4', 'a0', 5],
+      ['es-u1', 'a1', 5], ['es-u2', 'a1', 5], ['es-u3', 'a1', 4], ['es-u4', 'a1', 4], ['es-u5', 'a1', 4], ['es-u6', 'a1', 4],
+      ['es-u7', 'a1', 5], ['es-u8', 'a1', 4], ['es-u9', 'a1', 5], ['es-u10', 'a1', 4], ['es-u11', 'a1', 5], ['es-u12', 'a1', 4],
+      ['es-u13', 'a2', 4], ['es-u14', 'a2', 4], ['es-u15', 'a2', 4], ['es-u16', 'a2', 4], ['es-u17', 'a2', 4], ['es-u18', 'a2', 4], ['es-u19', 'a2', 4], ['es-u20', 'a2', 5],
+    ],
+  },
 ];
 export const TRACK_BY = Object.fromEntries(TRACKS.map(t => [t.code, t]));
 export const LANG_LESSONS = code => (TRACK_BY[code] ? TRACK_BY[code].units.reduce((n, u) => n + u[2], 0) : 0);
@@ -50,7 +59,7 @@ export const levelsOf = code => LEVELS.filter(l => (TRACK_BY[code] ? TRACK_BY[co
 export const levelLessons = (code, level) => (TRACK_BY[code] ? TRACK_BY[code].units.filter(u => u[1] === level).reduce((n, u) => n + u[2], 0) : 0);
 
 /* Загрузка текста трека по требованию */
-const LOADERS = { zh: () => import('./zh.js'), fr: () => import('./fr.js') };
+const LOADERS = { zh: () => import('./zh.js'), fr: () => import('./fr.js'), es: () => import('./es.js') };
 const cache = {};
 export function loadTrack(code) {
   if (!LOADERS[code]) return Promise.reject(new Error('no track'));

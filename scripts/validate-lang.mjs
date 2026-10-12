@@ -7,9 +7,10 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import zh from '../src/data/lang/zh.js';
 import fr from '../src/data/lang/fr.js';
+import es from '../src/data/lang/es.js';
 import { LETTERS, letterData } from '../src/data/lang/letters.js';
 import { audioNeeds, latinNeeds } from './audio-list.mjs';
-import { FR_DEMOS, FR_VIEWS } from '../src/lib/fr-data.js';
+import { FR_DEMOS, FR_VIEWS, demoKind } from '../src/lib/fr-data.js';
 import { LEVEL_BY, TRACK_BY, levelsOf } from '../src/data/lang/meta.js';
 import { EXPLAIN, buildLesson, buildPlacement, buildReview, charTable, indexTrack, isGraded, linksOf, phrase, silentOf } from '../src/lib/lang-engine.js';
 import { SYLLABLES, hanziCount, numbered, parseSyllable, splitSyllable, syllables } from '../src/lib/pinyin.js';
@@ -75,6 +76,8 @@ function checkTrack(track) {
         line[2].forEach(id => ok(ix.phrases[id] && id !== line[1], `${where}: неверный вариант ${id}`));
         ok(new Set([line[1], ...line[2]].map(id => ix.phrases[id] && ix.phrases[id].zh)).size === 3, `${where}: варианты совпадают`);
       });
+      if (l.voice) ok(['mx', 'ar'].includes(l.voice) && track.code === 'es', `${l.id}: голос ${l.voice}`);
+      if (l.board && l.board.title !== undefined) ok(l.board.title, `${l.id}: заголовок табло`);
       if (l.card) ok(l.card.t && l.card.x && (!l.card.src || /^https:\/\//.test(l.card.src.url)), `${l.id}: карточка`);
       (l.write || []).forEach(([z, p, ru]) => {
         const s = syllables(p);
@@ -162,14 +165,23 @@ function checkTrack(track) {
 /* ---------- латиница (французский) ---------- */
 const NBSP = ' ';
 const BODY_ZONES = ['head', 'ear', 'teeth', 'throat', 'arm', 'belly', 'knee', 'foot'];
+/* Текст трека на латинице. Французский: перед ? ! : ; — неразрывный пробел.
+   Испанский: пробела перед знаками нет, вопрос и восклицание открываются перевёрнутым знаком ¿ ¡ */
+let LANG = 'fr';
 function checkFrText(t, where) {
   ok(typeof t === 'string' && t.trim() === t && !/ {2}/.test(t), `${where}: лишние пробелы «${t}»`);
-  ok(!/ [?!:;»]/.test(t), `${where}: перед ? ! : ; нужен неразрывный пробел «${t}»`);
+  if (LANG === 'fr') ok(!/ [?!:;»]/.test(t), `${where}: перед ? ! : ; нужен неразрывный пробел «${t}»`);
+  if (LANG === 'es') {
+    ok(!/[\s\u00a0][?!:;,.]/.test(t), `${where}: пробел перед знаком «${t}»`);
+    const q = (t.match(/\?/g) || []).length, iq = (t.match(/¿/g) || []).length, e = (t.match(/!/g) || []).length, ie = (t.match(/¡/g) || []).length;
+    ok(q === iq && e === ie, `${where}: у ? и ! нет пары ¿ ¡ «${t}»`);
+  }
   ok(!/(^|[ ‿])‿|‿($|[ ‿])/.test(t), `${where}: дужка не между словами «${t}»`);
-  ok(!/[一-鿿]/.test(t), `${where}: иероглифы во французском тексте`);
+  ok(!/[一-鿿]/.test(t), `${where}: иероглифы в тексте на латинице`);
 }
 const frWord = (w, where) => { ok(typeof w === 'string' && w && !/[‿()]/.test(w), `${where}: слово «${w}»`); };
 function checkLatinTrack(track) {
+  LANG = track.code;
   const meta = TRACK_BY[track.code];
   ok(meta && meta.ready && meta.script === 'latin' && track.script === 'latin', `${track.code}: нет в meta.js или не латиница`);
   ok(track.inLang && track.lang, `${track.code}: нет inLang или lang`);
@@ -194,10 +206,18 @@ function checkLatinTrack(track) {
       ok(!lessonIds.has(l.id) && l.id.startsWith(`${u.id}-`), `урок ${l.id}: повтор или чужой префикс`); lessonIds.add(l.id);
       ok(l.title && l.goal, `${l.id}: нет названия или цели`);
       (l.ph || []).forEach(id => { ok(ix.phrases[id], `${l.id}: нет фразы ${id}`); ok(!used.has(id), `${l.id}: фраза ${id} уже вводилась в другом уроке`); used.add(id); });
-      [...(l.intro || []), ...(l.rule ? [l.rule] : [])].forEach((r, j) => {
-        ok(r.t && r.x && (r.demo === undefined || FR_DEMOS.includes(r.demo)), `${l.id}: карточка ${j + 1} (схема «${r.demo}»)`);
+      [...(l.intro || []), ...(l.rule ? [l.rule] : [])].forEach((r0, j) => {
+        ok(r0.t && r0.x && (r0.demo === undefined || FR_DEMOS.includes(r0.demo)), `${l.id}: карточка ${j + 1} (схема «${r0.demo}»)`);
+        ok(!r0.demo || r0.demo.startsWith(`${track.code}-`), `${l.id}: схема ${r0.demo} другого языка`);
+        const r = { ...r0, demo: demoKind(r0.demo) };
+        if (r.demo === 'es-rr') ok(r.w.every(x => x.length === 2 && x[1].includes('rr')), `${l.id}: пары r и rr`);
+        if (r.demo === 'es-world') ok(r.w.every(x => x.length === 4 && x.slice(1).every(Boolean)), `${l.id}: слова для схемы стран`);
+        if (r.demo === 'es-false') ok(r.combo.every(x => x.length === 3 && x.every(Boolean)), `${l.id}: ложные друзья`);
+        if (r.demo === 'fr-floors' && r.w) ok(r.w.length >= 3 && r.w.every(x => x[0] && x[1]), `${l.id}: этажи`);
+        if (r.demo === 'fr-steak' && r.w) ok(r.w.length >= 3 && r.w.every(x => x[0] && x[1] && /^#[0-9A-F]{6}$/i.test(x[2])), `${l.id}: прожарка`);
         if (['fr-stress', 'fr-silent', 'fr-count'].includes(r.demo)) ok(Array.isArray(r.w) && r.w.length >= 2, `${l.id}: слова для схемы ${r.demo}`);
         if (r.demo === 'fr-stress') r.w.forEach(w => ok(w.includes('·') || !/[aeiouyéèêàâîôûœ].*[aeiouyéèêàâîôûœ]/i.test(w), `${l.id}: ${w} — слоги через точку`));
+        if (r0.demo === 'es-stress') r.w.forEach(w => ok((w.match(/ˈ/g) || []).length === 1 && w.split('·').length >= 2, `${l.id}: ${w} — слоги через точку и один знак ˈ`));
         if (r.demo === 'fr-nasal') ok(r.w.every(x => x.length === 3 && x[0] !== x[1]), `${l.id}: пары для схемы носовых`);
         if (r.demo === 'fr-lips') ok(r.w.every(x => x.length === 3), `${l.id}: шаги для схемы губ`);
         if (r.demo === 'fr-link') ok(r.w.every(x => x.length === 2), `${l.id}: связки для схемы`);
@@ -218,7 +238,7 @@ function checkLatinTrack(track) {
       if (l.hear) ok(l.hearAsk, `${l.id}: нет вопроса hearAsk к заданиям на слух`);
       (l.dictee || []).forEach(d => (Array.isArray(d) ? ok(d[0] && d[1] && !/\s/.test(d[1]), `${l.id}: диктант по буквам ${d[1]}`) : frWord(d, `${l.id} диктант`)));
       (l.route || []).forEach(([sayText, path]) => { checkFrText(sayText, `${l.id} маршрут`); ok(/^[LUR]( [LUR])*$/.test(path), `${l.id}: стрелки маршрута «${path}»`); });
-      (l.digits || []).forEach(([sayText, d]) => ok(sayText && /^\d{10}$/.test(d), `${l.id}: номер ${d}`));
+      (l.digits || []).forEach(([sayText, d]) => ok(sayText && (track.code === 'es' ? /^[6789]\d{8}$/ : /^\d{10}$/).test(d), `${l.id}: номер ${d}`));
       (l.body || []).forEach(([sayText, zone]) => { checkFrText(sayText, `${l.id} тело`); ok(BODY_ZONES.includes(zone), `${l.id}: часть тела ${zone}`); });
       if (l.board) ok(l.board.head.length === l.board.rows[0].length && l.board.rows.every(r => r.length === l.board.head.length) && l.board.ask.every(([t, k]) => t && l.board.rows[k]), `${l.id}: табло`);
       (l.order || []).forEach(([t, items]) => { checkFrText(t, `${l.id} рассказ`); ok(items.length >= 3 && new Set(items).size === items.length, `${l.id}: события рассказа`); });
@@ -236,6 +256,8 @@ function checkLatinTrack(track) {
         line[2].forEach(id => ok(ix.phrases[id] && id !== line[1], `${where}: неверный вариант ${id}`));
         ok(new Set([line[1], ...line[2]].map(id => ix.phrases[id] && ix.phrases[id].zh)).size === line[2].length + 1, `${where}: варианты совпадают`);
       });
+      if (l.voice) ok(['mx', 'ar'].includes(l.voice) && track.code === 'es', `${l.id}: голос ${l.voice}`);
+      if (l.board && l.board.title !== undefined) ok(l.board.title, `${l.id}: заголовок табло`);
       if (l.card) ok(l.card.t && l.card.x && (!l.card.src || (/^https:\/\//.test(l.card.src.url) && l.card.checked)), `${l.id}: карточка`);
       if (u.level === 'a0') ok(!(l.ph || []).length && !l.dialog, `${l.id}: на уровне «С нуля» нет фраз — только звуки, чтение и слова`);
       if (l.mixSounds || l.mixLevel) ok(l.kind === 'scene', `${l.id}: проверка должна быть последним уроком мини-курса`);
@@ -315,7 +337,7 @@ function checkTask(t, where) {
   } else if (t.type === 'route') {
     ok(t.say && t.answer.length >= 1 && t.answer.every(x => 'LUR'.includes(x)), `${where}: маршрут`);
   } else if (t.type === 'digits') {
-    ok(t.say && /^\d{10}$/.test(t.answer), `${where}: номер`);
+    ok(t.say && /^\d{9,10}$/.test(t.answer), `${where}: номер`);
   } else if (t.type === 'body') {
     ok(t.say && BODY_ZONES.includes(t.zone), `${where}: тело`);
   } else if (t.type === 'board') {
@@ -333,6 +355,7 @@ function checkTask(t, where) {
 
 checkTrack(zh);
 checkLatinTrack(fr);
+checkLatinTrack(es);
 // латиница для прописей: у каждой буквы есть черты, средние линии внутри поля и контур
 LETTERS.forEach(ch => {
   const d = letterData(ch);

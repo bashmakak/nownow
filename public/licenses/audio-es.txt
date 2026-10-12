@@ -1,0 +1,26 @@
+Звук испанского курса NowNow (audio/es/)
+
+Все файлы (t-*.mp3) — синтез речи Piper (rhasspy, код — лицензия MIT) через sherpa-onnx (k2-fsa, лицензия Apache 2.0).
+Сборка: scripts/audio/make_audio_es.py в репозитории сайта. Записей носителей пока нет.
+
+1. Голоса Испании — модель Piper es_ES-sharvard-medium (женский и мужской голос), обучена на корпусе Sharvard
+   (University of Edinburgh, https://datashare.ed.ac.uk/handle/10283/574).
+   Лицензия корпуса: Creative Commons Attribution 3.0 (CC BY 3.0).
+   Женским голосом озвучены слова и фразы ученика, мужским — реплики собеседника в сценариях.
+
+2. Запасной голос Испании — модель Piper es_ES-davefx-medium (https://github.com/NabuCasa/voice-datasets).
+   Лицензия: CC0 (общественное достояние). Им озвучены фразы, которые распознавание речи поняло неверно
+   в исполнении первого голоса.
+
+3. Голос Мексики — модель Piper es_MX-claude-high (https://huggingface.co/spaces/HirCoir/Piper-TTS-Spanish).
+   Лицензия: Apache 2.0. Им озвучены фразы и сценарии мини-курса «Испанский Америки» и мексиканский вариант
+   слов в схеме «Испания, Мексика, Аргентина».
+
+4. Голос Аргентины — модель Piper es_AR-daniela-high, обучена на корпусе OpenSLR 61
+   (Crowdsourced high-quality Argentinian Spanish speech data set, Google, https://www.openslr.org/61/);
+   модель — https://huggingface.co/larcanio/piper-voices.
+   Лицензия: Creative Commons Attribution-ShareAlike 4.0 (CC BY-SA 4.0). Файлы этого голоса распространяются
+   на тех же условиях CC BY-SA 4.0.
+
+Каждую фразу проверяло распознавание речи Whisper (OpenAI, лицензия MIT; сборка sherpa-onnx),
+отдельные слова — по фонетической записи espeak-ng.

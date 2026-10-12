@@ -13,7 +13,7 @@ import { sparkFrom } from '../lib/fx.js';
 import { CLOUD } from '../config.js';
 import { GAMES } from '../data/brain.js';
 import { ForYou } from '../components/Interests.jsx';
-import { LANG_LESSONS, TRACKS, levelsOf } from '../data/lang/meta.js';
+import { LANG_LESSONS, TRACKS } from '../data/lang/meta.js';
 
 const TL_COLORS = ['#D8FF5A', '#B6F66B', '#93EC79', '#6BE285', '#3FD68F', '#00C897'];
 const DEMO_TOPICS = [['', 'Все'], ['psihologiya', 'Психология'], ['lichnye-finansy', 'Финансы'], ['iskusstvennyj-intellekt', 'ИИ']];
@@ -154,6 +154,15 @@ function Timeline() {
   );
 }
 
+/* Заголовок блока языков: готовые треки и сколько в них уроков */
+function langTitle() {
+  const ready = TRACKS.filter(t => t.ready);
+  const names = ready.map((t, k) => (k ? t.title.toLowerCase() : t.title));
+  const list = names.length > 1 ? `${names.slice(0, -1).join(', ')} и ${names.at(-1)}` : names[0];
+  const n = ready.reduce((a, t) => a + LANG_LESSONS(t.code), 0);
+  return `${list} с нуля до A2: ${n} ${plural(n, ['короткий урок', 'коротких урока', 'коротких уроков'])}`;
+}
+
 export default function Home() {
   useTitle('');
   return (
@@ -220,12 +229,12 @@ export default function Home() {
           <div className="authors-cta lang-cta" data-rv="">
             <div className="stack" style={{ gap: 10 }}>
               <span className="label">Языки для путешествий</span>
-              <h2 className="h2">Китайский с нуля до {levelsOf('zh').at(-1).code}: {LANG_LESSONS('zh')} {plural(LANG_LESSONS('zh'), ['короткий урок', 'коротких урока', 'коротких уроков'])}</h2>
-              <p className="lead">Уровни по шкале CEFR: от звуков и первых иероглифов до разговоров в поездке. Задания как в языковых приложениях, прописи, где знаки обводят пальцем, повторение фраз и разговорник для печати. Плюс правила страны: оплата, интернет, регистрация.{TRACKS.some(t => !t.ready) && ` ${TRACKS.filter(t => !t.ready).map((t, k) => (k ? t.title.toLowerCase() : t.title)).join(' и ')} ${TRACKS.filter(t => !t.ready).length > 1 ? 'готовятся' : 'готовится'}.`}</p>
+              <h2 className="h2">{langTitle()}</h2>
+              <p className="lead">Уровни по шкале CEFR: от звуков и правил чтения до разговоров в поездке. Задания как в языковых приложениях, прописи, где буквы и знаки обводят пальцем, повторение фраз и разговорник для печати. Плюс правила страны: оплата, транспорт, экстренные номера.{TRACKS.some(t => !t.ready) && ` ${TRACKS.filter(t => !t.ready).map((t, k) => (k ? t.title.toLowerCase() : t.title)).join(' и ')} ${TRACKS.filter(t => !t.ready).length > 1 ? 'готовятся' : 'готовится'}.`}</p>
             </div>
             <div className="lang-cta-side">
               <span className="lang-cta-zh" lang="zh-CN" aria-hidden="true">你好</span>
-              <div className="row"><Link className="btn btn-primary btn-lg" to="/lang/zh"><Icon name="message-circle" size={18} />Начать китайский</Link><Link className="btn btn-secondary btn-lg" to="/lang">Все языки</Link></div>
+              <div className="row"><Link className="btn btn-primary btn-lg" to="/lang"><Icon name="message-circle" size={18} />Выбрать язык</Link><Link className="btn btn-secondary btn-lg" to="/lang/zh">Начать китайский</Link></div>
             </div>
           </div>
         </div>

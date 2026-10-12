@@ -20,7 +20,7 @@ import ToneChart, { ToneIcon } from '../components/ToneChart.jsx';
 import ToneMic, { micSupported } from '../components/ToneMic.jsx';
 import { BreathDemo, MouthDemo, PinyinDemo, SyllableBuilder, TonesDemo, TongueDemo, demosFor } from '../components/LangDemos.jsx';
 import { FrSoundView, FrText, frRuleDemo, hasFrView } from '../components/FrDemos.jsx';
-import { frPlain } from '../lib/fr-data.js';
+import { frPlain, setTextLang, textLang } from '../lib/fr-data.js';
 import { FrTask, FR_TASKS, FrExplain } from '../components/FrTasks.jsx';
 import { VOWEL_EX } from '../lib/demo-data.js';
 import NotFound from './NotFound.jsx';
@@ -88,6 +88,7 @@ function Gate({ code, player = false, children }) {
     );
   }
   if (!t.ix) return player ? <div className="pl-wait" role="status"><Mark size={28} /><span>Загружаем урок…</span></div> : <section className="page" aria-busy="true"><div className="wrap"><p className="muted" role="status">Загружаем курс…</p></div></section>;
+  setTextLang(t.ix.track.code);        // язык текста для схем и заданий латиницы
   return children(t.ix);
 }
 
@@ -309,6 +310,9 @@ function TrackBody({ ix }) {
         </div>
         {t.audio && t.code === 'fr' && (
           <p className="wr-credits" id="lg-audio-credits">Звук: слова и фразы озвучены синтезом речи Piper — голоса siwis (по записям корпуса SIWIS, лицензия CC BY 4.0) и upmc (по записям корпуса UPMC, лицензия CC BY-SA 4.0). Каждую фразу мы проверили распознаванием речи, а слова — по фонетической записи. Записи носителей появятся позже. <a href="licenses/audio-fr.txt" target="_blank" rel="noopener">Подробнее о лицензиях</a>.</p>
+        )}
+        {t.audio && t.code === 'es' && (
+          <p className="wr-credits" id="lg-audio-credits">Звук: слова и фразы озвучены синтезом речи Piper — голоса sharvard (по записям корпуса Sharvard, лицензия CC BY 3.0) и davefx (CC0) для Испании, claude (Apache 2.0) для Мексики и daniela (CC BY-SA 4.0) для Аргентины. Каждую фразу мы проверили распознаванием речи, а слова — по фонетической записи. Записи носителей появятся позже. <a href="licenses/audio-es.txt" target="_blank" rel="noopener">Подробнее о лицензиях</a>.</p>
         )}
         {t.audio && t.code === 'zh' && (
           <p className="wr-credits" id="lg-audio-credits">Звук: слоги — записи носителя из проекта <a href="https://github.com/hugolpz/audio-cmn" target="_blank" rel="noopener noreferrer">audio-cmn</a> (голос Chen Wang), слова — записи Yue Tan из того же проекта (Shtooka), обе коллекции — по лицензии CC BY-SA; фразы целиком — синтез речи Kokoro (Apache 2.0). Тоны синтез передаёт неточно, поэтому для тонов ориентируйтесь на записи носителя: слоги, слова и кнопку «По словам». <a href="licenses/audio-zh.txt" target="_blank" rel="noopener">Подробнее о лицензиях</a>.</p>
@@ -618,7 +622,7 @@ function Intro({ task: { p }, lang, voice, onNext }) {
 /* Наглядная схема к правилу: demo в данных урока */
 function ruleDemo(rule, { lang, voice }) {
   const kind = rule.demo;
-  if (kind && kind.startsWith('fr-')) return frRuleDemo(rule, { lang, voice });
+  if (kind && /^(fr|es)-/.test(kind)) return frRuleDemo(rule, { lang, voice });
   if (kind === 'tones') return <TonesDemo lang={lang} voice={voice} labels={TONE_EXAMPLES} />;
   if (kind === 'pinyin') return <PinyinDemo lang={lang} voice={voice} />;
   if (kind === 'syllable') return <SyllableBuilder lang={lang} voice={voice} />;
@@ -983,7 +987,7 @@ function WriteTask({ task: x, lang, voice, answer, onAnswer }) {
     <>
       <p className="tr-ask lg-ask">{latin ? (memory ? 'Напишите букву по памяти' : 'Обведите букву по контуру') : memory ? 'Напишите знак по памяти' : 'Обведите знак по контуру'}</p>
       <div className="lg-write-head">
-        {latin ? <span className="tx lg-write-zh" lang="fr">{x.ch.zh}</span> : !memory && <span className="zh lg-write-zh" lang="zh-CN">{x.ch.zh}</span>}
+        {latin ? <span className="tx lg-write-zh" lang={textLang()}>{x.ch.zh}</span> : !memory && <span className="zh lg-write-zh" lang="zh-CN">{x.ch.zh}</span>}
         {!latin && <div className="lg-write-meta"><span className="py">{x.ch.py}</span><span className="lg-write-ru">{x.ch.ru}</span></div>}
         {!latin && <SpeakBtn text={x.ch.zh} py={x.ch.py} lang={lang} voice={voice} />}
       </div>

@@ -6,7 +6,8 @@
    (такую сборщик может склеить из записей слогов носителя, если нет записи слова целиком). */
 import zh from '../src/data/lang/zh.js';
 import fr from '../src/data/lang/fr.js';
-import { frDemoWords, frPlain } from '../src/lib/fr-data.js';
+import es from '../src/data/lang/es.js';
+import { frDemoVariants, frDemoWords, frPlain } from '../src/lib/fr-data.js';
 import { TONE_EXAMPLES, charTable, indexTrack } from '../src/lib/lang-engine.js';
 import { keysFor, sylKey, textKey } from '../src/lib/audio-keys.js';
 import { airPair, parseSyllable, splitSyllable, syllables, withInitial } from '../src/lib/pinyin.js';
@@ -57,43 +58,49 @@ export function audioNeeds(track) {
   return [...need.values()];
 }
 
-/* Латиница (французский): всё озвучивается по тексту. Поля: key, text — что синтезировать (без дужек и скобок),
-   role — чья реплика: me — фраза ученика, them — собеседник, word — отдельное слово, tile — слово из фразы */
+/* Латиница (французский, испанский): всё озвучивается по тексту. Поля: key, text — что синтезировать (без дужек и скобок),
+   role — чья реплика: me — фраза ученика, them — собеседник, word — отдельное слово, tile — слово из фразы.
+   Голос другой страны (испанский Мексики и Аргентины) — суффикс роли: me-mx, them-ar. Он берётся у фразы с id mx-… или ar-…
+   и у урока с полем voice: 'mx'. Слово схемы es-world звучит в трёх вариантах: ключи t:…, mx:t:…, ar:t:… */
 export function latinNeeds(track) {
   const ix = indexTrack(track), need = new Map();
-  const add = (src, role) => {
+  // voice — голос страны для обычного ключа; variant — отдельный ключ mx:t:… рядом с испанским t:…
+  const add = (src, role, { voice = '', variant = '' } = {}) => {
     const text = frPlain(src);
-    const k = textKey(text);
-    if (k === 't:' || need.has(k)) return;
-    need.set(k, { key: k, text, role, words: text.split(' ').length });
+    const k = (variant ? `${variant}:` : '') + textKey(text);
+    if (k.endsWith('t:') || need.has(k)) return;
+    const v = variant || voice;
+    need.set(k, { key: k, text, role: v ? `${role}-${v}` : role, words: text.split(' ').length });
   };
-  Object.values(ix.phrases).forEach(p => add(p.zh, 'me'));
+  const vOf = id => (/^(mx|ar)-/.test(id) ? id.slice(0, 2) : '');
+  Object.values(ix.phrases).forEach(p => add(p.zh, 'me', { voice: vOf(p.id) }));
   Object.values(ix.phrases).forEach(p => p.tiles.forEach(t => add(t.zh, 'tile')));
   Object.values(ix.vocab).forEach(w => add(w.zh, 'word'));
   ix.lessons.forEach(l => {
-    (l.dialog || []).forEach(line => { if (line[0] === 'them') add(line[1], 'them'); });
+    (l.dialog || []).forEach(line => { if (line[0] === 'them') add(line[1], 'them', { voice: l.voice || '' }); });
     [...(l.intro || []), ...(l.rule ? [l.rule] : [])].forEach(r => frDemoWords(r).forEach(w => add(w, 'word')));
+    [...(l.intro || []), ...(l.rule ? [l.rule] : [])].forEach(r => frDemoVariants(r).forEach(({ text, v }) => add(text, 'word', { variant: v })));
     (l.sounds || []).forEach(([, , ex]) => ex.forEach(w => add(w, 'word')));
     (l.repeat || []).forEach(w => add(w, 'word'));
     (l.pick || []).forEach(([w, others]) => [w, ...others].forEach(x => add(x, 'word')));
     (l.minimal || []).forEach(pair => pair.forEach(x => add(x, 'word')));
     (l.silent || []).forEach(w => add(w, 'word'));
     (l.link || []).forEach(w => add(w, 'me'));
-    (l.hear || []).forEach(([w]) => add(w, 'me'));
+    (l.hear || []).forEach(([w]) => add(w, 'me', { voice: l.voice || '' }));
     (l.dictee || []).forEach(d => add(Array.isArray(d) ? d[0] : d, Array.isArray(d) ? 'them' : 'word'));
     ((l.sort && l.sort.items) || []).forEach(([w]) => add(w, 'word'));
-    (l.route || []).forEach(([w]) => add(w, 'them'));
-    (l.digits || []).forEach(([w]) => add(w, 'them'));
+    (l.route || []).forEach(([w]) => add(w, 'them', { voice: l.voice || '' }));
+    (l.digits || []).forEach(([w]) => add(w, 'them', { voice: l.voice || '' }));
     (l.body || []).forEach(([w]) => add(w, 'me'));
-    ((l.board && l.board.ask) || []).forEach(([w]) => add(w, 'them'));
+    ((l.board && l.board.ask) || []).forEach(([w]) => add(w, 'them', { voice: l.voice || '' }));
     (l.speakQ || []).forEach(([w]) => add(w, 'me'));
-    (l.order || []).forEach(([w]) => add(w, 'them'));
+    (l.order || []).forEach(([w]) => add(w, 'them', { voice: l.voice || '' }));
   });
   return [...need.values()];
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const code = process.argv[2] || 'zh';
-  console.log(JSON.stringify(code === 'fr' ? latinNeeds(fr) : audioNeeds(zh), null, 0));
+  console.log(JSON.stringify(code === 'fr' ? latinNeeds(fr) : code === 'es' ? latinNeeds(es) : audioNeeds(zh), null, 0));
 }
 export { textKey };

@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { speak } from '../lib/speech.js';
 import { analyzeLine } from '../lib/pitch.js';
 import { micSupported, useRecorder } from './ToneMic.jsx';
-import { frPlain } from '../lib/fr-data.js';
+import { frPlain, latinOf, textLang } from '../lib/fr-data.js';
 import { sparkFrom } from '../lib/fx.js';
 import { Icon } from './Icon.jsx';
 import { FrText } from './FrDemos.jsx';
 
-/* ===== Задания французского курса =====
+/* ===== Задания курсов на латинице (французский, испанский) =====
    silent — отметить немые буквы; liaison — поставить дужки там, где слова связываются;
    dictee — написать услышанное слово; sort — разложить слова по двум группам.
    Задания собирает lib/lang-engine.js; ответ проверяется здесь и передаётся в плеер через onAnswer(ok). */
@@ -43,7 +43,7 @@ function Silent({ task: x, lang, voice, answer, onAnswer }) {
     <>
       <p className="tr-ask lg-ask">Какие буквы в этом слове не читаются?</p>
       <p className="muted">Нажмите на немые буквы. Если читаются все — сразу нажмите «Проверить».</p>
-      <div className={`fr-letters ${answer ? 'done' : ''}`} id="fr-letters" role="group" aria-label={`Буквы слова ${x.w}`} lang="fr">
+      <div className={`fr-letters ${answer ? 'done' : ''}`} id="fr-letters" role="group" aria-label={`Буквы слова ${x.w}`} lang={textLang()}>
         {x.letters.map((l, k) => (l.tap ? (
           <button type="button" key={k} data-k={k} data-mute={l.mute ? '1' : undefined}
             className={`fr-letter ${sel.has(k) ? 'on' : ''} ${answer ? (l.mute ? 'is-mute' : '') + (l.mute !== sel.has(k) ? ' miss' : '') : ''}`}
@@ -69,9 +69,9 @@ function Liaison({ task: x, lang, voice, answer, onAnswer }) {
   return (
     <>
       <p className="tr-ask lg-ask">Где слова звучат слитно?</p>
-      <p className="muted">{voice ? 'Послушайте и нажмите на промежутки, где согласный переходит к следующему слову.' : 'Нажмите на промежутки, где слова связываются: согласный переходит к следующему слову.'}{' '}Связок может и не быть.</p>
+      <p className="muted">{voice ? `Послушайте и нажмите на промежутки, где ${latinOf().link}.` : `Нажмите на промежутки, где слова связываются: ${latinOf().link}.`}{' '}Связок может и не быть.</p>
       <Listen text={x.say} lang={lang} voice={voice} auto />
-      <div className={`fr-gaps ${answer ? 'done' : ''}`} id="fr-gaps" lang="fr">
+      <div className={`fr-gaps ${answer ? 'done' : ''}`} id="fr-gaps" lang={textLang()}>
         {x.words.map((w, k) => (
           <span key={k} className="fr-gw">
             <span className="tx">{w}</span>
@@ -91,7 +91,6 @@ function Liaison({ task: x, lang, voice, answer, onAnswer }) {
 }
 
 /* ---------- диктант: услышать и написать ---------- */
-const ACCENTS = ['é', 'è', 'ê', 'à', 'â', 'ç', 'ù', 'û', 'î', 'ï', 'ô', 'œ', 'ë', "'"];
 const norm = s => String(s || '').trim().toLowerCase().replace(/[’`]/g, "'").replace(/\s+/g, ' ');
 const bare = s => norm(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/œ/g, 'oe');
 function Dictee({ task: x, lang, voice, answer, onAnswer }) {
@@ -115,10 +114,10 @@ function Dictee({ task: x, lang, voice, answer, onAnswer }) {
     <form className="fr-dictee" onSubmit={check} data-w={x.w}>
       <p className="tr-ask lg-ask">{x.say !== x.w ? 'Запишите фамилию, которую продиктовали по буквам' : 'Напишите услышанное слово'}</p>
       <Listen text={x.say} lang={lang} voice={voice} auto />
-      <input ref={inp} className={`input fr-input ${answer ? (answer.ok ? 'ok' : 'bad') : ''}`} id="fr-input" lang="fr" value={v} onChange={e => setV(e.target.value)}
-        disabled={Boolean(answer)} autoComplete="off" autoCapitalize="off" autoCorrect="off" spellCheck={false} aria-label="Ваш ответ" placeholder="Слово по-французски" />
+      <input ref={inp} className={`input fr-input ${answer ? (answer.ok ? 'ok' : 'bad') : ''}`} id="fr-input" lang={textLang()} value={v} onChange={e => setV(e.target.value)}
+        disabled={Boolean(answer)} autoComplete="off" autoCapitalize="off" autoCorrect="off" spellCheck={false} aria-label="Ваш ответ" placeholder={latinOf().word} />
       <div className="fr-keys" role="group" aria-label="Буквы со значками">
-        {ACCENTS.map(ch => <button type="button" key={ch} className="lg-chip" data-ch={ch} disabled={Boolean(answer)} onClick={() => add(ch)}>{ch}</button>)}
+        {latinOf().accents.map(ch => <button type="button" key={ch} className="lg-chip" data-ch={ch} disabled={Boolean(answer)} onClick={() => add(ch)}>{ch}</button>)}
       </div>
       {!answer && <div className="row"><button type="submit" className="btn btn-primary" id="lg-check" disabled={!v.trim()}>Проверить</button></div>}
     </form>
@@ -141,7 +140,7 @@ function Sort({ task: x, lang, voice, answer, onAnswer }) {
         {x.items.map((it, k) => (
           <li key={it.w} data-w={it.w} data-g={it.g} className={answer ? (pick[k] === it.g ? 'ok' : 'bad') : ''}>
             <button type="button" className="fr-sort-w" onClick={() => say(it.w, lang, voice)} aria-label={`${it.w}: послушать`} disabled={!voice}>
-              <span className="tx" lang="fr">{it.w}</span>{voice && <Icon name="volume-2" size={14} />}
+              <span className="tx" lang={textLang()}>{it.w}</span>{voice && <Icon name="volume-2" size={14} />}
             </button>
             {it.ru && <span className="fr-sort-ru">{it.ru}</span>}
             <span className="seg-ctl" role="radiogroup" aria-label={`Группа для ${it.w}`}>
@@ -179,8 +178,8 @@ function Route({ task: x, lang, voice, answer, onAnswer }) {
   return (
     <>
       <p className="tr-ask lg-ask">{voice ? 'Послушайте, как пройти, и проложите маршрут' : 'Прочитайте, как пройти, и проложите маршрут'}</p>
-      {voice ? <Listen text={x.say} lang={lang} voice={voice} auto /> : <p className="lg-big"><span className="tx" lang="fr" id="lg-zh">{x.say}</span></p>}
-      {voice && answer && <p className="fr-route-say"><span className="tx" lang="fr">{x.say}</span></p>}
+      {voice ? <Listen text={x.say} lang={lang} voice={voice} auto /> : <p className="lg-big"><span className="tx" lang={textLang()} id="lg-zh">{x.say}</span></p>}
+      {voice && answer && <p className="fr-route-say"><span className="tx" lang={textLang()}>{x.say}</span></p>}
       <div className="fr-route" data-answer={x.answer.join(' ')}>
         <svg viewBox="0 0 150 150" className="fr-map" aria-label={`Маршрут: ${path.map(a => ARROW[a][1]).join(', ') || 'пока пусто'}`}>
           {Array.from({ length: 5 }, (_, k) => <g key={k}><line x1={k * 30 + 10} y1="0" x2={k * 30 + 10} y2="150" /><line x1="0" y1={k * 30 + 10} x2="150" y2={k * 30 + 10} /></g>)}
@@ -205,23 +204,25 @@ function Route({ task: x, lang, voice, answer, onAnswer }) {
 }
 
 /* ---------- номер телефона на слух ---------- */
-const pairs = d => d.replace(/(\d{2})(?=\d)/g, '$1 ');
+/* Номер группами: во Франции 06 12 34 56 78, в Испании 612 34 56 78 */
+const pairs = d => (d.length === 9 ? d.replace(/^(\d{3})(\d{2})(\d{2})(\d{2})$/, '$1 $2 $3 $4') : d.replace(/(\d{2})(?=\d)/g, '$1 '));
 function Digits({ task: x, lang, voice, answer, onAnswer }) {
   const [d, setD] = useState('');
-  const press = k => { if (answer || d.length >= 10) return; setD(v => v + k); };
+  const n = x.answer.length;
+  const press = k => { if (answer || d.length >= n) return; setD(v => v + k); };
   const check = e => { const ok = d === x.answer; if (ok) sparkFrom(e.currentTarget); onAnswer(ok, { typed: d }); };
   return (
     <>
       <p className="tr-ask lg-ask">Наберите продиктованный номер</p>
       <Listen text={x.say} lang={lang} voice={voice} auto />
-      <p className={`fr-phone-num ${answer ? (answer.ok ? 'ok' : 'bad') : ''}`} id="fr-phone" aria-live="polite" data-answer={x.answer}>{d ? pairs(d) : '— — — — —'}</p>
+      <p className={`fr-phone-num ${answer ? (answer.ok ? 'ok' : 'bad') : ''}`} id="fr-phone" aria-live="polite" data-answer={x.answer}>{d ? pairs(d) : n === 9 ? '— — — —' : '— — — — —'}</p>
       <div className="fr-keypad" role="group" aria-label="Цифры">
         {['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'del'].map((k, i) => (k === '' ? <span key={i} /> : (
           <button key={k} type="button" className="fr-key" data-k={k} disabled={Boolean(answer)} aria-label={k === 'del' ? 'Стереть' : k}
             onClick={() => (k === 'del' ? setD(v => v.slice(0, -1)) : press(k))}>{k === 'del' ? <Icon name="delete" size={20} /> : k}</button>
         )))}
       </div>
-      {!answer && <Check disabled={d.length !== 10} onClick={check} />}
+      {!answer && <Check disabled={d.length !== n} onClick={check} />}
     </>
   );
 }
@@ -243,7 +244,7 @@ function Body({ task: x, lang, voice, answer, onAnswer }) {
   return (
     <>
       <p className="tr-ask lg-ask">{voice ? 'Послушайте и покажите, где болит' : 'Прочитайте и покажите, где болит'}</p>
-      {voice ? <Listen text={x.say} lang={lang} voice={voice} auto /> : <p className="lg-big"><span className="tx" lang="fr" id="lg-zh">{x.say}</span></p>}
+      {voice ? <Listen text={x.say} lang={lang} voice={voice} auto /> : <p className="lg-big"><span className="tx" lang={textLang()} id="lg-zh">{x.say}</span></p>}
       {!answer && <p className="muted fr-body-hint">Нажмите на схеме на ту часть тела, которая болит.</p>}
       <svg viewBox="0 0 200 320" className={`fr-body ${answer ? 'done' : ''}`} id="fr-body" role="group" aria-label="Схема тела">
         <g className="fig" aria-hidden="true">
@@ -269,9 +270,9 @@ function Board({ task: x, lang, voice, answer, onAnswer }) {
   return (
     <>
       <p className="tr-ask lg-ask">{voice ? 'Послушайте объявление и найдите поезд на табло' : 'Прочитайте объявление и найдите поезд на табло'}</p>
-      {voice ? <Listen text={x.say} lang={lang} voice={voice} auto /> : <p className="fr-route-say"><span className="tx" lang="fr" id="lg-zh">{x.say}</span></p>}
+      {voice ? <Listen text={x.say} lang={lang} voice={voice} auto /> : <p className="fr-route-say"><span className="tx" lang={textLang()} id="lg-zh">{x.say}</span></p>}
       <div className="fr-board" id="fr-board" role="group" aria-label="Табло отправления">
-        <div className="fr-board-title" aria-hidden="true"><Icon name="clock" size={15} /><span lang="fr">Départs</span></div>
+        <div className="fr-board-title" aria-hidden="true"><Icon name="clock" size={15} /><span lang={textLang()}>{x.title || latinOf().board}</span></div>
         <div className="fr-board-head" aria-hidden="true">{x.head.map(h => <span key={h}>{h}</span>)}</div>
         {x.rows.map((r, k) => (
           <button key={r[0]} type="button" className={`fr-board-row ${answer ? (k === x.correct ? 'ok' : answer.picked === k ? 'bad' : 'dim') : ''}`} data-k={k} data-ok={k === x.correct ? '1' : undefined} disabled={Boolean(answer)} onClick={e => pick(k, e)}>
@@ -291,8 +292,8 @@ function Order({ task: x, lang, voice, answer, onAnswer }) {
   return (
     <>
       <p className="tr-ask lg-ask">{voice ? 'Послушайте рассказ и расставьте события по порядку' : 'Прочитайте рассказ и расставьте события по порядку'}</p>
-      {voice ? <Listen text={x.say} lang={lang} voice={voice} auto /> : <p className="fr-route-say"><span className="tx" lang="fr" id="lg-zh">{x.say}</span></p>}
-      {voice && answer && <p className="fr-route-say"><span className="tx" lang="fr">{x.say}</span></p>}
+      {voice ? <Listen text={x.say} lang={lang} voice={voice} auto /> : <p className="fr-route-say"><span className="tx" lang={textLang()} id="lg-zh">{x.say}</span></p>}
+      {voice && answer && <p className="fr-route-say"><span className="tx" lang={textLang()}>{x.say}</span></p>}
       <ol className={`fr-order ${answer ? 'done' : ''}`} id="fr-order" aria-label="Ваш порядок">
         {x.items.map((_, i) => <li key={i} className={answer ? (seq[i] === i ? 'ok' : 'bad') : ''}>{seq[i] !== undefined ? x.items[seq[i]] : <span className="muted">…</span>}</li>)}
       </ol>
@@ -335,7 +336,7 @@ function SpeakLine({ task: x, lang, voice, onNext }) {
   return (
     <div className="lg-rule lg-speak" id="lg-speak-line" data-state={state} data-verdict={res ? (res.ok ? 'ok' : 'bad') : undefined}>
       <p className="label pl-kicker">Скажите сами · интонация</p>
-      <h2 className="h3"><span className="tx" lang="fr">{x.text}</span></h2>
+      <h2 className="h3"><span className="tx" lang={textLang()}>{x.text}</span></h2>
       <p className="muted">«{x.ru}» — {x.rise ? 'это вопрос: голос поднимается на последнем слоге.' : 'это утверждение: голос спокойно опускается к концу.'}</p>
       <Listen text={x.text} lang={lang} voice={voice} />
       <LineChart mine={res && res.contour} rise={x.rise} />
@@ -375,11 +376,11 @@ export function FrExplain({ task: x, answer }) {
     return <span className="lg-ex"><FrText text={x.letters.map(l => (l.mute ? `(${l.c})` : l.c)).join('')} silent />{mute.length ? ` — не читаются: ${mute.join(', ')}` : ' — читаются все буквы'}.</span>;
   }
   if (x.type === 'liaison') return <span className="lg-ex"><FrText text={x.src} />{x.links.some(Boolean) ? '' : ' — здесь слова не связываются'}.</span>;
-  if (x.type === 'dictee') return <span className="lg-ex">Правильно: <span className="tx" lang="fr">{x.w}</span>{answer && answer.accentOnly ? '. Буквы верные, но значки тоже важны: они меняют чтение и смысл' : ''}.</span>;
-  if (x.type === 'route') return <span className="lg-ex"><span className="tx" lang="fr">{x.say}</span> — {x.answer.map(a => ARROW[a][1]).join(', ')}.</span>;
+  if (x.type === 'dictee') return <span className="lg-ex">Правильно: <span className="tx" lang={textLang()}>{x.w}</span>{answer && answer.accentOnly ? '. Буквы верные, но значки тоже важны: они меняют чтение и смысл' : ''}.</span>;
+  if (x.type === 'route') return <span className="lg-ex"><span className="tx" lang={textLang()}>{x.say}</span> — {x.answer.map(a => ARROW[a][1]).join(', ')}.</span>;
   if (x.type === 'digits') return <span className="lg-ex">Номер: <b>{pairs(x.answer)}</b>.</span>;
-  if (x.type === 'body') return <span className="lg-ex"><span className="tx" lang="fr">{x.say}</span> — болит {ZONES[x.zone].name}{x.ru && x.ru !== ZONES[x.zone].name ? ` (${x.ru})` : ''}.</span>;
-  if (x.type === 'board') return <span className="lg-ex"><span className="tx" lang="fr">{x.say}</span> — {x.rows[x.correct].join(' · ')}.</span>;
+  if (x.type === 'body') return <span className="lg-ex"><span className="tx" lang={textLang()}>{x.say}</span> — болит {ZONES[x.zone].name}{x.ru && x.ru !== ZONES[x.zone].name ? ` (${x.ru})` : ''}.</span>;
+  if (x.type === 'board') return <span className="lg-ex"><span className="tx" lang={textLang()}>{x.say}</span> — {x.rows[x.correct].join(' · ')}.</span>;
   if (x.type === 'order') return <span className="lg-ex">{x.items.map((t, i) => `${i + 1}) ${t}`).join('; ')}.</span>;
   if (x.type === 'sort') return <span className="lg-ex">{x.groups.map((g, j) => `${g[0].toUpperCase()}${g.slice(1)}: ${x.items.filter(it => it.g === j).map(it => it.w).join(', ')}`).join('. ')}.</span>;
   return null;

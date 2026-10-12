@@ -2,21 +2,21 @@ import { useEffect, useRef, useState } from 'react';
 import { speak } from '../lib/speech.js';
 import { Icon } from './Icon.jsx';
 import Mouth, { MouthSide, PLACE_TXT, TongueSide } from './Mouth.jsx';
-import { FLOORS, STEAK, frNumber, frPlain } from '../lib/fr-data.js';
+import { FLOORS, STEAK, WORLD, demoKind, frNumber, frPlain, textLang } from '../lib/fr-data.js';
 
-/* ===== Наглядные схемы для французского с нуля =====
+/* ===== Наглядные схемы для французского и испанского с нуля =====
    Вставляются в карточки правил (поле demo урока) и в знакомство со звуком (поле view звука):
    ритм и ударение, немые буквы, носовые гласные, губы для [y], буквосочетания и значки, связки слов,
    счёт до двадцати, слова, которые звучат одинаково. Всё понятно и без звука: звук только дополняет.
    Слова приходят из данных урока (поле w у правила), их звук собирает scripts/audio-list.mjs. */
 
-const say = (lang, voice, w, slow = false) => { if (voice) speak(frPlain(w), lang, { voice, slow }); };
+const say = (lang, voice, w, slow = false, variant) => { if (voice) speak(frPlain(w), lang, { voice, slow, variant }); };
 
 /* Запись слова или фразы: дужки ‿ рисуются аркой между словами, немые буквы в скобках — бледнее */
 export function FrText({ text, className = '', silent = false }) {
   const parts = String(text).split(/(‿)/);
   return (
-    <span className={`tx ${className}`} lang="fr">
+    <span className={`tx ${className}`} lang={textLang()}>
       {parts.map((x, k) => (x === '‿'
         ? <span key={k} className="lk" aria-hidden="true">‿</span>
         : <span key={k}>{silent ? mutes(x) : x.replace(/[()]/g, '')}</span>))}
@@ -36,24 +36,27 @@ function mutes(x) {
 }
 
 /* ---------- ритм: все слоги ровные, ударный — последний ---------- */
-export function StressDemo({ w, lang, voice }) {
+/* Ударный слог отмечен в данных знаком ˈ перед ним (ca·ˈfé); без знака ударный — последний, как во французском */
+const stressAt = syl => { const k = syl.findIndex(s => s.startsWith('ˈ')); return k < 0 ? syl.length - 1 : k; };
+export function StressDemo({ w, lang, voice, note }) {
   const [on, setOn] = useState(null);                  // какое слово «звучит» и номер запуска
   const play = (x, k) => { say(lang, voice, x); setOn({ k, n: Date.now() }); };
   useEffect(() => { const t = setTimeout(() => play(w[0], 0), 600); return () => clearTimeout(t); }, []);  // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className="lg-demo fr-stress" id="fr-demo-stress">
       {w.map((x, k) => {
-        const syl = x.split('·');
+        const syl = x.split('·'), at = stressAt(syl);
+        const where = at === syl.length - 1 ? 'на последнем слоге' : at === syl.length - 2 ? 'на предпоследнем слоге' : `на ${at + 1}-м слоге`;
         return (
-          <button type="button" key={x} className={`fr-stress-row ${on && on.k === k ? 'on' : ''}`} data-w={frPlain(x)} onClick={() => play(x, k)} aria-label={`${frPlain(x)}: ударение на последнем слоге. Послушать`}>
+          <button type="button" key={x} className={`fr-stress-row ${on && on.k === k ? 'on' : ''}`} data-w={frPlain(x)} data-at={at} onClick={() => play(x, k)} aria-label={`${frPlain(x)}: ударение ${where}. Послушать`}>
             <span className="fr-syls" key={on && on.k === k ? on.n : 'still'}>
-              {syl.map((s, j) => <span key={j} className={`fr-syl ${j === syl.length - 1 ? 'last' : ''}`} style={{ '--d': `${j * 0.22}s` }}>{s}</span>)}
+              {syl.map((s, j) => <span key={j} className={`fr-syl ${j === at ? 'last' : ''}`} style={{ '--d': `${j * 0.22}s` }}>{s.replace('ˈ', '')}</span>)}
             </span>
             <Icon name="volume-2" size={16} />
           </button>
         );
       })}
-      <p className="fr-demo-note">Брусок — слог. Все слоги одной длины и звучат чётко, а последний чуть длиннее: на нём ударение.</p>
+      <p className="fr-demo-note">{note || 'Брусок — слог. Все слоги одной длины и звучат чётко, а последний чуть длиннее: на нём ударение.'}</p>
     </div>
   );
 }
@@ -91,9 +94,9 @@ export function NasalDemo({ w, lang, voice }) {
       <div className="fr-pairs" role="group" aria-label="Пары слов: без носа и с носом">
         {w.map(([a, b], k) => (
           <div className="fr-pair" key={a}>
-            <button type="button" className={`lg-chip ${sel.k === k && !sel.nasal ? 'on' : ''}`} data-w={a} onClick={() => play(k, false)}><span className="tx" lang="fr">{a}</span><Icon name="volume-2" size={14} /></button>
+            <button type="button" className={`lg-chip ${sel.k === k && !sel.nasal ? 'on' : ''}`} data-w={a} onClick={() => play(k, false)}><span className="tx" lang={textLang()}>{a}</span><Icon name="volume-2" size={14} /></button>
             <span className="fr-pair-vs" aria-hidden="true">→</span>
-            <button type="button" className={`lg-chip nasal ${sel.k === k && sel.nasal ? 'on' : ''}`} data-w={b} onClick={() => play(k, true)}><span className="tx" lang="fr">{b}</span><Icon name="volume-2" size={14} /></button>
+            <button type="button" className={`lg-chip nasal ${sel.k === k && sel.nasal ? 'on' : ''}`} data-w={b} onClick={() => play(k, true)}><span className="tx" lang={textLang()}>{b}</span><Icon name="volume-2" size={14} /></button>
           </div>
         ))}
       </div>
@@ -133,7 +136,7 @@ export function LipsDemo({ w, lang, voice }) {
       <div className="fr-steps" role="group" aria-label="Шаги">
         {w.map(([form, label, word], j) => (
           <button type="button" key={form} className={`lg-chip ${j === k ? 'on' : ''}`} data-v={form} onClick={() => pick(j)} aria-pressed={j === k}>
-            <b>{label}</b> <span className="tx" lang="fr">{word}</span><Icon name="volume-2" size={14} />
+            <b>{label}</b> <span className="tx" lang={textLang()}>{word}</span><Icon name="volume-2" size={14} />
           </button>
         ))}
       </div>
@@ -176,7 +179,7 @@ export function LinkDemo({ w, lang, voice }) {
         const parts = x.split('‿');
         return (
           <button type="button" key={x} className="fr-link-row" style={{ '--d': `${0.4 + k * 0.4}s` }} data-w={frPlain(x)} onClick={() => play(x)} aria-label={`${frPlain(x)}: слова звучат слитно${s ? `, на стыке звучит [${s}]` : ''}. Послушать`}>
-            <span className="fr-link-t" key={run[x] || 0} lang="fr">
+            <span className="fr-link-t" key={run[x] || 0} lang={textLang()}>
               {parts.map((p, j) => (
                 <span key={j} className="fr-link-w">{p}{j < parts.length - 1 && <span className="fr-arc" aria-hidden="true"><svg viewBox="0 0 40 16"><path d="M2 3 Q20 18 38 3" /></svg>{s && <i>{s}</i>}</span>}</span>
               ))}
@@ -199,7 +202,7 @@ export function CountDemo({ w, lang, voice }) {
         const [label, word] = Array.isArray(x) ? x : [k, x];
         return (
           <button type="button" key={word} className="fr-num" data-w={word} onClick={() => say(lang, voice, word)} aria-label={`${label}: ${word}. Послушать`}>
-            <b>{label}</b><span className="tx" lang="fr">{word}</span>
+            <b>{label}</b><span className="tx" lang={textLang()}>{word}</span>
           </button>
         );
       })}
@@ -224,7 +227,7 @@ export function NumDemo({ lang, voice }) {
         </span>
         <span className="fr-num-math">{base === 60 ? '60' : '4 × 20'}{add ? ` + ${add}` : ''} = <b>{n}</b></span>
         <button type="button" className="fr-num-word" id="fr-num-word" onClick={() => say(lang, voice, word)} aria-label={`${n}: ${word}. Послушать`}>
-          <span className="tx" lang="fr">{word}</span><Icon name="volume-2" size={18} />
+          <span className="tx" lang={textLang()}>{word}</span><Icon name="volume-2" size={18} />
         </button>
       </div>
       <div className="lg-bgrp" role="radiogroup" aria-label="Основа">
@@ -244,24 +247,26 @@ export function NumDemo({ lang, voice }) {
 }
 
 /* ---------- лифт: этажи считают с нуля ---------- */
-export function FloorsDemo({ lang, voice }) {
+export function FloorsDemo({ w, lang, voice }) {
+  // w: [[этаж на языке трека, этаж по-нашему, надпись на кнопке лифта у нуля], …] — по умолчанию французский
+  const FL = w || FLOORS, zero = (w && w[0][2]) || 'RDC';
   const [at, setAt] = useState(0);
-  const go = k => { setAt(k); say(lang, voice, FLOORS[k][0]); };
+  const go = k => { setAt(k); say(lang, voice, FL[k][0]); };
   return (
     <div className="lg-demo fr-floors" id="fr-demo-floors" data-floor={at}>
       <div className="fr-house" aria-hidden="true">
-        {[...FLOORS].map((f, k) => [f, k]).reverse().map(([f, k]) => (
+        {[...FL].map((f, k) => [f, k]).reverse().map(([f, k]) => (
           <div key={k} className={`fr-storey ${k === at ? 'on' : ''}`}>
-            <span className="fr-storey-fr tx">{k === 0 ? 'RDC' : k}</span>
+            <span className="fr-storey-fr tx">{k === 0 ? zero : k}</span>
             <span className="fr-storey-win" /><span className="fr-storey-win" /><span className="fr-storey-win" />
             <span className="fr-storey-ru">{f[1]} по-нашему</span>
           </div>
         ))}
       </div>
       <div className="fr-lift" role="group" aria-label="Кнопки лифта">
-        {[...FLOORS].map((f, k) => [f, k]).reverse().map(([f, k]) => (
+        {[...FL].map((f, k) => [f, k]).reverse().map(([f, k]) => (
           <button key={k} type="button" className={`fr-lift-btn ${k === at ? 'on' : ''}`} data-floor={k} aria-pressed={k === at} onClick={() => go(k)}>
-            <b>{k === 0 ? '0' : k}</b><span className="tx" lang="fr">{f[0]}</span>
+            <b>{k === 0 ? '0' : k}</b><span className="tx" lang={textLang()}>{f[0]}</span>
           </button>
         ))}
       </div>
@@ -270,50 +275,141 @@ export function FloorsDemo({ lang, voice }) {
 }
 
 /* ---------- прожарка стейка ---------- */
-export function SteakDemo({ lang, voice }) {
-  const [k, setK] = useState(2);
-  const [word, ru, color] = STEAK[k];
-  const set = v => { setK(v); say(lang, voice, STEAK[v][0]); };
+export function SteakDemo({ w, lang, voice }) {
+  const ST = w || STEAK;                               // [[слово, перевод, цвет мяса], …] от сырого к прожаренному
+  const [k, setK] = useState(Math.min(2, ST.length - 1));
+  const [word, ru, color] = ST[k];
+  const set = v => { setK(v); say(lang, voice, ST[v][0]); };
   return (
     <div className="lg-demo fr-steak" id="fr-demo-steak" data-k={k}>
       <svg viewBox="0 0 220 120" className="fr-steak-svg" aria-hidden="true">
         <ellipse cx="110" cy="64" rx="96" ry="46" fill="#5A3324" />
         <ellipse cx="110" cy="60" rx="88" ry="40" fill="#7B4A33" />
-        <ellipse cx="110" cy="60" rx={66 - k * 14} ry={28 - k * 6} fill={color} style={{ transition: 'all .4s' }} />
+        <ellipse cx="110" cy="60" rx={66 - (k * 42) / Math.max(1, ST.length - 1)} ry={28 - (k * 18) / Math.max(1, ST.length - 1)} fill={color} style={{ transition: 'all .4s' }} />
       </svg>
-      <p className="fr-steak-t"><span className="tx" lang="fr">{word}</span> — {ru}</p>
-      <input type="range" min="0" max="3" step="1" value={k} onChange={e => set(+e.target.value)} className="fr-range" aria-label="Прожарка" aria-valuetext={`${word}, ${ru}`} />
-      <div className="fr-steak-scale" aria-hidden="true">{STEAK.map(([w]) => <span key={w} className="tx">{w}</span>)}</div>
+      <p className="fr-steak-t"><span className="tx" lang={textLang()}>{word}</span> — {ru}</p>
+      <input type="range" min="0" max={ST.length - 1} step="1" value={k} onChange={e => set(+e.target.value)} className="fr-range" aria-label="Прожарка" aria-valuetext={`${word}, ${ru}`} />
+      <div className="fr-steak-scale" aria-hidden="true">{ST.map(([x]) => <span key={x} className="tx">{x}</span>)}</div>
     </div>
   );
 }
 
 /* ---------- одинаково звучат, по-разному пишутся ---------- */
-export function HomoDemo({ combo, lang, voice }) {
-  // combo: [[звук, [[запись, значение], …]], …]; звучит первое слово группы
+export function HomoDemo({ combo, each, lang, voice }) {
+  // combo: [[звук, [[запись, значение], …]], …]; звучит первое слово группы, а с each — каждое слово своё (sí и si, papa и papá)
   return (
     <div className="lg-demo fr-homo" id="fr-demo-homo">
       {combo.map(([sound, items]) => (
         <div className="fr-homo-g" key={sound}>
           <button type="button" className="lg-say" data-w={items[0][0]} onClick={() => say(lang, voice, items[0][0])} aria-label={`Послушать ${sound}`}><Icon name="volume-2" size={18} /></button>
           <span className="fr-homo-s">{sound}</span>
-          <ul>{items.map(([x, ru]) => <li key={x}><span className="tx" lang="fr">{x}</span> — {ru}</li>)}</ul>
+          <ul>{items.map(([x, ru]) => <li key={x}>{each
+            ? <button type="button" className="lg-chip" data-w={x} onClick={() => say(lang, voice, x)}><span className="tx" lang={textLang()}>{x}</span><Icon name="volume-2" size={13} /></button>
+            : <span className="tx" lang={textLang()}>{x}</span>} — {ru}</li>)}</ul>
         </div>
       ))}
     </div>
   );
 }
 
+
+/* ---------- испанское r и rr: один удар кончика языка или раскат ---------- */
+export function TapDemo({ w, lang, voice }) {
+  // w: [[слово с r, слово с rr], …] — pero / perro
+  const [sel, setSel] = useState({ k: 0, rr: false, n: 0 });
+  const play = (k, rr) => { setSel(s => ({ k, rr, n: s.n + 1 })); say(lang, voice, w[k][rr ? 1 : 0]); };
+  const hits = sel.rr ? 4 : 1;
+  return (
+    <div className="lg-demo es-rr" id="es-demo-rr" data-rr={sel.rr ? '1' : '0'}>
+      <div className="lg-mouth-views">
+        <figure className="lg-mouth-view"><TongueSide place="alveolar" /><figcaption>Сбоку: кончик языка ударяет по бугоркам за верхними зубами</figcaption></figure>
+        <div className="es-taps" aria-live="polite">
+          <span className="es-taps-w tx" lang={textLang()}>{w[sel.k][sel.rr ? 1 : 0]}</span>
+          <span className="es-taps-row" key={sel.n} aria-label={sel.rr ? 'Раскат: четыре быстрых удара' : 'Один короткий удар'}>
+            {Array.from({ length: 4 }, (_, j) => <i key={j} className={j < hits ? 'on' : ''} style={{ '--d': `${j * 0.09}s` }} />)}
+          </span>
+          <span className="es-taps-t">{sel.rr ? 'rr — раскат: 3–4 удара подряд' : 'r — один короткий удар'}</span>
+        </div>
+      </div>
+      <div className="fr-pairs" role="group" aria-label="Пары слов: r и rr">
+        {w.map(([a, b], k) => (
+          <div className="fr-pair" key={a}>
+            <button type="button" className={`lg-chip ${sel.k === k && !sel.rr ? 'on' : ''}`} data-w={a} onClick={() => play(k, false)}><span className="tx" lang={textLang()}>{a}</span><Icon name="volume-2" size={14} /></button>
+            <span className="fr-pair-vs" aria-hidden="true">→</span>
+            <button type="button" className={`lg-chip nasal ${sel.k === k && sel.rr ? 'on' : ''}`} data-w={b} onClick={() => play(k, true)}><span className="tx" lang={textLang()}>{b}</span><Icon name="volume-2" size={14} /></button>
+          </div>
+        ))}
+      </div>
+      <p className="fr-demo-note">Слева — одно касание, как в русском «р» между гласными. Справа — раскат: так же звучит r в начале слова (Rusia, rojo).</p>
+    </div>
+  );
+}
+
+/* ---------- одно слово в Испании, Мексике и Аргентине ---------- */
+export function WorldDemo({ w, lang, voice }) {
+  // w: [[слово, как в Испании, как в Мексике, как в Аргентине], …] — звук пишется в квадратных скобках
+  const [v, setV] = useState(0);
+  const [k, setK] = useState(null);
+  const play = (j, c = v) => { setK(j); setV(c); say(lang, voice, w[j][0], false, WORLD[c][0] || undefined); };
+  return (
+    <div className="lg-demo es-world" id="es-demo-world" data-v={WORLD[v][0] || 'es'}>
+      <div className="lg-bgrp" role="radiogroup" aria-label="Страна">
+        <div className="lg-chips">
+          {WORLD.map(([id, name], c) => <button key={name} type="button" role="radio" aria-checked={v === c} className={`lg-chip ${v === c ? 'on' : ''}`} data-v={id || 'es'} onClick={() => (k === null ? setV(c) : play(k, c))}>{name}</button>)}
+        </div>
+      </div>
+      <ul className="es-world-list">
+        {w.map((x, j) => (
+          <li key={x[0]} className={k === j ? 'on' : ''}>
+            <button type="button" className="lg-chip" data-w={x[0]} onClick={() => play(j)} aria-label={`${x[0]}, ${WORLD[v][1]}: ${x[v + 1]}. Послушать`}>
+              <span className="tx" lang={textLang()}>{x[0]}</span><Icon name="volume-2" size={14} />
+            </button>
+            <span className="es-world-s">{x.slice(1).map((y, c) => <b key={c} className={c === v ? 'on' : ''}>{y}</b>)}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="fr-demo-note">Выберите страну и нажмите на слово: оно прозвучит голосом из этой страны. Звуки в скобках — Испания, Мексика, Аргентина.</p>
+    </div>
+  );
+}
+
+/* ---------- ложные друзья: похоже на русское слово, а значит другое ---------- */
+export function FalseDemo({ combo, lang, voice }) {
+  // combo: [[слово, на что похоже, что значит на самом деле], …]
+  const [open, setOpen] = useState({});
+  const flip = (x, k) => { setOpen(o => ({ ...o, [k]: !o[k] })); if (!open[k]) say(lang, voice, x); };
+  return (
+    <div className="lg-demo es-false" id="es-demo-false">
+      {combo.map(([x, looks, means], k) => (
+        <button type="button" key={x} className={`es-false-card ${open[k] ? 'open' : ''}`} data-w={x} aria-pressed={Boolean(open[k])} onClick={() => flip(x, k)}
+          aria-label={open[k] ? `${x} — ${means}` : `${x}: похоже на «${looks}». Нажмите, чтобы узнать значение`}>
+          <span className="tx" lang={textLang()}>{x}</span>
+          <span className="es-false-t">{open[k] ? <><Icon name="check" size={14} />{means}</> : <><s>{looks}</s><Icon name="rotate-ccw" size={13} /></>}</span>
+        </button>
+      ))}
+      <p className="fr-demo-note">Зачёркнуто — то, что подсказывает знакомое слово. Нажмите на карточку, чтобы узнать настоящее значение и послушать слово.</p>
+    </div>
+  );
+}
+
 /* ---------- схема к звуку: рот, разрез с носом, язык для r ---------- */
 const VOWEL = { a: 'a', i: 'i', o: 'o', u: 'u', y: 'ü', 'é': 'é', 'è': 'è', 'ø': 'ø', 'œ': 'œ', 'ə': 'ə' };
-export const hasFrView = view => Boolean(VOWEL[view] || /^nasal-/.test(view) || view === 'r');
+/* Согласные: французское картавое r, испанские j (velar), r (alveolar) и z (зубное) */
+const CONS = {
+  r: ['uvular', 'точка — где язык ближе всего к маленькому язычку'],
+  x: ['velar', 'точка — где спинка языка ближе всего к мягкому нёбу'],
+  tap: ['alveolar', 'точка — где кончик языка касается бугорков за зубами'],
+  th: ['dental', 'кончик языка между зубами или у самого края верхних зубов'],
+};
+export const hasFrView = view => Boolean(VOWEL[view] || /^nasal-/.test(view) || CONS[view]);
 export function FrSoundView({ view, pulse = 0 }) {
-  if (view === 'r') {
+  if (CONS[view]) {
+    const [place, cap] = CONS[view];
     return (
-      <div className="lg-demo lg-tongue" id="fr-view-r" data-place="uvular">
+      <div className="lg-demo lg-tongue" id={`fr-view-${view}`} data-place={place}>
         <div className="lg-tongue-main">
-          <figure className="lg-mouth-view"><TongueSide place="uvular" /><figcaption>Сбоку, в разрезе: точка — где язык ближе всего к маленькому язычку</figcaption></figure>
-          <p className="lg-mouth-txt">{PLACE_TXT.uvular}</p>
+          <figure className="lg-mouth-view"><TongueSide place={place} /><figcaption>Сбоку, в разрезе: {cap}</figcaption></figure>
+          <p className="lg-mouth-txt">{view === 'th' ? PLACE_TXT.inter : PLACE_TXT[place]}</p>
         </div>
       </div>
     );
@@ -333,17 +429,21 @@ export function FrSoundView({ view, pulse = 0 }) {
 
 /* Схема к правилу по имени из данных урока */
 export function frRuleDemo(rule, props) {
-  const { demo, w, combo } = rule;
-  if (demo === 'fr-stress') return <StressDemo w={w} {...props} />;
+  const { w, combo, note, each } = rule;
+  const demo = demoKind(rule.demo);
+  if (demo === 'es-rr') return <TapDemo w={w} {...props} />;
+  if (demo === 'es-world') return <WorldDemo w={w} {...props} />;
+  if (demo === 'es-false') return <FalseDemo combo={combo} {...props} />;
+  if (demo === 'fr-stress') return <StressDemo w={w} note={note} {...props} />;
   if (demo === 'fr-silent') return <SilentDemo w={w} {...props} />;
   if (demo === 'fr-nasal') return <NasalDemo w={w} {...props} />;
   if (demo === 'fr-lips') return <LipsDemo w={w} {...props} />;
   if (demo === 'fr-combo') return <ComboDemo combo={combo} {...props} />;
   if (demo === 'fr-link') return <LinkDemo w={w} {...props} />;
   if (demo === 'fr-count') return <CountDemo w={w} {...props} />;
-  if (demo === 'fr-homo') return <HomoDemo combo={combo} {...props} />;
+  if (demo === 'fr-homo') return <HomoDemo combo={combo} each={each} {...props} />;
   if (demo === 'fr-num') return <NumDemo {...props} />;
-  if (demo === 'fr-floors') return <FloorsDemo {...props} />;
-  if (demo === 'fr-steak') return <SteakDemo {...props} />;
+  if (demo === 'fr-floors') return <FloorsDemo w={w} {...props} />;
+  if (demo === 'fr-steak') return <SteakDemo w={w} {...props} />;
   return null;
 }
