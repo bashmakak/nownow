@@ -147,11 +147,27 @@ textarea.input{height:auto;min-height:112px;padding:12px 14px;line-height:1.5;re
 .demo-row > .ic{color:var(--text-3)}
 
 /* ---------- шаги ---------- */
-.steps3{display:grid;gap:clamp(24px,3vw,40px)}
-@media (min-width:820px){.steps3{grid-template-columns:repeat(3,minmax(0,1fr))}}
-.step3{display:flex;flex-direction:column;gap:10px;padding-top:20px;border-top:2px solid var(--text)}
-.step3 .num{font-weight:600;font-size:15px;letter-spacing:.08em;color:var(--accent-text)}
-.step3 p{color:var(--text-2)}
+.how{display:grid;gap:16px;counter-reset:how}
+@media (min-width:860px){.how{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.how-step{position:relative;display:flex;flex-direction:column;gap:8px;padding:12px 12px 22px;border-radius:var(--r-lg);border:1px solid var(--border);background:var(--bg-1);box-shadow:var(--shadow)}
+.how-step p{color:var(--text-2);font-size:15px;line-height:1.5;padding-inline:10px}
+.how-step .h4{padding-inline:10px}
+.how-stage{display:grid;place-items:center;height:200px;margin-bottom:10px;padding:18px;border-radius:calc(var(--r-lg) - 6px);background:linear-gradient(140deg,#0B0F14 45%,#0C2420);overflow:hidden}
+.how-h{display:flex;align-items:center;gap:10px}
+.how-n{flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#D8FF5A;color:#0B0F14;font:700 13px/1 var(--font-display)}
+.how-chips{justify-content:center;max-width:280px}
+.how-chips .chip{background:rgba(245,247,250,.06);border-color:rgba(245,247,250,.14);color:#A9AFB8}
+.how-chips .chip[aria-pressed="true"]{background:#D8FF5A;border-color:#D8FF5A;color:#0B0F14}
+.how .how-ver{width:min(100%,300px);background:rgba(245,247,250,.06);border-color:rgba(245,247,250,.14)}
+.how-opt{display:flex;flex-direction:column;gap:4px;padding:9px 14px;border-radius:calc(var(--r-md) - 4px);font:600 15px/1.2 var(--font-body);color:#A9AFB8}
+.how-opt small{font:500 13px/1.2 var(--font-body);color:#7D848E}
+.how-opt.on{background:#0B0F14;color:#F5F7FA;box-shadow:0 0 0 1px rgba(245,247,250,.18)}
+.how-opt.on small{color:#D8FF5A}
+.how .how-key{width:100%;max-width:300px;gap:7px;padding:13px 15px;border-radius:var(--r-md);background:#0F151B}
+.how-key .label{font-size:10.5px}
+.how-key b{font:700 15px/1.25 var(--font-display)}
+.how-key .act{padding-top:8px;font-size:12.5px;line-height:1.4;color:#DCE0E6}
+.how-key .act small{font-size:9.5px;margin-bottom:3px}
 
 /* ---------- плитка темы ---------- */
 .tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}

@@ -1,10 +1,10 @@
 import { Fragment, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BLOCKS, BLOCK_SHARE, COURSES, COURSE_BY, FEATURED, FORMAT, PUBLIC, SOON, START_COURSE, TIME, TOPIC_BY, WITH_FULL, WPM, coursesOf, minutes } from '../data';
-import { plural, genMin, aboutMin } from '../lib/store.js';
+import { plural, genMin, aboutMin, nMin } from '../lib/store.js';
 import { useTitle } from '../lib/ui.jsx';
 import { Icon } from '../components/Icon.jsx';
-import { HeroFx, Lockup } from '../components/Brand.jsx';
+import { HeroFx, Lockup, Mark } from '../components/Brand.jsx';
 import { CourseCard, TopicTile } from '../components/Cards.jsx';
 import { ChoiceView } from '../components/Play.jsx';
 import { TRAINERS, ROUND } from '../data/trainers.js';
@@ -163,6 +163,46 @@ function langTitle() {
   return `${list} с нуля до A2: ${n} ${plural(n, ['короткий урок', 'коротких урока', 'коротких уроков'])}`;
 }
 
+/* «Как это работает»: три шага показаны кусочками самого интерфейса, на примере первого урока */
+function HowItWorks() {
+  const c = COURSE_BY[START_COURSE];
+  const short = minutes(c, 'short'), full = c.full ? minutes(c, 'full') : 0;
+  return (
+    <ol className="how" data-rv-kids="">
+      <li className="how-step">
+        <div className="how-stage" aria-hidden="true">
+          <div className="chips how-chips">
+            {['Психология', 'Финансы', 'ИИ', 'Сон', 'Карьера'].map((t, i) => <span key={t} className="chip chip-static" aria-pressed={i === 0}>{t}</span>)}
+          </div>
+        </div>
+        <h3 className="h4 how-h"><span className="how-n">1</span>Выберите тему</h3>
+        <p>{PUBLIC.length} {plural(PUBLIC.length, ['тема', 'темы', 'тем'])}. Каждый урок отвечает на один вопрос.</p>
+      </li>
+      <li className="how-step">
+        <div className="how-stage" aria-hidden="true">
+          <div className="ver how-ver">
+            <span className="how-opt on"><span>Короткая</span><small>{nMin(short)}</small></span>
+            {full > 0 && <span className="how-opt"><span>Полная</span><small>{nMin(full)}</small></span>}
+          </div>
+        </div>
+        <h3 className="h4 how-h"><span className="how-n">2</span>Выберите версию</h3>
+        <p>Короткая даёт главное, полная разбирает тему подробно. Время видно до начала.</p>
+      </li>
+      <li className="how-step">
+        <div className="how-stage" aria-hidden="true">
+          <div className="keycard how-key">
+            <span className="label"><Mark size={14} />Ключевое знание</span>
+            <b>{c.key.title}</b>
+            <p className="act"><small>Что сделать сегодня</small>{c.key.action}</p>
+          </div>
+        </div>
+        <h3 className="h4 how-h"><span className="how-n">3</span>Примените сегодня</h3>
+        <p>Урок заканчивается карточкой с выводом и одним действием на сегодня.</p>
+      </li>
+    </ol>
+  );
+}
+
 export default function Home() {
   useTitle('');
   return (
@@ -189,11 +229,7 @@ export default function Home() {
       <section className="sec theme-light">
         <div className="wrap">
           <div className="sec-head"><h2 className="h2">Как это работает</h2></div>
-          <ol className="steps3" data-rv-kids="">
-            <li className="step3"><span className="num">ШАГ 1</span><h3 className="h3">Выберите тему</h3><p>Психология, финансы, ИИ, сон и другие. В каждой теме короткие уроки на конкретный вопрос.</p></li>
-            <li className="step3"><span className="num">ШАГ 2</span><h3 className="h3">Выберите версию</h3><p>Короткая даёт главное за несколько минут. Полная разбирает тему подробно. Время каждой указано заранее.</p></li>
-            <li className="step3"><span className="num">ШАГ 3</span><h3 className="h3">Примените сегодня</h3><p>Урок заканчивается карточкой «Ключевое знание» с одним действием на сегодня.</p></li>
-          </ol>
+          <HowItWorks />
         </div>
       </section>
 
