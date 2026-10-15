@@ -95,5 +95,4 @@ export const BLOCK_SHARE = (() => {
   return pct;
 })();
 
-export const metaLine = (x, v) => `${minutes(x, v)} мин · ${FORMAT[x.format]} · ${LEVEL[x.level]}`;
 export const tagsOf = slug => [...new Set(coursesOf(slug).flatMap(x => x.tags))];

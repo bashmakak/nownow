@@ -55,7 +55,7 @@ export function Train() {
         <div className="group" id="train-brain">
           <h2 className="h3" style={{ marginBottom: 6 }}>Мини-игры</h2>
           <p className="muted" style={{ marginBottom: 6, maxWidth: '66ch' }}>{GAMES.length} игр на внимание, реакцию, память и счёт. Раунд длится от полуминуты до двух минут.</p>
-          <p className="muted brain-honest" style={{ marginBottom: 22, maxWidth: '66ch' }}>Игры тренируют то, что в них делаешь: искать глазами, отвечать быстро, удерживать в голове. Исследования не подтверждают, что от таких игр человек становится умнее в целом, поэтому здесь нет таких обещаний. Это разминка и повод не прерывать серию.</p>
+          <p className="muted brain-honest" style={{ marginBottom: 22, maxWidth: '66ch' }}>Игры тренируют только то, что в них делаешь: искать глазами, быстро отвечать, удерживать в голове. Исследования не подтверждают, что они развивают мышление в целом.</p>
           {SKILLS.map(k => (
             <div className="brain-skill" key={k.id} data-skill={k.id}>
               <h3 className="h4"><Icon name={k.icon} size={18} />{k.title}<span>{k.hook}</span></h3>

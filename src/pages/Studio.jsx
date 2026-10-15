@@ -42,7 +42,7 @@ function Gate({ children, title = 'Мастерская' }) {
           <div className="cols3">
             <div className="col3"><span className="tile-ic"><Icon name="pen-line" size={22} /></span><h2 className="h3">Напишите урок</h2><p>Шесть блоков, от 3 до 7 минут: зачем, идея, пример, практика, проверка, ключевое знание. Редактор подскажет, чего не хватает.</p></div>
             <div className="col3"><span className="tile-ic"><Icon name="shield-check" size={22} /></span><h2 className="h3">Пройдите проверку</h2><p>Модератор читает каждый урок. Если что-то не так, урок вернётся с комментарием, и его можно доработать.</p></div>
-            <div className="col3"><span className="tile-ic"><Icon name="sparkles" size={22} /></span><h2 className="h3">Получайте искры</h2><p>{SPARK_RULES[0][0]} за опубликованный урок и по {SPARK_RULES[1][0]} за каждого, кто его прошёл. Искры — внутренние очки сайта, не деньги.</p></div>
+            <div className="col3"><span className="tile-ic"><Icon name="coins" size={22} /></span><h2 className="h3">Получайте искры</h2><p>{SPARK_RULES[0][0]} за опубликованный урок и по {SPARK_RULES[1][0]} за каждого, кто его прошёл. Искры — внутренние очки сайта, не деньги.</p></div>
           </div>
           <div className="group">
             <p className="muted" style={{ marginBottom: 16 }}>Чтобы писать уроки, нужна учётная запись: по ней сайт понимает, чей это урок.</p>
@@ -133,7 +133,7 @@ function Wallet({ w, lessons }) {
   return (
     <div className="panel st-wallet" id="wallet">
       <div className="st-wallet-top">
-        <span className="tile-ic"><Icon name="sparkles" size={22} /></span>
+        <span className="tile-ic"><Icon name="coins" size={22} /></span>
         <div><b className="num" id="wallet-balance">{w.balance}</b><span>{plural(w.balance, ['искра', 'искры', 'искр'])}</span></div>
       </div>
       <dl className="st-wallet-parts">
@@ -236,7 +236,7 @@ function Dashboard() {
                 <Alert>{act.error}</Alert>
                 {st.lessons.length
                   ? <ul className="st-lessons">{st.lessons.map(l => <LessonRow key={l.id} l={l} reload={load} />)}</ul>
-                  : <p className="muted">Уроков пока нет. Начните с темы, которую можете объяснить за пять минут: одна идея, один пример, одно действие.</p>}
+                  : <p className="muted">Уроков пока нет. Начните с темы, которую можете объяснить за пять минут.</p>}
               </div>
               <div className="panel">
                 <h2 className="h3">Правила для авторов</h2>

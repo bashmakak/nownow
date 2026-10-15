@@ -16,7 +16,7 @@ const SELECTS = [
   ['level', 'Уровень', [['', 'Любой уровень'], ['1', 'Начальный'], ['2', 'Средний'], ['3', 'Продвинутый']]],
   ['version', 'Версия', [['', 'Любая версия'], ['full', 'Есть полная версия']]],
   ['play', 'Задания', [['', 'С заданиями и без'], ['1', 'С интерактивом']]],
-  ['status', 'Статус', [['', 'Все курсы'], ['new', 'Не начатые'], ['progress', 'В процессе'], ['done', 'Пройденные']]],
+  ['status', 'Статус', [['', 'Все уроки'], ['new', 'Не начатые'], ['progress', 'В процессе'], ['done', 'Пройденные']]],
   ['sort', 'Сортировка', [['', 'Сначала рекомендуемые'], ['fast', 'Сначала короткие'], ['long', 'Сначала длинные'], ['az', 'По названию']]],
 ];
 /* У авторских уроков одна версия и нет интерактивных заданий, а порядок по умолчанию — от новых к старым */
@@ -80,7 +80,7 @@ export default function Catalog() {
           <h1 className="h1">Каталог</h1>
           {authors
             ? <p className="lead">Уроки, которые написали участники NowNow. Каждый урок перед публикацией читает модератор. Написать свой можно в <Link to="/studio">мастерской</Link>.</p>
-            : <p className="lead">Короткие уроки от {TIME.short.min} до {TIME.short.max} {genMin(TIME.short.max)}. Время на карточке посчитано по объёму текста. Выберите тему или найдите курс по слову.</p>}
+            : <p className="lead">Короткие уроки от {TIME.short.min} до {TIME.short.max} {genMin(TIME.short.max)}. Время на карточке посчитано по объёму текста. Выберите тему или найдите урок по слову.</p>}
           {CLOUD && (
             <div className="seg-ctl cat-source" role="radiogroup" aria-label="Чьи уроки показывать" id="cat-source">
               <button type="button" role="radio" aria-checked={!authors} data-by="" onClick={() => set({ by: '', sort: '' })}>Редакция</button>
@@ -92,9 +92,9 @@ export default function Catalog() {
         </header>
         <div className="cat-tools">
           <form className="field cat-search" role="search" onSubmit={e => e.preventDefault()}>
-            <label className="sr" htmlFor="cat-q">Поиск курсов</label>
+            <label className="sr" htmlFor="cat-q">Поиск уроков</label>
             <Icon name="search" size={18} />
-            <input className="input" id="cat-q" ref={input} type="search" placeholder="Поиск курсов…" autoComplete="off"
+            <input className="input" id="cat-q" ref={input} type="search" placeholder="Поиск уроков…" autoComplete="off"
               value={f.q} onChange={e => set({ q: e.target.value })} />
           </form>
           <div className="chips chips-scroll" role="group" aria-label="Темы" id="cat-topics">
@@ -140,7 +140,7 @@ export default function Catalog() {
               </div>
             </EmptyState>
           ) : authors && !com.list.length ? (
-            <EmptyState title="Авторских уроков пока нет" text="Здесь появятся уроки, которые написали участники и одобрил модератор. Первый урок может быть вашим.">
+            <EmptyState title="Авторских уроков пока нет" text="Здесь появятся уроки, которые написали участники и одобрил модератор.">
               <Link className="btn btn-primary" to="/studio" id="cat-to-studio">Открыть мастерскую</Link>
             </EmptyState>
           ) : list.length ? (
@@ -155,7 +155,7 @@ export default function Catalog() {
               )}
             </>
           ) : (
-            <EmptyState title="Ничего не нашлось" text="Попробуйте другое слово или сбросьте фильтры.">
+            <EmptyState icon="search" title="Ничего не нашлось" text="Попробуйте другое слово или сбросьте фильтры.">
               <button type="button" className="btn btn-secondary" onClick={() => { setParams(authors ? { by: 'authors' } : {}, { replace: true }); setShown(PAGE); input.current?.focus(); }}>Сбросить фильтры</button>
             </EmptyState>
           )}

@@ -28,35 +28,6 @@ export function useReveal(rootId) {
   }, [rootId]);
 }
 
-/* Световое пятно под курсором на карточках и лёгкий наклон карточки в hero.
-   Один обработчик на документ; работает только там, где есть мышь. */
-export function usePointerLight() {
-  useEffect(() => {
-    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return undefined;
-    let raf = 0, ev = null;
-    const apply = () => {
-      raf = 0;
-      const t = ev.target.closest ? ev.target.closest('.ccard, .tile, .tcard, .ach, .daily') : null;
-      if (t) {
-        const r = t.getBoundingClientRect();
-        t.style.setProperty('--mx', `${ev.clientX - r.left}px`);
-        t.style.setProperty('--my', `${ev.clientY - r.top}px`);
-      }
-      const hero = document.querySelector('.hero');
-      if (hero) {
-        const r = hero.getBoundingClientRect();
-        if (ev.clientY < r.bottom) {
-          hero.style.setProperty('--px', ((ev.clientX - r.left) / r.width - 0.5).toFixed(3));
-          hero.style.setProperty('--py', ((ev.clientY - r.top) / r.height - 0.5).toFixed(3));
-        }
-      }
-    };
-    const onMove = e => { ev = e; if (!raf) raf = requestAnimationFrame(apply); };
-    document.addEventListener('pointermove', onMove, { passive: true });
-    return () => { document.removeEventListener('pointermove', onMove); cancelAnimationFrame(raf); };
-  }, []);
-}
-
 /* Шапка получает data-stuck, когда страница прокручена: фон становится плотнее */
 export function useStuck(ref) {
   useEffect(() => {

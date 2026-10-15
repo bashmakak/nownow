@@ -7,7 +7,7 @@ import { Lockup, Mark, Wordmark } from './Brand.jsx';
 import { ThemeControl } from './Cards.jsx';
 import { TopicsPanel } from './TopicsPanel.jsx';
 import { LevelChip, Rewards } from './GameUI.jsx';
-import { usePointerLight, useReveal, useStuck } from '../lib/motion.js';
+import { useReveal, useStuck } from '../lib/motion.js';
 import { CLOUD } from '../config.js';
 import { AccountLink, AuthNotice, ConsentBar } from './Account.jsx';
 import { useAuth } from '../lib/cloud.js';
@@ -52,7 +52,7 @@ function Header() {
           <NavLink className="head-about" to="/about">О платформе</NavLink>
         </nav>
         <div className={`head-actions${guest ? ' guest' : ''}`}>
-          <button type="button" className="icon-btn" aria-label="Поиск курсов"
+          <button type="button" className="icon-btn" aria-label="Поиск уроков"
             onClick={() => nav('/courses', { state: { focusSearch: Date.now() } })}><Icon name="search" /></button>
           <LevelChip />
           <NavLink className="btn btn-ghost btn-sm head-me" to="/me"><Icon name="user" size={16} /><span>Кабинет</span></NavLink>
@@ -73,7 +73,7 @@ function Footer() {
         <div className="foot-grid">
           <div className="foot-brand">
             <Lockup />
-            <span className="label">Быстрые знания / Большие возможности</span>
+            <span className="label">Быстрые знания</span>
             <p>{CLOUD
               ? 'Демо-версия. Полная версия пока есть не у всех уроков. Учётная запись необязательна: без неё прогресс хранится в вашем браузере.'
               : 'Демо-версия. Полная версия пока есть не у всех уроков, прогресс хранится только в вашем браузере.'}</p>
@@ -110,7 +110,6 @@ export function Layout() {
   const main = useRef(null);
   const inPlayer = isPlayer(pathname);
   useReveal('view');
-  usePointerLight();
 
   useEffect(() => {
     window.scrollTo(0, 0);

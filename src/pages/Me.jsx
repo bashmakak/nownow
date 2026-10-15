@@ -11,7 +11,7 @@ import { TRAINERS } from '../data/trainers.js';
 import { GAMES } from '../data/brain.js';
 import { dailyDone, xpOf } from '../lib/game.js';
 import { CLOUD } from '../config.js';
-import { LANG_LESSONS, LEVEL_BY, TRACKS } from '../data/lang/meta.js';
+import { LANG_LESSONS, LEVEL_BY, TRACKS, langList } from '../data/lang/meta.js';
 import { useAuth } from '../lib/cloud.js';
 import { AccountPanel, downloadMyData } from '../components/Account.jsx';
 import { InterestsPanel } from '../components/Interests.jsx';
@@ -48,7 +48,7 @@ function LangPanel({ s }) {
   if (!started.length) {
     return (
       <div className="panel" style={{ maxWidth: 640 }}>
-        <p className="muted">Короткие уроки для поездки по уровням от нуля: фразы под ситуации, задания как в языковых приложениях, прописи и разговорник. Сейчас готов {rows.map(r => r.t.title.toLowerCase()).join(', ')}.</p>
+        <p className="muted">Уроки для поездки от уровня «С нуля» до A2: звуки и чтение, фразы для разных ситуаций, прописи и разговорник. Сейчас {rows.length > 1 ? 'готовы' : 'готов'} {langList()}.</p>
         <div><Link className="btn btn-secondary" to="/lang"><Icon name="message-circle" size={17} />Открыть языки</Link></div>
       </div>
     );
@@ -61,7 +61,7 @@ function LangPanel({ s }) {
           <span className="bar" style={{ flex: 'none' }}><i style={{ width: `${Math.max(2, Math.round(done / total * 100))}%` }} /></span>
           <p className="muted" style={{ fontSize: 14.5 }}>{learned} {plural(learned, ['фраза выучена', 'фразы выучено', 'фраз выучено'])}{due ? `, ${due} ${plural(due, ['пора повторить', 'пора повторить', 'пора повторить'])}` : ', повторять сегодня нечего'}{written ? `; в прописях написано ${written} ${plural(written, ['знак', 'знака', 'знаков'])}` : ''}.</p>
           <div className="row">
-            <Link className="btn btn-primary" to={`/lang/${t.code}`}>{done < total ? 'Продолжить' : 'К курсу'}</Link>
+            <Link className="btn btn-primary" to={`/lang/${t.code}`}>{done < total ? 'Продолжить' : 'К уроку'}</Link>
             {due > 0 && <Link className="btn btn-secondary" id="me-lang-review" to={`/lang/${t.code}/review`}><Icon name="repeat" size={17} />Повторить</Link>}
             <Link className="btn btn-ghost" to={`/lang/${t.code}/phrases`}>Разговорник</Link>
             <Link className="btn btn-ghost" to={`/lang/${t.code}/write`}>Прописи</Link>
@@ -130,8 +130,8 @@ export default function Me() {
                 </div>
               ) : (
                 <>
-                  <p className="muted">Незавершённых уроков нет. Выберите курс: первый блок займёт меньше минуты.</p>
-                  <div><Link className="btn btn-primary" to="/courses">Выбрать курс</Link></div>
+                  <p className="muted">Незавершённых уроков нет. Выберите урок: первый блок займёт меньше минуты.</p>
+                  <div><Link className="btn btn-primary" to="/courses">Выбрать урок</Link></div>
                 </>
               )}
             </div>
@@ -140,7 +140,7 @@ export default function Me() {
               <div className="stats">
                 <div className="stat"><b>{wkMin}</b><span>{plural(wkMin, ['минута', 'минуты', 'минут'])} обучения</span></div>
                 <div className="stat"><b>{wkBlocks}</b><span>{plural(wkBlocks, ['блок пройден', 'блока пройдено', 'блоков пройдено'])}</span></div>
-                <div className="stat"><b>{completed.length}</b><span>{plural(completed.length, ['курс пройден', 'курса пройдено', 'курсов пройдено'])} всего</span></div>
+                <div className="stat"><b>{completed.length}</b><span>{plural(completed.length, ['урок пройден', 'урока пройдено', 'уроков пройдено'])} всего</span></div>
               </div>
             </div>
           </div>
@@ -197,7 +197,7 @@ export default function Me() {
               ))}
             </div>
           ) : (
-            <EmptyState title="Здесь появятся карточки" text="После каждого пройденного урока сюда попадает его главный вывод с действием на сегодня.">
+            <EmptyState icon="layers" title="Здесь появятся карточки" text="После каждого пройденного урока сюда попадает его главный вывод с действием на сегодня.">
               <Link className="btn btn-secondary" to="/courses">Перейти в каталог</Link>
             </EmptyState>
           )}
@@ -207,7 +207,7 @@ export default function Me() {
           <h2 className="h3" style={{ marginBottom: 18 }}>Закладки</h2>
           {bookmarks.length
             ? <div className="cards">{bookmarks.map(k => <CourseCard course={COURSE_BY[k]} key={k} />)}</div>
-            : <EmptyState title="Закладок пока нет" text="Здесь появятся курсы, к которым вы захотите вернуться. Нажмите на значок закладки на карточке курса." />}
+            : <EmptyState icon="bookmark" title="Закладок пока нет" text="Здесь появятся уроки, к которым вы захотите вернуться. Нажмите на значок закладки на карточке урока." />}
         </div>
 
         {(notes.length > 0 || reflects.length > 0 || sheets.length > 0) && (

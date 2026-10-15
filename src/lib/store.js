@@ -168,5 +168,5 @@ export const plural = (n, f) => {
 export const genMin = n => (n % 10 === 1 && n % 100 !== 11 ? 'минуты' : 'минут');
 export const aboutMin = n => `около ${n} ${genMin(n)}`;
 export const nMin = n => `${n} ${plural(n, ['минута', 'минуты', 'минут'])}`;
-export const nCourses = n => `${n} ${plural(n, ['курс', 'курса', 'курсов'])}`;
+export const nCourses = n => `${n} ${plural(n, ['урок', 'урока', 'уроков'])}`;
 export const norm = s => String(s).toLowerCase().replace(/ё/g, 'е').trim();

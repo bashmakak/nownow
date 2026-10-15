@@ -53,6 +53,11 @@ export const TRACKS = [
   },
 ];
 export const TRACK_BY = Object.fromEntries(TRACKS.map(t => [t.code, t]));
+/* Названия языков через запятую и «и»: «китайский, французский и испанский». ready — готовые или будущие */
+export function langList(ready = true) {
+  const n = TRACKS.filter(t => Boolean(t.ready) === ready).map(t => t.title.toLowerCase());
+  return n.length > 1 ? `${n.slice(0, -1).join(', ')} и ${n.at(-1)}` : (n[0] || '');
+}
 export const LANG_LESSONS = code => (TRACK_BY[code] ? TRACK_BY[code].units.reduce((n, u) => n + u[2], 0) : 0);
 /* Уровни, у которых в треке есть уроки */
 export const levelsOf = code => LEVELS.filter(l => (TRACK_BY[code] ? TRACK_BY[code].units : []).some(u => u[1] === l.id));

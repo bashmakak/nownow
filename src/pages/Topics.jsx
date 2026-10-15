@@ -18,7 +18,7 @@ export function Topics() {
       <div className="wrap">
         <header className="page-head">
           <h1 className="h1">Темы</h1>
-          <p className="lead">Выбирайте по тому, что интересно сейчас. В каждой открытой теме минимум два курса.</p>
+          <p className="lead">Выбирайте по тому, что интересно сейчас. В каждой открытой теме минимум два урока.</p>
         </header>
         {mine.length > 0 && (
           <div className="group" id="topics-mine">
@@ -38,7 +38,7 @@ export function Topics() {
         {SOON.length > 0 && (
           <div className="soon">
             <h2 className="h3">Готовятся</h2>
-            <p>Эти темы появятся в каталоге, когда в каждой будет минимум два курса.</p>
+            <p>Эти темы появятся в каталоге, когда в каждой будет минимум два урока.</p>
             <div className="chips">
               {SOON.map(t => <span className="chip chip-static" key={t.slug}><Icon name={t.icon} size={15} />{t.title}</span>)}
             </div>
@@ -65,7 +65,7 @@ function TopicBody({ topic }) {
             <span className="tile-ic"><Icon name={topic.icon} size={28} /></span>
             <div className="stack" style={{ gap: 10 }}>
               <h1 className="h1">{topic.title}</h1>
-              <p className="lead">{topic.hook}. {topic.desc}</p>
+              <p className="lead">{topic.desc}</p>
             </div>
           </div>
         </header>

@@ -138,7 +138,7 @@ function Sheet({ slug, fields, work }) {
             onChange={e => update(d => { const p = ensureProgress(d, slug); if (!p.work) p.work = {}; p.work[k] = e.target.value; })} />
         </div>
       ))}
-      <p className="saved" aria-live="polite">{filled ? 'Сохранено. Ответы появятся в кабинете.' : 'Поля можно пропустить, но урок работает, только если писать.'}</p>
+      <p className="saved" aria-live="polite">{filled ? 'Сохранено. Ответы появятся в кабинете.' : 'Поля можно пропустить, но запоминается лучше, если ответить письменно.'}</p>
     </div>
   );
 }
@@ -320,7 +320,7 @@ function Done({ course: c, pk, version, p, hRef }) {
         </div>
       )}
       <div className="row">
-        {nextC && <Link className="btn btn-primary btn-lg" to={`/courses/${nextC.slug}`}>Следующий курс <Icon name="arrow-right" size={18} /></Link>}
+        {nextC && <Link className="btn btn-primary btn-lg" to={`/courses/${nextC.slug}`}>Следующий урок <Icon name="arrow-right" size={18} /></Link>}
         <Link className="btn btn-secondary btn-lg" to="/me">В кабинет</Link>
         <Link className="btn btn-ghost btn-lg" to="/courses">В каталог</Link>
       </div>
@@ -407,7 +407,7 @@ function PlayerBody({ course: base, version }) {
       <header className="pl-top">
         <div className="wrap">
           <div className="pl-top-row">
-            <Link className="icon-btn" to={`/courses/${base.slug}`} aria-label="Закрыть урок и вернуться к курсу"><Icon name="x" /></Link>
+            <Link className="icon-btn" to={`/courses/${base.slug}`} aria-label="Закрыть урок и вернуться к его странице"><Icon name="x" /></Link>
             <div className="pl-title"><Mark size={20} /><span>{c.title}</span></div>
             <div className="pl-left" id="pl-left">{finished ? 'Урок пройден' : leftLabel(left)}</div>
           </div>
