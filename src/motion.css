@@ -9,6 +9,7 @@
 @keyframes pop{0%{transform:scale(.6)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
 @keyframes grow{from{transform:scaleX(0)}}
 @keyframes drain{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+@keyframes sweep{to{transform:translateX(130%)}}
 @keyframes shake{20%{transform:translateX(-6px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
 @keyframes okPulse{0%{box-shadow:0 0 0 0 rgba(0,200,151,.45)}100%{box-shadow:0 0 0 14px rgba(0,200,151,0)}}
 @keyframes floatUp{from{opacity:0;transform:translateY(10px) scale(.9)}}
@@ -45,6 +46,8 @@ html[data-norv] [data-rv],html[data-norv] [data-rv-kids] > *{opacity:1}
 @keyframes heroUp{from{opacity:0;transform:translateY(22px)}}
 @keyframes wordUp{from{transform:translateY(108%)}}
 @keyframes demoIn{from{opacity:0;transform:translateY(36px) scale(.97)}}
+@keyframes beamIn{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes beamPulse{0%{stroke-dashoffset:7;opacity:0}5%{opacity:1}30%{stroke-dashoffset:-100;opacity:1}32%,100%{stroke-dashoffset:-100;opacity:0}}
 .hero-copy > *{animation:heroUp .8s var(--ease) backwards}
 .hero-copy > :nth-child(1){animation-delay:.05s}
 .hero-copy > :nth-child(3){animation-delay:.34s}
@@ -54,8 +57,15 @@ html[data-norv] [data-rv],html[data-norv] [data-rv-kids] > *{opacity:1}
 .hero-h span{display:inline-block;overflow:hidden;vertical-align:bottom;padding-bottom:.16em;margin-bottom:-.16em}
 .hero-h i{display:inline-block;font-style:normal;animation:wordUp .9s var(--ease) backwards;animation-delay:calc(var(--i) * 110ms + 120ms)}
 .demo{animation:demoIn 1s var(--ease) .3s backwards}
+.hero-fx svg{animation:beamIn 1.15s cubic-bezier(.7,0,.2,1) backwards}
+.hero-fx .glow{animation:fadeIn 1.8s ease .2s backwards}
+.beam-pulse{fill:none;stroke:#F4FFD2;stroke-width:3;stroke-linecap:round;stroke-dasharray:7 100;stroke-dashoffset:7;opacity:0;animation:beamPulse 7s cubic-bezier(.6,0,.3,1) 1.7s infinite}
 .demo-list > *{animation:rise .35s var(--ease) backwards}
 .demo-list > :nth-child(2){animation-delay:70ms}
+@media (hover:hover) and (pointer:fine){
+  .hero-fx .glow{transform:translate(calc(var(--px,0) * 34px),calc(var(--py,0) * 22px));transition:transform .5s ease-out}
+  .hero .demo{transform:perspective(1300px) rotateY(calc(var(--px,0) * -5deg)) rotateX(calc(var(--py,0) * 4deg));transition:transform .3s ease-out}
+}
 
 /* ---------- шапка ---------- */
 .site-head{transition:background-color .25s,box-shadow .25s}
@@ -64,22 +74,40 @@ html[data-norv] [data-rv],html[data-norv] [data-rv-kids] > *{opacity:1}
 .head-nav a{position:relative}
 .head-nav a[aria-current="page"]::after{content:"";position:absolute;left:14px;right:14px;bottom:5px;height:2px;border-radius:2px;background:var(--lime);transform-origin:left;animation:lineIn .35s var(--ease)}
 .lock .mark{transition:transform .35s var(--ease)}
+.lock:hover .mark{transform:rotate(-10deg) scale(1.12)}
 
-/* ---------- кнопки ---------- */
+/* ---------- кнопки: блик проходит по основной кнопке ---------- */
 .btn{transition:background-color .15s,border-color .15s,box-shadow .2s,transform .12s var(--ease),filter .15s}
 .btn:active{transform:scale(.96)}
 .btn-primary{position:relative;overflow:hidden;isolation:isolate}
+.btn-primary::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.75) 50%,transparent 70%);transform:translateX(-130%);pointer-events:none}
 .btn .ic{transition:transform .2s var(--ease)}
 .chip:active,.icon-btn:active{transform:scale(.94)}
 .chip,.icon-btn{transition:border-color .15s,color .15s,background-color .15s,transform .12s var(--ease)}
 @media (hover:hover){
+  .btn-primary:hover::after{animation:sweep .75s var(--ease)}
   .btn:hover > .ic:last-child{transform:translateX(3px)}
   .more-link .ic{transition:transform .2s var(--ease)}
   .more-link:hover .ic{transform:translateX(4px)}
 }
 
-/* ---------- карточки ---------- */
-.ccard,.tile{transition:border-color .2s}
+/* ---------- карточки: пятно света под курсором, вспышка по лучу на обложке ---------- */
+.tile{position:relative;overflow:hidden}
+.ccard{transition:border-color .2s,transform .28s var(--ease),box-shadow .28s}
+.tile{transition:border-color .2s,transform .28s var(--ease)}
+.cover-ic{transition:transform .3s var(--ease)}
+.tile-ic{transition:background-color .15s,color .15s,transform .3s var(--ease)}
+.cover-pulse{fill:none;stroke:#F4FFD2;stroke-width:2.5;stroke-linecap:round;stroke-dasharray:14 100;stroke-dashoffset:14;opacity:0}
+@keyframes coverPulse{0%{stroke-dashoffset:14;opacity:1}100%{stroke-dashoffset:-100;opacity:1}}
+@media (hover:hover){
+  .ccard::after,.tile::after,.tcard::after,.ach::after,.daily::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .3s;background:radial-gradient(280px circle at var(--mx,50%) var(--my,50%),rgba(0,200,151,.13),transparent 65%)}
+  .ccard:hover::after,.tile:hover::after,a.tcard:hover::after,.ach.on:hover::after,.daily:hover::after{opacity:1}
+  .ccard:hover{transform:translateY(-4px);box-shadow:0 18px 40px rgba(0,0,0,.22)}
+  .ccard:hover .cover-pulse,.side:hover .cover-pulse{animation:coverPulse .9s cubic-bezier(.6,0,.3,1)}
+  .ccard:hover .cover-ic{transform:translateY(-2px) rotate(-5deg)}
+  .tile:hover{transform:translateY(-3px)}
+  .tile:hover .tile-ic{transform:rotate(-8deg) scale(1.08)}
+}
 .bar i{transition:width .6s var(--ease)}
 .syl-bar i{transition:background-color .4s}
 .bm[aria-pressed="true"] .ic{animation:pop .3s var(--ease)}
@@ -105,6 +133,7 @@ html[data-norv] [data-rv],html[data-norv] [data-rv-kids] > *{opacity:1}
 .done-wrap > :nth-child(4){animation-delay:.3s}
 .done-wrap > :nth-child(5){animation-delay:.4s}
 .done-wrap > :nth-child(n+6){animation-delay:.48s}
+.done-wrap .keycard::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(105deg,transparent 35%,rgba(216,255,90,.2) 50%,transparent 65%);transform:translateX(-130%);animation:sweep 1.2s var(--ease) .55s}
 
 /* ---------- задания и тренажёры ---------- */
 .play .ch,.tr-body .ch{animation:rise .35s var(--ease) backwards}
@@ -149,5 +178,7 @@ dialog[open]::backdrop{animation:fadeIn .25s ease}
 @media print{[data-rv]:not([data-in]),[data-rv-kids]:not([data-in]) > *{opacity:1}}
 @media (prefers-reduced-motion: reduce){
   [data-rv]:not([data-in]),[data-rv-kids]:not([data-in]) > *{opacity:1}
+  .beam-pulse,.cover-pulse{display:none}
+  .hero .demo,.hero-fx .glow{transform:none}
   .tr-timer{display:none}
 }

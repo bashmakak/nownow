@@ -21,7 +21,7 @@
 /* искры */
 .st-wallet{gap:14px}
 .st-wallet-top{display:flex;align-items:center;gap:14px}
-.st-wallet-top .tile-ic{margin-bottom:0;background:#D8FF5A;color:#0B0F14}
+.st-wallet-top .tile-ic{margin-bottom:0;background:linear-gradient(155deg,#D8FF5A,#00C897);color:#0B0F14}
 .st-wallet-top div{display:flex;align-items:baseline;gap:8px;color:var(--text-2)}
 .st-wallet-top b{font:700 40px/1 var(--font-display);color:var(--text)}
 .st-wallet-parts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}

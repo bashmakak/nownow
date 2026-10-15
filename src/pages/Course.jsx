@@ -5,7 +5,7 @@ import { loadFull } from '../data/full-loader.js';
 import { useStore, pkey, statusOf, activeVersion, remainingSec, leftLabel, restartCourse, setVersion, nMin, aboutMin, plural } from '../lib/store.js';
 import { useTitle } from '../lib/ui.jsx';
 import { Icon } from '../components/Icon.jsx';
-import { BookmarkButton, CourseCard, Crumbs, KeyCard } from '../components/Cards.jsx';
+import { BookmarkButton, CourseCard, Cover, Crumbs, KeyCard } from '../components/Cards.jsx';
 import { AuthorBox, LessonWait } from '../components/Community.jsx';
 import { useCommunityLesson } from '../lib/community.js';
 import NotFound from './NotFound.jsx';
@@ -121,12 +121,15 @@ function CourseBody({ course: c }) {
             )}
           </div>
           <aside className="side" aria-label="Об уроке">
+            <Cover course={c} min={T.min} big />
             <div className="side-body">
               <Cta course={c} version={v} />
               <dl className="facts">
                 <div><dt>Время</dt><dd>{aboutMin(T.min)}</dd></div>
                 {!c.community && <div><dt>Версия</dt><dd>{VERSION[v]}</dd></div>}
                 {T.plays > 0 && <div><dt>Заданий</dt><dd>{T.plays}</dd></div>}
+                <div><dt>Формат</dt><dd>{FORMAT[c.format]}</dd></div>
+                <div><dt>Уровень</dt><dd>{LEVEL[c.level]}</dd></div>
                 <div><dt>Тема</dt><dd><Link to={`/topics/${t.slug}`}>{t.title}</Link></dd></div>
                 <div><dt>Автор</dt><dd>{c.community ? c.author.name : 'Редакция NowNow'}</dd></div>
               </dl>

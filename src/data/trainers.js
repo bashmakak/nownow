@@ -198,7 +198,7 @@ export const TRAINERS = [
     ],
   },
   {
-    id: 'follow-up', topic: 'iskusstvennyj-intellekt', type: 'pick', icon: 'pen-line', lesson: 'ii-kak-redaktor', also: ['zadacha-po-shagam', 'kontekstnoe-okno', 'ii-kak-repetitor'],
+    id: 'follow-up', topic: 'iskusstvennyj-intellekt', type: 'pick', icon: 'wand-sparkles', lesson: 'ii-kak-redaktor', also: ['zadacha-po-shagam', 'kontekstnoe-okno', 'ii-kak-repetitor'],
     title: 'Точная правка',
     hook: 'Ответ модели не подошёл. Выберите действие, которое исправит его быстрее всего.',
     ask: 'Что сделать дальше?',

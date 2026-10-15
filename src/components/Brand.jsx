@@ -8,6 +8,12 @@ export function Defs() {
         <linearGradient id="nv-g" x1="0.15" y1="0" x2="0.85" y2="1">
           <stop offset="0" stopColor="#D8FF5A" /><stop offset=".55" stopColor="#7BE87E" /><stop offset="1" stopColor="#00C897" />
         </linearGradient>
+        <linearGradient id="nv-gs" x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0" stopColor="#00C897" stopOpacity="0" /><stop offset=".55" stopColor="#00C897" stopOpacity=".85" /><stop offset="1" stopColor="#D8FF5A" />
+        </linearGradient>
+        <filter id="nv-b2" x="-20%" y="-200%" width="140%" height="500%"><feGaussianBlur stdDeviation="1.4" /></filter>
+        <filter id="nv-b6" x="-20%" y="-200%" width="140%" height="500%"><feGaussianBlur stdDeviation="6" /></filter>
+        <filter id="nv-b12" x="-20%" y="-200%" width="140%" height="500%"><feGaussianBlur stdDeviation="14" /></filter>
         {/* знак: молния, внутри которой вырезана такая же молния поменьше */}
         <mask id="nv-m" maskUnits="userSpaceOnUse" x="-10" y="-10" width="120" height="120">
           <rect x="-10" y="-10" width="120" height="120" fill="#fff" />
@@ -35,3 +41,17 @@ export function Lockup({ className = '', small = false }) {
   return <span className={`lock ${className}`}><Mark size={small ? 20 : 24} /><Wordmark /></span>;
 }
 
+/* Световой луч: фирменный приём для hero и финального блока */
+export function HeroFx() {
+  return (
+    <div className="hero-fx" aria-hidden="true">
+      <div className="glow" />
+      <svg viewBox="0 0 1200 600" preserveAspectRatio="none">
+        <polygon points="560,600 1200,250 1200,292 640,600" fill="url(#nv-gs)" opacity=".5" filter="url(#nv-b12)" />
+        <polygon className="streak-core" points="610,600 1200,268 1200,276 628,600" fill="url(#nv-gs)" filter="url(#nv-b2)" />
+        {/* вспышка, которая время от времени пробегает по лучу */}
+        <line className="beam-pulse" x1="619" y1="600" x2="1200" y2="272" pathLength="100" />
+      </svg>
+    </div>
+  );
+}

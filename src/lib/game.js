@@ -87,9 +87,9 @@ function langStats(s) {
 
 /* Достижения. of(st) возвращает [сколько сделано, сколько нужно] */
 export const ACHIEVEMENTS = [
-  { id: 'first', icon: 'zap', title: 'Первый урок', text: 'Пройти первый урок', of: st => [st.lessons, 1] },
-  { id: 'five', icon: 'layers', title: 'Пять уроков', text: 'Пройти пять уроков', of: st => [st.lessons, 5] },
-  { id: 'fifteen', icon: 'award', title: 'Пятнадцать уроков', text: 'Пройти пятнадцать уроков', of: st => [st.lessons, 15] },
+  { id: 'first', icon: 'zap', title: 'Первое знание', text: 'Пройти первый урок', of: st => [st.lessons, 1] },
+  { id: 'five', icon: 'layers', title: 'Пять знаний', text: 'Пройти пять уроков', of: st => [st.lessons, 5] },
+  { id: 'fifteen', icon: 'award', title: 'Пятнадцать знаний', text: 'Пройти пятнадцать уроков', of: st => [st.lessons, 15] },
   { id: 'deep', icon: 'book-open', title: 'Вглубь', text: 'Пройти полную версию урока', of: st => [st.fulls, 1] },
   { id: 'perfect', icon: 'target', title: 'Без ошибок', text: 'Ответить верно на все вопросы проверки в одном уроке', of: st => [st.perfect, 1] },
   { id: 'hands', icon: 'mouse-pointer-click', title: 'Своими руками', text: 'Выполнить пять интерактивных заданий в уроках', of: st => [st.plays, 5] },
@@ -99,11 +99,11 @@ export const ACHIEVEMENTS = [
   { id: 'streak3', icon: 'flame', title: 'Три дня подряд', text: 'Заниматься три дня подряд', of: st => [st.streak, 3] },
   { id: 'streak7', icon: 'flame', title: 'Неделя подряд', text: 'Заниматься семь дней подряд', of: st => [st.streak, 7] },
   { id: 'warmup', icon: 'gamepad-2', title: 'Разминка', text: 'Сыграть первый раунд в тренажёре', of: st => [st.rounds, 1] },
-  { id: 'bolts', icon: 'zap', title: 'Три молнии', text: 'Пройти раунд без единой ошибки', of: st => [st.anyTop, 1] },
+  { id: 'bolts', icon: 'sparkles', title: 'Три молнии', text: 'Пройти раунд без единой ошибки', of: st => [st.anyTop, 1] },
   { id: 'daily', icon: 'calendar-check', title: 'Тренировка дня', text: 'Выполнить тренировку дня', of: st => [st.dailies, 1] },
   { id: 'daily5', icon: 'medal', title: 'Пять тренировок', text: 'Выполнить тренировку дня пять раз', of: st => [st.dailies, 5] },
   { id: 'master', icon: 'crown', title: 'Полный заряд', text: 'Получить три молнии во всех тренажёрах по ИИ', of: st => [st.top, TRAINERS.length] },
-  { id: 'brain', icon: 'brain', title: 'Первая мини-игра', text: 'Сыграть в любую мини-игру', of: st => [st.brain, 1] },
+  { id: 'brain', icon: 'brain', title: 'Разминка для ума', text: 'Сыграть в любую мини-игру', of: st => [st.brain, 1] },
   { id: 'brain-all', icon: 'layout-grid', title: 'Полный круг', text: 'Сыграть во все мини-игры', of: st => [st.brain, st.brainTotal] },
   { id: 'brain-top', icon: 'gauge', title: 'В отличной форме', text: 'Получить три молнии в трёх мини-играх', of: st => [st.brainTop, 3] },
   { id: 'lang-first', icon: 'languages', title: 'Первый урок языка', text: 'Пройти первый урок в разделе «Языки»', of: st => [st.langLessons, 1] },

@@ -15,8 +15,13 @@ export default function About() {
       <div className="wrap">
         <header className="page-head">
           <h1 className="h1">О платформе</h1>
-          <p className="lead">NowNow — короткие уроки на конкретные вопросы: как принять решение, составить бюджет, поставить задачу нейросети. Урок заканчивается действием на сегодня, а сколько времени он займёт, видно заранее.</p>
+          <p className="lead">NowNow — это быстрые знания для тех, кто ценит своё время. Один урок даёт одну идею, которую можно применить сегодня. Сколько времени он займёт, видно заранее.</p>
         </header>
+        <div className="cols3" style={{ marginTop: 8 }}>
+          <div className="col3"><span className="tile-ic"><Icon name="zap" size={22} /></span><h2 className="h3">Скорость</h2><p>От главной страницы до первого блока урока меньше минуты. Регистрация для этого не нужна.</p></div>
+          <div className="col3"><span className="tile-ic"><Icon name="target" size={22} /></span><h2 className="h3">Концентрат</h2><p>Один экран, одна мысль. Если текст можно убрать без потери смысла, мы его убираем.</p></div>
+          <div className="col3"><span className="tile-ic"><Icon name="circle-check" size={22} /></span><h2 className="h3">Результат</h2><p>Каждый урок заканчивается карточкой с выводом и одним действием, которое можно сделать сегодня.</p></div>
+        </div>
         <div className="group" style={{ maxWidth: 720 }}>
           <h2 className="h3" style={{ marginBottom: 8 }}>Как устроен урок</h2>
           <p className="muted" style={{ marginBottom: 14 }}>Шесть блоков в любой версии. Справа доля времени, которую блок обычно занимает в короткой версии.</p>

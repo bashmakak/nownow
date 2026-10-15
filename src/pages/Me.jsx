@@ -197,7 +197,7 @@ export default function Me() {
               ))}
             </div>
           ) : (
-            <EmptyState icon="layers" title="Здесь появятся карточки" text="После каждого пройденного урока сюда попадает его главный вывод с действием на сегодня.">
+            <EmptyState title="Здесь появятся карточки" text="После каждого пройденного урока сюда попадает его главный вывод с действием на сегодня.">
               <Link className="btn btn-secondary" to="/courses">Перейти в каталог</Link>
             </EmptyState>
           )}
@@ -207,7 +207,7 @@ export default function Me() {
           <h2 className="h3" style={{ marginBottom: 18 }}>Закладки</h2>
           {bookmarks.length
             ? <div className="cards">{bookmarks.map(k => <CourseCard course={COURSE_BY[k]} key={k} />)}</div>
-            : <EmptyState icon="bookmark" title="Закладок пока нет" text="Здесь появятся уроки, к которым вы захотите вернуться. Нажмите на значок закладки на карточке урока." />}
+            : <EmptyState title="Закладок пока нет" text="Здесь появятся уроки, к которым вы захотите вернуться. Нажмите на значок закладки на карточке урока." />}
         </div>
 
         {(notes.length > 0 || reflects.length > 0 || sheets.length > 0) && (

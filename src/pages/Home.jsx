@@ -1,10 +1,10 @@
 import { Fragment, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BLOCKS, BLOCK_SHARE, COURSES, COURSE_BY, FEATURED, FORMAT, PUBLIC, SOON, START_COURSE, TIME, TOPIC_BY, WITH_FULL, coursesOf, minutes } from '../data';
+import { BLOCKS, BLOCK_SHARE, COURSES, COURSE_BY, FEATURED, FORMAT, PUBLIC, SOON, START_COURSE, TIME, TOPIC_BY, WITH_FULL, WPM, coursesOf, minutes } from '../data';
 import { plural, genMin, aboutMin } from '../lib/store.js';
 import { useTitle } from '../lib/ui.jsx';
 import { Icon } from '../components/Icon.jsx';
-import { Lockup } from '../components/Brand.jsx';
+import { HeroFx, Lockup } from '../components/Brand.jsx';
 import { CourseCard, TopicTile } from '../components/Cards.jsx';
 import { ChoiceView } from '../components/Play.jsx';
 import { TRAINERS, ROUND } from '../data/trainers.js';
@@ -21,7 +21,9 @@ const FAQ = [
   ['Сколько времени занимает урок?', `У каждого урока своё время. Оно указано на карточке и на странице урока. Короткие версии занимают от ${TIME.short.min} до ${TIME.short.max} ${genMin(TIME.short.max)}${TIME.full ? `, полная — ${aboutMin(TIME.full.mid)}` : ''}.`],
   ['Чем короткая версия отличается от полной?', 'В короткой главная идея, один пример, короткая практика и три вопроса. Полная разбирает ту же тему подробно: больше примеров, вопросы для размышления по ходу, рабочий лист и пять вопросов. Версию выбирают на странице урока.'],
   ['У всех уроков есть полная версия?', `Пока нет. Сейчас она есть у ${WITH_FULL.length} ${plural(WITH_FULL.length, ['урока', 'уроков', 'уроков'])} из ${COURSES.length}${PUBLIC.every(t => coursesOf(t.slug).some(c => c.full)) ? ', минимум у одного в каждой теме' : ''}. Остальные готовятся. В каталоге такие уроки показывает фильтр «Есть полная версия», а на карточке указано время обеих версий.`],
+  ['Как считается время?', `По объёму урока: чтение со скоростью ${WPM} слов в минуту плюс небольшие паузы на вопросы и задания. Это оценка среднего темпа: ваш может отличаться.`],
   ['Что если я не успею за один раз?', 'Прогресс сохраняется после каждого блока. Откройте урок позже и продолжите с того места, где остановились.'],
+  ['Счётчик времени что-то ограничивает?', 'Нет. Надпись «Осталось N мин» только подсказывает, сколько впереди. Урок не закроется, если вы задержитесь на блоке.'],
   ['Нужна ли регистрация?', CLOUD
     ? 'Нет. Уроки, задания и тренажёры доступны сразу, а прогресс, закладки и заметки хранятся в вашем браузере. Учётная запись нужна для одного: чтобы прогресс сохранялся в облаке и появлялся на других устройствах. Создать её можно в кабинете.'
     : 'В этой версии нет. Прогресс, закладки и заметки хранятся в вашем браузере и не передаются на сервер. На другом устройстве они не появятся.'],
@@ -53,7 +55,7 @@ function Demo() {
   return (
     <div className="demo">
       <div className="demo-top"><Lockup small /><span className="label">Каталог</span></div>
-      <p className="demo-title">{COURSES.length} {plural(COURSES.length, ['урок', 'урока', 'уроков'])} по {PUBLIC.length} {plural(PUBLIC.length, ['теме', 'темам', 'темам'])}</p>
+      <p className="demo-title">Выберите тему и получите ключевое знание за несколько минут</p>
       <form className="field" role="search" onSubmit={submit}>
         <label className="sr" htmlFor="demo-q">Поиск уроков</label>
         <Icon name="search" size={18} />
@@ -85,7 +87,7 @@ function Try() {
   return (
     <div className="try">
       <div className="try-copy" data-rv="">
-        <h2 className="h2">Задания и тренажёры</h2>
+        <h2 className="h2">Знание закрепляется, когда им пользуются</h2>
         <p className="lead">В уроках по искусственному интеллекту есть задания, которые выполняют руками, а после уроков — тренажёры: раунд из {ROUND} заданий, очки за точность и скорость, разбор ошибок.</p>
         <ul className="try-list">
           <li><Icon name="mouse-pointer-click" size={20} /><span>Соберите запрос из элементов и посмотрите, как меняется ответ</span></li>
@@ -153,20 +155,25 @@ function Timeline() {
 }
 
 /* Заголовок блока языков: готовые треки и сколько в них уроков */
-const READY = TRACKS.filter(t => t.ready);
-const langTitle = () => { const s = langList(); return s.charAt(0).toUpperCase() + s.slice(1); };
-const LANG_N = READY.reduce((a, t) => a + LANG_LESSONS(t.code), 0);
+function langTitle() {
+  const ready = TRACKS.filter(t => t.ready);
+  const names = ready.map((t, k) => (k ? t.title.toLowerCase() : t.title));
+  const list = names.length > 1 ? `${names.slice(0, -1).join(', ')} и ${names.at(-1)}` : names[0];
+  const n = ready.reduce((a, t) => a + LANG_LESSONS(t.code), 0);
+  return `${list} с нуля до A2: ${n} ${plural(n, ['короткий урок', 'коротких урока', 'коротких уроков'])}`;
+}
 
 export default function Home() {
   useTitle('');
   return (
     <>
       <section className="hero theme-dark">
+        <HeroFx />
         <div className="wrap hero-grid">
           <div className="hero-copy">
             <p className="label hero-eyebrow">Быстрые знания</p>
-            <h1 className="h-display hero-h">{['Короткие', 'уроки', 'с практикой'].map((w, i) => <Fragment key={w}>{i > 0 && ' '}<span style={{ '--i': i }}><i>{w}</i></span></Fragment>)}</h1>
-            <p className="lead">Каждый урок разбирает один вопрос: идея, пример, задание и проверка. Короткая версия занимает {aboutMin(TIME.short.mid)}{TIME.full ? `, полная — ${aboutMin(TIME.full.mid)}` : ''}.</p>
+            <h1 className="h-display hero-h">{['Знания,', 'которые', 'работают.'].map((w, i) => <Fragment key={w}>{i > 0 && ' '}<span style={{ '--i': i }}><i>{w}</i></span></Fragment>)}</h1>
+            <p className="lead">Один урок даёт одно ключевое знание. Короткая версия занимает {aboutMin(TIME.short.mid)}, полная разбирает тему подробно. Сколько времени уйдёт, видно до начала.</p>
             <div className="row">
               <Link className="btn btn-primary btn-lg" to={`/learn/${START_COURSE}`}>Начать первый урок <Icon name="arrow-right" size={18} /></Link>
               <Link className="btn btn-secondary btn-lg" to="/courses">Смотреть каталог</Link>
@@ -210,7 +217,7 @@ export default function Home() {
       <section className="sec theme-light" style={{ paddingTop: 0 }}>
         <div className="wrap">
           <div className="sec-head">
-            <h2 className="h2">С чего начать</h2>
+            <h2 className="h2">Начните с того, что нужно сейчас</h2>
             <Link className="more-link" to="/courses">Весь каталог <Icon name="arrow-right" size={16} /></Link>
           </div>
           <Featured />
@@ -223,10 +230,10 @@ export default function Home() {
             <div className="stack" style={{ gap: 10 }}>
               <span className="label">Языки для путешествий</span>
               <h2 className="h2">{langTitle()}</h2>
-              <p className="lead">{LANG_N} {plural(LANG_N, ['урок', 'урока', 'уроков'])} от уровня «С нуля» до A2: звуки и чтение, потом фразы для аэропорта, транспорта, отеля, кафе и аптеки. Разговорник можно распечатать.{TRACKS.some(t => !t.ready) && ` ${TRACKS.filter(t => !t.ready).map((t, k) => (k ? t.title.toLowerCase() : t.title)).join(' и ')} ${TRACKS.filter(t => !t.ready).length > 1 ? 'готовятся' : 'готовится'}.`}</p>
+              <p className="lead">Уровни по шкале CEFR: от звуков и правил чтения до разговоров в поездке. Задания как в языковых приложениях, прописи, где буквы и знаки обводят пальцем, повторение фраз и разговорник для печати. Плюс правила страны: оплата, транспорт, экстренные номера.{TRACKS.some(t => !t.ready) && ` ${TRACKS.filter(t => !t.ready).map((t, k) => (k ? t.title.toLowerCase() : t.title)).join(' и ')} ${TRACKS.filter(t => !t.ready).length > 1 ? 'готовятся' : 'готовится'}.`}</p>
             </div>
             <div className="lang-cta-side">
-              <span className="lang-cta-native" aria-hidden="true">{READY.map(t => <span key={t.code} lang={t.code}>{t.native}</span>)}</span>
+              <span className="lang-cta-zh" lang="zh-CN" aria-hidden="true">你好</span>
               <div className="row"><Link className="btn btn-primary btn-lg" to="/lang"><Icon name="message-circle" size={18} />Выбрать язык</Link><Link className="btn btn-secondary btn-lg" to="/lang/zh">Начать китайский</Link></div>
             </div>
           </div>
@@ -242,6 +249,18 @@ export default function Home() {
             </div>
           </div>
           <Timeline />
+        </div>
+      </section>
+
+      <section className="sec theme-light">
+        <div className="wrap">
+          <div className="sec-head"><h2 className="h2">Зачем учиться коротко</h2></div>
+          <div className="cols3" data-rv-kids="">
+            <div className="col3"><span className="tile-ic"><Icon name="trending-up" size={22} /></span><h3 className="h3">Быстро расти</h3><p>Несколько минут в день складываются в десятки новых идей за год. Каждый урок закончен и полезен сам по себе.</p></div>
+            <div className="col3"><span className="tile-ic"><Icon name="target" size={22} /></span><h3 className="h3">Принимать лучшие решения</h3><p>В уроках нет пересказа теории ради теории. Только модели и приёмы, которые меняют поступки.</p></div>
+            <div className="col3"><span className="tile-ic"><Icon name="compass" size={22} /></span><h3 className="h3">Двигаться к своим целям</h3><p>Серия дней, уровень и коллекция ключевых знаний показывают, сколько уже пройдено и что из этого вы применили.</p></div>
+          </div>
+          <div className="motto" data-rv=""><i /><p>Большие цели начинаются с малого</p></div>
         </div>
       </section>
 
@@ -272,9 +291,10 @@ export default function Home() {
       </section>
 
       <section className="sec final theme-dark">
+        <HeroFx />
         <div className="wrap">
-          <h2 className="h1">Первый урок займёт {aboutMin(minutes(COURSE_BY[START_COURSE], 'short'))}</h2>
-          <p className="lead">Регистрация не нужна: прогресс сохраняется в браузере.</p>
+          <h2 className="h1">Большие цели начинаются с малого.</h2>
+          <p className="lead">Первый урок займёт {aboutMin(minutes(COURSE_BY[START_COURSE], 'short'))}. Выберите тему и начните.</p>
           <div className="row"><Link className="btn btn-primary btn-lg" to="/courses">Выбрать урок <Icon name="arrow-right" size={18} /></Link></div>
         </div>
       </section>

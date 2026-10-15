@@ -155,7 +155,7 @@ export default function Catalog() {
               )}
             </>
           ) : (
-            <EmptyState icon="search" title="Ничего не нашлось" text="Попробуйте другое слово или сбросьте фильтры.">
+            <EmptyState title="Ничего не нашлось" text="Попробуйте другое слово или сбросьте фильтры.">
               <button type="button" className="btn btn-secondary" onClick={() => { setParams(authors ? { by: 'authors' } : {}, { replace: true }); setShown(PAGE); input.current?.focus(); }}>Сбросить фильтры</button>
             </EmptyState>
           )}

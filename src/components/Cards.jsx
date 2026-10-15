@@ -1,15 +1,29 @@
 import { Link } from 'react-router-dom';
-import { FORMAT, LEVEL, TOPIC_BY, VERSION, about, coursesOf, minutes, timing } from '../data';
+import { FORMAT, LEVEL, TOPIC_BY, VERSION, about, coursesOf, metaLine, minutes, timing } from '../data';
 import { useStore, status, activeVersion, remainingSec, leftLabel, toggleBookmark, setTheme, nCourses } from '../lib/store.js';
 import { useUI } from '../lib/ui.jsx';
 import { Icon } from './Icon.jsx';
 import { Mark } from './Brand.jsx';
 
-/* Шапка карточки курса: значок темы и расчётное время в минутах */
+/* Линия, по которой при наведении пробегает вспышка: середина яркого луча из STREAKS */
+const PULSE = [[156, 120, 300, 44], [91, 120, 300, 68.5], [201, 120, 300, 20], [134, 120, 300, 91.5]];
+const STREAKS = [
+  [['130,120 300,34 300,52 160,120', 0.45, 'nv-b6'], ['150,120 300,42 300,46 162,120', 1]],
+  [['60,120 300,60 300,76 96,120', 0.45, 'nv-b6'], ['84,120 300,67 300,70 98,120', 1]],
+  [['180,120 300,10 300,30 204,120', 0.45, 'nv-b6'], ['196,120 300,18 300,22 206,120', 1]],
+  [['100,120 300,84 300,98 140,120', 0.45, 'nv-b6'], ['126,120 300,90 300,93 142,120', 1]],
+];
+
+/* Обложка курса: световой луч, положение которого зависит от курса. min — расчётное время в минутах */
 export function Cover({ course, min, big = false }) {
   const t = TOPIC_BY[course.topic];
+  const v = [...course.slug].reduce((s, ch) => s + ch.charCodeAt(0), 0) % 4;
   return (
     <div className="cover">
+      <svg className="cover-fx" viewBox="0 0 300 120" preserveAspectRatio="none" aria-hidden="true">
+        {STREAKS[v].map(([p, o, f], i) => <polygon key={i} points={p} fill="url(#nv-gs)" opacity={o} filter={f ? `url(#${f})` : undefined} />)}
+        <line className="cover-pulse" x1={PULSE[v][0]} y1={PULSE[v][1]} x2={PULSE[v][2]} y2={PULSE[v][3]} pathLength="100" />
+      </svg>
       <span className="cover-ic"><Icon name={t.icon} size={big ? 24 : 22} /></span>
       <span className="cover-min"><span className="sr">Время урока: </span>{min} мин</span>
     </div>
@@ -53,7 +67,7 @@ export function CourseCard({ course }) {
         <div className="ccard-body">
           <span className="label">{TOPIC_BY[course.topic].title}</span>
           <h3 className="ccard-title">{course.title}</h3>
-          <p className="ccard-meta">{FORMAT[course.format]} · {LEVEL[course.level]}</p>
+          <p className="ccard-meta">{metaLine(course, v)}</p>
           {course.community && <p className="ccard-by"><Icon name="pen-line" size={14} />{course.author.name}</p>}
           {(course.full || about(course).plays > 0) && (
             <div className="badges">
@@ -81,7 +95,7 @@ export function CommunityCard({ item }) {
         <div className="ccard-body">
           <span className="label">{TOPIC_BY[item.topic].title}</span>
           <h3 className="ccard-title">{item.title}</h3>
-          <p className="ccard-meta">{FORMAT[item.format]} · {LEVEL[item.level]}</p>
+          <p className="ccard-meta">{item.minutes} мин · {FORMAT[item.format]} · {LEVEL[item.level]}</p>
           <p className="ccard-by"><Icon name="pen-line" size={14} />{item.author}{item.learners > 0 && <span> · прошли {item.learners}</span>}</p>
           {st === 'progress' && <div><span className="badge badge-play">В процессе</span></div>}
           {st === 'done' && <div><span className="badge"><Icon name="check" size={13} />Пройден</span></div>}
@@ -123,10 +137,10 @@ export function KeyCard({ course, locked = false }) {
   );
 }
 
-export function EmptyState({ title, text, icon, children }) {
+export function EmptyState({ title, text, children }) {
   return (
     <div className="empty">
-      {icon && <Icon name={icon} size={32} />}
+      <Mark size={40} fill="currentColor" />
       <h3 className="h4">{title}</h3>
       <p>{text}</p>
       {children}
